@@ -15,6 +15,8 @@ data class ItemCondition(
     val lowincLUK: Int? = null,
     val highincLUK: Int? = null,
     val lowincPAD: Int? = null,
-    val highincPAD: Int? = null
+    val highincPAD: Int? = null,
+    val lowincMAD: Int? = null,
+    val highincMAD: Int? = null
 ) {
 }

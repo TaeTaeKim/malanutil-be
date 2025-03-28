@@ -5,4 +5,4 @@ feign:
         loggerLevel: FULL
 logging.level.com.guide.openfeign.infra: DEBUG
 server:
-  port: 8081
+  port: 8080

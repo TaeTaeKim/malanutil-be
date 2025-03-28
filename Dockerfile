@@ -1,5 +1,5 @@
 # Use an official Gradle image to build the application
-FROM gradle:7.5.1-jdk17
+FROM gradle:7.5.1-jdk17 AS build
 
 # Set the working directory
 WORKDIR /app

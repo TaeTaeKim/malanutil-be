@@ -1,5 +1,5 @@
 # Use an official Gradle image to build the application
-FROM gradle:7.5.1-jdk17 AS build
+FROM gradle:8.7-jdk-21-and-22-alpine AS build
 
 # Set the working directory
 WORKDIR /app
@@ -17,7 +17,7 @@ COPY src /app/src
 RUN ./gradlew build
 
 # Use an official OpenJDK image to run the application
-FROM openjdk:17-jdk-slim
+FROM openjdk:21-jdk-slim
 
 # Set the working directory
 WORKDIR /app
@@ -26,7 +26,7 @@ WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
 
 # Expose the port the application runs on
-EXPOSE 38081
+EXPOSE 8080
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

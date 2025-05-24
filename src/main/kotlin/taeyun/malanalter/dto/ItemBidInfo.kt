@@ -1,4 +1,4 @@
-package taeyun.malanalter
+package taeyun.malanalter.dto
 
 import com.fasterxml.jackson.annotation.JsonCreator
 

@@ -1,0 +1,45 @@
+package taeyun.malanalter.dto
+
+data class MalanggBidRequest (
+    val highPrice: Int? = null,
+    val lowincINT: Int? = null,
+    val highincINT: Int? = null,
+    val lowincSTR: Int? = null,
+    val highincSTR: Int? = null,
+    val lowincDEX: Int? = null,
+    val highincDEX: Int? = null,
+    val lowincLUK: Int? = null,
+    val highincLUK: Int? = null,
+    val lowincPAD: Int? = null,
+    val highincPAD: Int? = null,
+    val lowincMAD: Int? = null,
+    val highincMAD: Int? = null,
+    val lowHapma: Int? = null,
+    val highHapma: Int? = null,
+    val lowincSpeed: Int? = null,
+    val highincSpeed: Int? = null,
+    val lowincAcc: Int? = null,
+    val highincAcc: Int? = null,
+){
+    constructor(itemCondition: ItemCondition) : this(
+        highPrice = itemCondition.price,
+        lowincINT = itemCondition.int,
+        highincINT = itemCondition.int,
+        lowincSTR = itemCondition.str,
+        highincSTR = itemCondition.str,
+        lowincDEX = itemCondition.dex,
+        highincDEX = itemCondition.dex,
+        lowincLUK = itemCondition.luk,
+        highincLUK = itemCondition.luk,
+        lowincPAD = itemCondition.pad,
+        highincPAD = itemCondition.pad,
+        lowincMAD = itemCondition.mad,
+        highincMAD = itemCondition.mad,
+        lowHapma = itemCondition.hapma,
+        highHapma = itemCondition.hapma,
+        lowincSpeed = itemCondition.speed,
+        highincSpeed = itemCondition.speed,
+        lowincAcc = itemCondition.accuracy,
+        highincAcc = itemCondition.accuracy
+    )
+}

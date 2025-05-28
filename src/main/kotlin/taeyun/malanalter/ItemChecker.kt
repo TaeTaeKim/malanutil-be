@@ -20,7 +20,7 @@ class ItemChecker(
     private val discordClient: DiscordClient
 ) {
 
-    @Scheduled(fixedRate = 1000 * 60 * 10) // 30분마다 실행 (초기 1초 후)
+    @Scheduled(fixedRate = 1000 * 60 * 10) // 10분마다 실행 (초기 1초 후)
     fun checkItem() {
         // 한국 새벽 시간에는 1시간 간격으로 체크 (서버 시간은 UTC)
         LocalDateTime.now(ZoneId.of("Asia/Seoul")).let {

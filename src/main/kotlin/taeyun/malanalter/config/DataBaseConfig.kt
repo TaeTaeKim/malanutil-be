@@ -9,7 +9,7 @@ import taeyun.malanalter.config.property.DataSourceProperties
 import javax.sql.DataSource
 
 @Configuration
-data class DataBaseConfig(val dbProperties: DataSourceProperties, ) {
+data class DataBaseConfig(val dbProperties: DataSourceProperties ) {
 
     @Bean
     fun datasource(): DataSource{

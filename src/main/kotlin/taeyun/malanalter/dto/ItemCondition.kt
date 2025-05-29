@@ -1,8 +1,11 @@
 package taeyun.malanalter.dto
 
+import kotlinx.serialization.Serializable
+
 /**
  * Malan gg 로 보내는 쿼리 파라미터
  */
+@Serializable
 data class ItemCondition(
     val price: Int? = null,
     val str: Int? = null,
@@ -14,5 +17,4 @@ data class ItemCondition(
     val hapma: Int? = null, // 합마
     val accuracy: Int? = null, // 명중률
     val speed: Int? = null, // 이동속도
-) {
-}
+)

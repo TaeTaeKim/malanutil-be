@@ -1,71 +1,87 @@
 plugins {
-	id 'org.jetbrains.kotlin.plugin.spring' version '1.9.25'
-	id 'org.springframework.boot' version '3.4.4'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.jetbrains.kotlin.plugin.spring' version '1.9.25'
+    id 'org.springframework.boot' version '3.4.4'
+    id 'io.spring.dependency-management' version '1.1.7'
     id 'org.jetbrains.kotlin.jvm'
 }
 
 ext {
-	springCloudVersion = "2024.0.1"
+    springCloudVersion = "2024.0.1"
 }
 
 group = 'taeyun'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
-	implementation 'org.jetbrains.kotlin:kotlin-reflect'
-	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
+    implementation 'org.jetbrains.kotlin:kotlin-reflect'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-	implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4'
-	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0")
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4'
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0")
+    // configurations
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
-	// kotest
-	testImplementation("io.kotest:kotest-runner-junit5:5.4.2")
-	testImplementation("io.kotest:kotest-assertions-core:5.4.2")
-	testImplementation("io.kotest.extensions:kotest-extensions-spring:1.1.2")
+    // postgres driver
+    implementation group: 'org.postgresql', name: 'postgresql', version: '42.7.3'
 
-	// mockk
-	testImplementation("io.mockk:mockk:1.13.8")
+    // exposed
+    implementation 'org.jetbrains.exposed:exposed-core:1.0.0-beta-2'
+    implementation 'org.jetbrains.exposed:exposed-crypt:1.0.0-beta-2'
+    implementation 'org.jetbrains.exposed:exposed-dao:1.0.0-beta-2'
+    implementation 'org.jetbrains.exposed:exposed-jdbc:1.0.0-beta-2'
 
+    implementation 'org.jetbrains.exposed:exposed-kotlin-datetime:1.0.0-beta-2'
+
+    implementation 'org.jetbrains.exposed:exposed-json:1.0.0-beta-2'
+    implementation 'org.jetbrains.exposed:exposed-money:1.0.0-beta-2'
+    implementation 'org.jetbrains.exposed:exposed-spring-boot-starter:1.0.0-beta-2'
+
+    // kotest
+    testImplementation("io.kotest:kotest-runner-junit5:5.4.2")
+    testImplementation("io.kotest:kotest-assertions-core:5.4.2")
+    testImplementation("io.kotest.extensions:kotest-extensions-spring:1.1.2")
+
+    // mockk
+    testImplementation("io.mockk:mockk:1.13.8")
 
 
 }
 
 kotlin {
-	compilerOptions {
-		freeCompilerArgs.addAll '-Xjsr305=strict'
-	}
+    compilerOptions {
+        freeCompilerArgs.addAll '-Xjsr305=strict'
+    }
 }
 
 dependencyManagement {
-	imports {
-		mavenBom "org.springframework.cloud:spring-cloud-dependencies:$springCloudVersion"
-	}
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:$springCloudVersion"
+    }
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }

@@ -67,6 +67,9 @@ dependencies {
     // mockk
     testImplementation("io.mockk:mockk:1.13.8")
 
+    // https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt
+    implementation("io.jsonwebtoken:jjwt:0.12.6")
+
 
 }
 

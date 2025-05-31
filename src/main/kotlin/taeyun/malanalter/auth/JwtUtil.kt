@@ -3,12 +3,14 @@ package taeyun.malanalter.auth
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import org.springframework.stereotype.Component
-import java.security.Key
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.*
+import javax.crypto.SecretKey
 
 @Component
 class JwtUtil(val authProperties: AuthProperties) {
-    private val key: Key by lazy{
+    private val key: SecretKey by lazy{
         Keys.hmacShaKeyFor(authProperties.secretKey.toByteArray())
     }
 
@@ -17,7 +19,7 @@ class JwtUtil(val authProperties: AuthProperties) {
         return Jwts.builder()
             .subject(username)
             .issuedAt(Date())
-            .expiration(Date(System.currentTimeMillis() + authProperties.accessTokenExpirationTime))
+            .expiration(getExpiry(authProperties.accessTokenExpireDay))
             .claim("type", "access")
             .signWith(key)
             .compact()
@@ -27,9 +29,21 @@ class JwtUtil(val authProperties: AuthProperties) {
         return Jwts.builder()
             .subject(UUID.randomUUID().toString())
             .issuedAt(Date())
-            .expiration(Date(System.currentTimeMillis() + authProperties.refreshTokenExpirationTime))
+            .expiration(getExpiry(authProperties.refreshTokenExpireDay))
             .claim("type", "refresh")
             .signWith(key)
             .compact()
+    }
+
+    fun getExpiryFromToken(token: String): Date? {
+        return Jwts.parser()
+            .verifyWith(key)
+            .build()
+            .parseSignedClaims(token)
+            .payload
+            .expiration
+    }
+    private fun getExpiry(days: Long): Date{
+        return Date(LocalDateTime.now().plusDays(days).toEpochSecond(ZoneOffset.UTC) * 1000)
     }
 }

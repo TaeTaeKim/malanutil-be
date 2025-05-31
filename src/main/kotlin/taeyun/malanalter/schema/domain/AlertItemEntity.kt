@@ -6,7 +6,7 @@ import org.jetbrains.exposed.v1.dao.IntEntityClass
 import taeyun.malanalter.schema.AlertItemTable
 
 class AlertItemEntity(id: EntityID<Int>) : IntEntity(id) {
-    companion object: IntEntityClass<AlertItemEntity>(AlertItemTable) // 간단한 dao 기능 제공?
+    companion object: IntEntityClass<AlertItemEntity>(AlertItemTable)
     var itemId by AlertItemTable.itemId
     var itemCondition by AlertItemTable.itemCondition
     var createdAt by AlertItemTable.createdAt

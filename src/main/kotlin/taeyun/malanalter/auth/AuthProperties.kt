@@ -6,6 +6,6 @@ import org.springframework.boot.context.properties.bind.ConstructorBinding
 @ConfigurationProperties(prefix = "jwt")
 data class AuthProperties @ConstructorBinding constructor(
     val secretKey: String,
-    val accessTokenExpirationTime: Long,
-    val refreshTokenExpirationTime: Long
+    val accessTokenExpireDay: Long,
+    val refreshTokenExpireDay: Long
 )

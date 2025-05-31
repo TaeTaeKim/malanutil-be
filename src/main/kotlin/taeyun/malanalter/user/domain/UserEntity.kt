@@ -13,6 +13,10 @@ class UserEntity(id: EntityID<Long>) : LongEntity(id) {
         fun existByUsername(username: String): Boolean {
             return find { Users.username eq username }.count() > 0
         }
+
+        fun findByUsername(username: String): UserEntity? {
+            return find { Users.username eq username }.firstOrNull()
+        }
     }
 
     var userId by Users.id

@@ -35,7 +35,7 @@ class JwtUtil(val authProperties: AuthProperties) {
             .compact()
     }
 
-    fun getExpiryFromToken(token: String): Date? {
+    fun getExpiryFromToken(token: String): Date {
         return Jwts.parser()
             .verifyWith(key)
             .build()

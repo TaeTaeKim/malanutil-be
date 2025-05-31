@@ -1,5 +1,7 @@
 package taeyun.malanalter.auth
 
+import io.jsonwebtoken.Claims
+import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import org.springframework.stereotype.Component
@@ -35,15 +37,28 @@ class JwtUtil(val authProperties: AuthProperties) {
             .compact()
     }
 
-    fun getExpiryFromToken(token: String): Date {
-        return Jwts.parser()
-            .verifyWith(key)
-            .build()
-            .parseSignedClaims(token)
-            .payload
-            .expiration
-    }
     private fun getExpiry(days: Long): Date{
         return Date(LocalDateTime.now().plusDays(days).toEpochSecond(ZoneOffset.UTC) * 1000)
+    }
+    fun getExpiryFromToken(token: String): Date {
+        return extractClaim(token, Claims::getExpiration)
+    }
+    fun getUsername(token: String) : String{
+        return extractClaim(token, Claims::getSubject)
+    }
+
+    fun isExpiredToken(token: String): Boolean {
+        return extractClaim(token, Claims::getExpiration).before(Date())
+    }
+
+    private fun <T> extractClaim(token: String, claimResolver: (Claims) -> T) : T{
+        try {
+
+            val claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).payload
+            return claimResolver(claims)
+        } catch (e: JwtException) {
+            //fixme: Jwt Auth Exception 으로 변환
+            throw RuntimeException("Jwt Token Exception"+ e.message)
+        }
     }
 }

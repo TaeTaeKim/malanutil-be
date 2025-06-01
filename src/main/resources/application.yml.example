@@ -1,0 +1,14 @@
+alerter:
+  postgresql:
+    ip: localhost
+    port: 5432
+    database: <YOUR_DBNAME>
+
+spring:
+  datasource:
+    username: <YOUR_DB_USERNAME>
+    password: <YOUR_DB_PASSWORD>
+jwt:
+  secret-key: <YOUR_LOCAL_JWT_SECRET>
+  access-token-expire-day: 1
+  refresh-token-expire-day: 7

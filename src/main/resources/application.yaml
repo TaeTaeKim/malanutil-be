@@ -4,3 +4,6 @@ server:
 spring:
   datasource:
     url: jdbc:postgresql://${alerter.postgresql.ip}:${alerter.postgresql.port}/${alerter.postgresql.database}
+  autoconfigure:
+    # 직접 구현한 UserService 사용
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration

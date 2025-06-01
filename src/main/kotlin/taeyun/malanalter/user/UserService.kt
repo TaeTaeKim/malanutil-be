@@ -1,6 +1,7 @@
 package taeyun.malanalter.user
 
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import taeyun.malanalter.auth.dto.LoginRequest
@@ -9,7 +10,7 @@ import taeyun.malanalter.user.dto.UserRegisterRequest
 
 @Service
 class UserService (
-    val passwordEncoder: PasswordEncoder
+    val passwordEncoder: PasswordEncoder = BCryptPasswordEncoder()
 ){
 
     fun existByUsername(username: String): Boolean {

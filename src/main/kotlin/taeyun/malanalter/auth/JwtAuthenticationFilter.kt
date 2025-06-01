@@ -28,12 +28,13 @@ class JwtAuthenticationFilter(
         val openedUrlMatcher = SecurityConfig.getOpenUrlMatchers()
         if(openedUrlMatcher.any { it.matches(request) }){
             logger.info("skip check jwt for url ${request.requestURI}")
+            filterChain.doFilter(request,response)
             return
         }
         val authHeader = request.getHeader("Authorization")
 
         if (authHeader == null || !authHeader.startsWith("Bearer")) {
-            logger.info{ "No Auth Requested From Host ${request.requestURI}"}
+            logger.info( "No Auth Requested From Host :  ${request.requestURL}")
             throw RuntimeException("No Auth header in request")
         }
         try {

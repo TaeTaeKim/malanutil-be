@@ -6,6 +6,9 @@ import kotlinx.datetime.toKotlinLocalDateTime
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.stereotype.Service
 import taeyun.malanalter.auth.domain.RefreshToken
+import taeyun.malanalter.config.exception.AlerterJwtException
+import taeyun.malanalter.config.exception.AlerterNotFoundException
+import taeyun.malanalter.config.exception.ErrorCode
 import taeyun.malanalter.user.domain.UserEntity
 
 @Service
@@ -30,7 +33,7 @@ class AuthService(
          return transaction {
             RefreshToken.findRefreshTokenByUserId(foundUser.userId.value, refreshToken)?.let { foundToken ->
                 if (foundToken.isExpired() && foundToken.isRevoked) {
-                    throw IllegalArgumentException("Refresh Token Expired") // fixme: change to jwt expired
+                    throw AlerterJwtException(ErrorCode.EXPIRED_TOKEN, "Refresh Token Expired")
                 }
                 // 기존 리프레시 토큰 삭제
                 foundToken.delete()
@@ -44,7 +47,7 @@ class AuthService(
                     refreshToken = generateRefreshToken,
                     expireAt = jwtUtil.getExpiryFromToken(generateAccessToken).toInstant().epochSecond
                 )
-            }?: throw IllegalArgumentException("Can't found RefreshToken") // fixme: change to code that send to login
+            }?: throw AlerterNotFoundException(ErrorCode.REFRESH_TOKEN_NOT_FOUND)
         }
     }
 }

@@ -1,15 +1,19 @@
 package taeyun.malanalter.auth
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import org.springframework.stereotype.Component
+import taeyun.malanalter.config.exception.AlerterJwtException
+import taeyun.malanalter.config.exception.ErrorCode
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.*
 import javax.crypto.SecretKey
 
+private val logger = KotlinLogging.logger{}
 @Component
 class JwtUtil(val authProperties: AuthProperties) {
     private val key: SecretKey by lazy{
@@ -57,8 +61,9 @@ class JwtUtil(val authProperties: AuthProperties) {
             val claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).payload
             return claimResolver(claims)
         } catch (e: JwtException) {
-            //fixme: Jwt Auth Exception 으로 변환
-            throw RuntimeException("Jwt Token Exception"+ e.message)
+            val randomUUID = UUID.randomUUID()
+            logger.error { "$randomUUID ${e.message}" }
+            throw AlerterJwtException(ErrorCode.INVALID_TOKEN, "[$randomUUID] Error in extracting claim")
         }
     }
 }

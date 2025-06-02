@@ -1,6 +1,7 @@
 package taeyun.malanalter.auth
 
 import AuthResponse
+import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
@@ -9,9 +10,12 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import taeyun.malanalter.auth.dto.LoginRequest
 import taeyun.malanalter.auth.dto.RefreshRequest
+import taeyun.malanalter.config.exception.AlerterServerError
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.dto.UserRegisterRequest
+import java.util.*
 
+private val logger = KotlinLogging.logger{}
 @RestController
 @RequestMapping("/malan-alter/auth")
 class AuthController(
@@ -25,7 +29,9 @@ class AuthController(
         try {
             userService.addUser(userRegisterRequest)
         } catch (e: Exception) {
-            throw IllegalArgumentException("Failed to register user: ${e.message}")
+            val randomUUID = UUID.randomUUID()
+            logger.error { "$randomUUID ${e.message}" }
+            throw AlerterServerError(message = "[$randomUUID] Unexpected Error in Creating User")
         }
     }
 
@@ -44,7 +50,9 @@ class AuthController(
                 )
             )
         }catch (e: Exception) {
-            throw IllegalArgumentException("Failed to login user: ${e.message}")
+            val randomUUID = UUID.randomUUID()
+            logger.error { "$randomUUID ${e.message}" }
+            throw AlerterServerError(message = "[$randomUUID] Unexpected error in login")
         }
 
     }

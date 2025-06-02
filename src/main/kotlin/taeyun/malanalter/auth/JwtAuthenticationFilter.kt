@@ -11,10 +11,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import taeyun.malanalter.config.SecurityConfig
-import taeyun.malanalter.config.exception.AlerterJwtException
-import taeyun.malanalter.config.exception.AlerterNotFoundException
-import taeyun.malanalter.config.exception.AlerterServerError
-import taeyun.malanalter.config.exception.ErrorCode
+import taeyun.malanalter.config.exception.*
 import taeyun.malanalter.user.UserService
 import java.util.*
 
@@ -43,14 +40,14 @@ class JwtAuthenticationFilter(
         val authHeader = request.getHeader("Authorization")
         if (authHeader == null || !authHeader.startsWith("Bearer")) {
             logger.info("No Auth Requested From Host :  ${request.requestURL}")
-            throw AlerterJwtException(ErrorCode.INVALID_TOKEN,  "No Auth header in request")
+            throw AlerterJwtException(ErrorCode.INVALID_TOKEN, "No Auth header in request")
         }
         // 검증로직
         val jwt = authHeader.substring(7)
         try {
             if (jwtUtil.isExpiredToken(jwt)) {
                 logger.info { "Expired Token with $jwt" }
-                throw AlerterJwtException(ErrorCode.EXPIRED_TOKEN,"Access Token expired")
+                throw AlerterJwtException(ErrorCode.EXPIRED_ACCESS_TOKEN, "Access Token expired")
             }
             val username = jwtUtil.getUsername(jwt)
             // 없는 사용자라면 exception 배출
@@ -66,10 +63,15 @@ class JwtAuthenticationFilter(
                 authToken.details = WebAuthenticationDetailsSource().buildDetails(request)
                 SecurityContextHolder.getContext().authentication = authToken
             }
+        } catch (e: BaseException) {
+            throw e
         } catch (e: JwtException) { // jwt
             val uuid = UUID.randomUUID().toString()
             logger.info("[$uuid]Error in Handling Token $jwt", e)
-            throw AlerterJwtException(ErrorCode.INVALID_TOKEN, "[UUID : $uuid] Error in checking JWT token See server log")
+            throw AlerterJwtException(
+                ErrorCode.INVALID_TOKEN,
+                "[UUID : $uuid] Error in checking JWT token See server log"
+            )
         } catch (e: Exception) {
             val uuid = UUID.randomUUID().toString()
             logger.error("Unexpected Error occur when validate user token", e)

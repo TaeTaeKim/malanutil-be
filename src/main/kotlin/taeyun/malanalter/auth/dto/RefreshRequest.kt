@@ -1,6 +1,10 @@
 package taeyun.malanalter.auth.dto
 
+import jakarta.validation.constraints.NotBlank
+
 data class RefreshRequest (
-    val username: String,
-    val refreshToken: String
+    @field:NotBlank
+    val username: String?,
+    @field:NotBlank
+    val refreshToken: String?
 )

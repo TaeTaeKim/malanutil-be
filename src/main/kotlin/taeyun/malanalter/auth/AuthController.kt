@@ -65,9 +65,9 @@ class AuthController(
     @PostMapping("/refresh")
     fun refresh(@RequestBody @Valid refreshRequest: RefreshRequest): ResponseEntity<AuthResponse>? {
         // find user
-        val foundUser = userService.findByUsername(refreshRequest.username)
+        val foundUser = userService.findByUsername(refreshRequest.username.orEmpty())
         // check
-        val renewTokenResponse = authService.renewToken(foundUser, refreshRequest.refreshToken)
+        val renewTokenResponse = authService.renewToken(foundUser, refreshRequest.refreshToken.orEmpty())
         return ResponseEntity.ok(renewTokenResponse)
     }
 

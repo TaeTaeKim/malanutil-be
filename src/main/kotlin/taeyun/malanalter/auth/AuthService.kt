@@ -33,7 +33,7 @@ class AuthService(
          return transaction {
             RefreshToken.findRefreshTokenByUserId(foundUser.userId.value, refreshToken)?.let { foundToken ->
                 if (foundToken.isExpired() && foundToken.isRevoked) {
-                    throw AlerterJwtException(ErrorCode.EXPIRED_TOKEN, "Refresh Token Expired")
+                    throw AlerterJwtException(ErrorCode.EXPIRED_REFRESH_TOKEN, "Refresh Token Expired")
                 }
                 // 기존 리프레시 토큰 삭제
                 foundToken.delete()

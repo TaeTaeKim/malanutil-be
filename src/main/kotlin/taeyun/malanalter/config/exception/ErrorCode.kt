@@ -9,11 +9,12 @@ enum class ErrorCode(
 ) {
     // UnAuthorized 는 무조건 전부 /login 으로 이동한다.
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_001", "Invalid Token"),
-    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_002", "Expired Token"),
-    REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "AUTH_003", "Refresh Token not found"),
+    EXPIRED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_002", "Expired AccessToken : refresh required"),
+    EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_003", "Expired Refresh Token RE-login required"),
+    REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "AUTH_004", "Refresh Token not found"),
 
     // Login
-    WRONG_PASSWORD(HttpStatus.NOT_ACCEPTABLE, "AUTH_004", "WRONG_PASSWORD"),
+    WRONG_PASSWORD(HttpStatus.NOT_ACCEPTABLE, "AUTH_005", "WRONG_PASSWORD"),
 
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "User Not Found"),

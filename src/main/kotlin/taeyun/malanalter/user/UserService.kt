@@ -19,6 +19,12 @@ class UserService (
         }
     }
 
+    fun findByUsername(username: String): UserEntity{
+        return transaction {
+            UserEntity.findByUsername(username) ?: throw IllegalArgumentException("Can't find user with username $username")
+        }
+    }
+
     fun addUser(userRegisterRequest: UserRegisterRequest): UserEntity {
         if( existByUsername(userRegisterRequest.username) ) {
             throw IllegalArgumentException("Username already exists")

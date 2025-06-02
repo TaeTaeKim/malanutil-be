@@ -1,14 +1,14 @@
 package taeyun.malanalter.auth
 
+import AuthResponse
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import taeyun.malanalter.auth.dto.AuthResponse
-import taeyun.malanalter.auth.dto.AuthService
 import taeyun.malanalter.auth.dto.LoginRequest
+import taeyun.malanalter.auth.dto.RefreshRequest
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.dto.UserRegisterRequest
 
@@ -40,7 +40,6 @@ class AuthController(
                 AuthResponse(
                     accessToken = generateAccessToken,
                     refreshToken = generateRefreshToken,
-                    username = user.username,
                     expireAt = jwtUtil.getExpiryFromToken(generateRefreshToken).time
                 )
             )
@@ -56,8 +55,12 @@ class AuthController(
     }
 
     @PostMapping("/refresh")
-    fun refresh() {
-        // Token refresh logic here
+    fun refresh(@RequestBody @Valid refreshRequest: RefreshRequest): ResponseEntity<AuthResponse>? {
+        // find user
+        val foundUser = userService.findByUsername(refreshRequest.username)
+        // check
+        val renewTokenResponse = authService.renewToken(foundUser, refreshRequest.refreshToken)
+        return ResponseEntity.ok(renewTokenResponse)
     }
 
 }

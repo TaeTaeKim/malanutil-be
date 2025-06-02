@@ -25,18 +25,20 @@ class JwtAuthenticationFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
+        // 인증이 필요없는 요청에 대해서는 filter pass
         val openedUrlMatcher = SecurityConfig.getOpenUrlMatchers()
         if(openedUrlMatcher.any { it.matches(request) }){
             logger.info("skip check jwt for url ${request.requestURI}")
             filterChain.doFilter(request,response)
             return
         }
+        // request header 의 Authorization header 검증 및 토큰 추출
         val authHeader = request.getHeader("Authorization")
-
         if (authHeader == null || !authHeader.startsWith("Bearer")) {
             logger.info( "No Auth Requested From Host :  ${request.requestURL}")
             throw RuntimeException("No Auth header in request")
         }
+        // 검증로직
         try {
             val jwt = authHeader.substring(7)
             if (jwtUtil.isExpiredToken(jwt)) {

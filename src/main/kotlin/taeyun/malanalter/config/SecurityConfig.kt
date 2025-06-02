@@ -25,8 +25,7 @@ class SecurityConfig(
             "/.well-known/**",
             "/v3/api-docs/**",
             // login, sing up
-            "/malan-alter/auth/login",
-            "/malan-alter/auth/register"
+            "/malan-alter/auth/**"
         )
 
         fun getOpenUrlMatchers(): Array<AntPathRequestMatcher> {

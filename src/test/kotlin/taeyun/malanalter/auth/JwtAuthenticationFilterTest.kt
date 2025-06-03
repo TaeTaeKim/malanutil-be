@@ -74,6 +74,7 @@ class JwtAuthenticationFilterTest : FunSpec({
         every { jwtUtil.isExpiredToken(fakeToken) } returns false
         every { jwtUtil.getUsername(fakeToken) } returns username
         every { userService.existByUsername(username) } returns true
+        every { userService.isLogoutUser((fakeToken)) } returns false
 
         request.servletPath = "/authenticated/uri"
         request.addHeader("Authorization", "Bearer $fakeToken")

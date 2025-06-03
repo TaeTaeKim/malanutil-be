@@ -1,18 +1,35 @@
 package taeyun.malanalter.auth
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.jsonwebtoken.Claims
+import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
+import taeyun.malanalter.config.exception.AlerterJwtException
+import taeyun.malanalter.config.exception.ErrorCode
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.*
 import javax.crypto.SecretKey
 
+private val logger = KotlinLogging.logger {}
+
 @Component
 class JwtUtil(val authProperties: AuthProperties) {
-    private val key: SecretKey by lazy{
+    companion object {
+        fun getTokenFromRequest(request: HttpServletRequest) : String {
+            val authHeader = request.getHeader("Authorization")
+            if (authHeader == null || !authHeader.startsWith("Bearer")) {
+                logger.info{"No Auth Requested From Host :  ${request.requestURL}"}
+                throw AlerterJwtException(ErrorCode.INVALID_TOKEN, "No Auth header in request")
+            }
+            return authHeader.substring(7)
+        }
+    }
+    private val key: SecretKey by lazy {
         Keys.hmacShaKeyFor(authProperties.secretKey.toByteArray())
     }
 
@@ -37,28 +54,37 @@ class JwtUtil(val authProperties: AuthProperties) {
             .compact()
     }
 
-    private fun getExpiry(days: Long): Date{
+    private fun getExpiry(days: Long): Date {
         return Date(LocalDateTime.now().plusDays(days).toEpochSecond(ZoneOffset.UTC) * 1000)
     }
+
     fun getExpiryFromToken(token: String): Date {
         return extractClaim(token, Claims::getExpiration)
     }
-    fun getUsername(token: String) : String{
+
+    fun getUsername(token: String): String {
         return extractClaim(token, Claims::getSubject)
     }
 
     fun isExpiredToken(token: String): Boolean {
-        return extractClaim(token, Claims::getExpiration).before(Date())
+        return try {
+            extractClaim(token, Claims::getExpiration).before(Date())
+        } catch (e: ExpiredJwtException) {
+            true
+        }
     }
 
-    private fun <T> extractClaim(token: String, claimResolver: (Claims) -> T) : T{
+    private fun <T> extractClaim(token: String, claimResolver: (Claims) -> T): T {
         try {
 
             val claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).payload
             return claimResolver(claims)
+        } catch (e: ExpiredJwtException) {
+            throw e
         } catch (e: JwtException) {
-            //fixme: Jwt Auth Exception 으로 변환
-            throw RuntimeException("Jwt Token Exception"+ e.message)
+            val randomUUID = UUID.randomUUID()
+            logger.error { "$randomUUID ${e.message}" }
+            throw AlerterJwtException(ErrorCode.INVALID_TOKEN, "[$randomUUID] Error in extracting claim")
         }
     }
 }

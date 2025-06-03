@@ -10,12 +10,14 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher
+import taeyun.malanalter.auth.JwtAuthExceptionFilter
 import taeyun.malanalter.auth.JwtAuthenticationFilter
 
 @Configuration
 @EnableWebSecurity
 class SecurityConfig(
-    val jwtAuthenticationFilter: JwtAuthenticationFilter
+    val jwtAuthenticationFilter: JwtAuthenticationFilter,
+    val jwtAuthExceptionFilter: JwtAuthExceptionFilter
 ) {
     companion object {
         private val openedUrlMatcher = arrayOf(
@@ -25,8 +27,7 @@ class SecurityConfig(
             "/.well-known/**",
             "/v3/api-docs/**",
             // login, sing up
-            "/malan-alter/auth/login",
-            "/malan-alter/auth/register"
+            "/malan-alter/auth/**"
         )
 
         fun getOpenUrlMatchers(): Array<AntPathRequestMatcher> {
@@ -47,6 +48,7 @@ class SecurityConfig(
             }
             .formLogin(FormLoginConfigurer<HttpSecurity>::disable)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+            .addFilterBefore(jwtAuthExceptionFilter, jwtAuthenticationFilter::class.java)
             .build()
     }
 }

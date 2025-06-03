@@ -13,7 +13,7 @@ data class ErrorResponse(
         fun of(exception: BaseException) = ErrorResponse(
             status = exception.errorCode.status,
             code = exception.errorCode.code,
-            message = exception.getErrorMessage()
+            message = exception.message?: exception.errorCode.defaultMessage
         )
 
         fun of(errorCode: ErrorCode) = ErrorResponse(

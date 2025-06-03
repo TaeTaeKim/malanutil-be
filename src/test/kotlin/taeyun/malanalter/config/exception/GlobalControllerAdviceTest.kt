@@ -1,6 +1,5 @@
 package taeyun.malanalter.config.exception
 
-import io.jsonwebtoken.JwtException
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import org.springframework.http.MediaType
@@ -51,12 +50,12 @@ class GlobalControllerAdviceTest : FunSpec({
 class TestController{
     @GetMapping("/test/base-exception/message")
     fun throwBaseExceptionWithMessage() {
-        throw InvalidTokenException(cause = JwtException("JwtException"))
+        throw AlerterJwtException(ErrorCode.INVALID_TOKEN, message = "JwtException")
     }
 
     @GetMapping("/test/base-exception/default-message")
     fun throwBaseExceptionDefaultMessage() {
-        throw InvalidTokenException(cause = RuntimeException())
+        throw AlerterJwtException(ErrorCode.INVALID_TOKEN, message = null)
     }
 
     @GetMapping("/test/internal-server-error")

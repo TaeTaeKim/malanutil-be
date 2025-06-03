@@ -11,6 +11,10 @@ class RefreshToken(id: EntityID<Long>) : LongEntity(id) {
         fun findRefreshTokenByUserId(userId: Long, oldRefreshToken: String): RefreshToken? {
                 return find { (RefreshTokens.userId eq userId) and (RefreshTokens.token eq oldRefreshToken) }.firstOrNull()
         }
+
+        fun deleteByUserId(id: Long){
+            RefreshToken.find { RefreshTokens.userId eq id }.firstOrNull()?.delete()
+        }
     }
 
     var tokenId by RefreshTokens.id

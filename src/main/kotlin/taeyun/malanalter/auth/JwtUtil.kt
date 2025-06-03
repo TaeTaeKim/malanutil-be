@@ -6,6 +6,7 @@ import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import taeyun.malanalter.config.exception.AlerterJwtException
 import taeyun.malanalter.config.exception.ErrorCode
@@ -18,6 +19,16 @@ private val logger = KotlinLogging.logger {}
 
 @Component
 class JwtUtil(val authProperties: AuthProperties) {
+    companion object {
+        fun getTokenFromRequest(request: HttpServletRequest) : String {
+            val authHeader = request.getHeader("Authorization")
+            if (authHeader == null || !authHeader.startsWith("Bearer")) {
+                logger.info{"No Auth Requested From Host :  ${request.requestURL}"}
+                throw AlerterJwtException(ErrorCode.INVALID_TOKEN, "No Auth header in request")
+            }
+            return authHeader.substring(7)
+        }
+    }
     private val key: SecretKey by lazy {
         Keys.hmacShaKeyFor(authProperties.secretKey.toByteArray())
     }

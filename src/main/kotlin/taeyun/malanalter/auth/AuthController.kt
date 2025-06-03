@@ -2,6 +2,7 @@ package taeyun.malanalter.auth
 
 import AuthResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
@@ -37,7 +38,7 @@ class AuthController(
 
     @PostMapping("/login")
     fun login(@RequestBody @Valid loginRequest: LoginRequest) : ResponseEntity<AuthResponse>{
-        val user = userService.loginUser(loginRequest)
+        val user = authService.loginUser(loginRequest)
         val generateAccessToken = jwtUtil.generateAccessToken(user.username)
         val generateRefreshToken = jwtUtil.generateRefreshToken()
         try {
@@ -58,8 +59,9 @@ class AuthController(
     }
 
     @PostMapping("/logout")
-    fun logout() {
-        // Logout logic here
+    fun logout(request: HttpServletRequest) {
+        val tokenFromRequest = JwtUtil.getTokenFromRequest(request)
+        authService.logout(tokenFromRequest) // accessToken 을 블랙리스트에 추가
     }
 
     @PostMapping("/refresh")

@@ -30,21 +30,21 @@ class JwtAuthenticationFilter(
         filterChain: FilterChain
     ) {
         // 인증이 필요없는 요청에 대해서는 filter pass
-        val openedUrlMatcher = SecurityConfig.getOpenUrlMatchers()
-        if (openedUrlMatcher.any { it.matches(request) }) {
-            logger.info("skip check jwt for url ${request.requestURI}")
+        if (SecurityConfig.getOpenUrlMatchers().any { it.matches(request) }) {
+            logger.debug("skip check jwt for url ${request.requestURI}")
             filterChain.doFilter(request, response)
             return
         }
         // request header 의 Authorization header 검증 및 토큰 추출
-        val authHeader = request.getHeader("Authorization")
-        if (authHeader == null || !authHeader.startsWith("Bearer")) {
-            logger.info("No Auth Requested From Host :  ${request.requestURL}")
-            throw AlerterJwtException(ErrorCode.INVALID_TOKEN, "No Auth header in request")
-        }
+        val jwt = JwtUtil.getTokenFromRequest(request)
+
         // 검증로직
-        val jwt = authHeader.substring(7)
         try {
+            // 로그아웃된 토큰 검사
+            if (userService.isLogoutUser(jwt)) {
+                throw AlerterJwtException(ErrorCode.LOGOUT_TOKEN, "Already Logout Token")
+            }
+            // 만료검사 : 만료시에 바로 Exception 이 발생
             if (jwtUtil.isExpiredToken(jwt)) {
                 logger.info { "Expired Token with $jwt" }
                 throw AlerterJwtException(ErrorCode.EXPIRED_ACCESS_TOKEN, "Access Token expired")
@@ -74,7 +74,7 @@ class JwtAuthenticationFilter(
             )
         } catch (e: Exception) {
             val uuid = UUID.randomUUID().toString()
-            logger.error("Unexpected Error occur when validate user token", e)
+            logger.error("[$uuid] Unexpected Error occur when validate user token", e)
             throw AlerterServerError(message = "[UUID : $uuid] Unexpected Error occur when validate user token")
         }
         filterChain.doFilter(request, response)

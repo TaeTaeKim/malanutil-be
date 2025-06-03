@@ -15,6 +15,7 @@ enum class ErrorCode(
 
     // Login
     WRONG_PASSWORD(HttpStatus.NOT_ACCEPTABLE, "AUTH_005", "WRONG_PASSWORD"),
+    LOGOUT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_005", "Logout Account"),
 
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "User Not Found"),

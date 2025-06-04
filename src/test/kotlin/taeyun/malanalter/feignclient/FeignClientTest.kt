@@ -4,8 +4,8 @@ import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.core.spec.style.StringSpec
 import org.springframework.cloud.openfeign.EnableFeignClients
 import org.springframework.test.context.TestConstructor
-import taeyun.malanalter.dto.ItemCondition
-import taeyun.malanalter.dto.MalanggBidRequest
+import taeyun.malanalter.alertitem.dto.ItemCondition
+import taeyun.malanalter.alertitem.dto.MalanggBidRequest
 
 @FeignTest
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)

@@ -1,4 +1,4 @@
-package taeyun.malanalter.dto
+package taeyun.malanalter.alertitem.dto
 
 data class MapleItem(
     val itemCode: Int,

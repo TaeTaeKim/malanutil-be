@@ -5,7 +5,7 @@ import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.stereotype.Component
 import taeyun.malanalter.feignclient.ItemListClient
-import taeyun.malanalter.repository.AlertRepository
+import taeyun.malanalter.alertitem.repository.AlertRepository
 
 private val logger = KotlinLogging.logger {  }
 @Component

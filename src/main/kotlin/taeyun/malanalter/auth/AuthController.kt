@@ -18,7 +18,7 @@ import java.util.*
 
 private val logger = KotlinLogging.logger{}
 @RestController
-@RequestMapping("/malan-alter/auth")
+@RequestMapping("/alerter/auth")
 class AuthController(
     val userService: UserService,
     val jwtUtil: JwtUtil,

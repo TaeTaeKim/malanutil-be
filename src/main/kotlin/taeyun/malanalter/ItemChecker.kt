@@ -3,12 +3,12 @@ package taeyun.malanalter
 import lombok.RequiredArgsConstructor
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import taeyun.malanalter.dto.DiscordMessage
-import taeyun.malanalter.dto.ItemBidInfo
-import taeyun.malanalter.dto.MalanggBidRequest
+import taeyun.malanalter.alertitem.dto.DiscordMessage
+import taeyun.malanalter.alertitem.dto.ItemBidInfo
+import taeyun.malanalter.alertitem.dto.MalanggBidRequest
 import taeyun.malanalter.feignclient.DiscordClient
 import taeyun.malanalter.feignclient.MalanClient
-import taeyun.malanalter.repository.AlertRepository
+import taeyun.malanalter.alertitem.repository.AlertRepository
 import java.time.LocalDateTime
 import java.time.ZoneId
 

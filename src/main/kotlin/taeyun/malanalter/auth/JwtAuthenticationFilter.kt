@@ -5,6 +5,7 @@ import io.jsonwebtoken.JwtException
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.security.authentication.AnonymousAuthenticationToken
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
@@ -29,7 +30,7 @@ class JwtAuthenticationFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        // 인증이 필요없는 요청에 대해서는 filter pass
+        // 인증이 필요없는 요청에 대해서는 filter pass -> Security Context 로 id가 들어가지 않는다.
         if (SecurityConfig.getOpenUrlMatchers().any { it.matches(request) }) {
             logger.debug("skip check jwt for url ${request.requestURI}")
             filterChain.doFilter(request, response)

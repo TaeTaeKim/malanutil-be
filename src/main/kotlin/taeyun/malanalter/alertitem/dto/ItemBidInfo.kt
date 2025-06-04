@@ -1,4 +1,4 @@
-package taeyun.malanalter.dto
+package taeyun.malanalter.alertitem.dto
 
 import com.fasterxml.jackson.annotation.JsonCreator
 

@@ -75,9 +75,11 @@ class JwtAuthenticationFilter(
                 "[UUID : $uuid] Error in checking JWT token See server log"
             )
         } catch (e: Exception) {
+            val uuid = UUID.randomUUID().toString()
+            logger.info("[$uuid] Unexpected Error occur when validate user token $jwt", e)
             throw AlerterServerError(
-                uuid = UUID.randomUUID().toString(),
-                message = "Unexpected Error occur when validate user token",
+                uuid = uuid,
+                message = "[$uuid] Unexpected Error occur when validate user token",
                 rootCause = e
             )
         }

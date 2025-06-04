@@ -1,13 +1,14 @@
-package taeyun.malanalter.controller
+package taeyun.malanalter.alertitem
 
 import org.springframework.web.bind.annotation.*
-import taeyun.malanalter.dto.ItemCondition
-import taeyun.malanalter.dto.RegisteredItem
-import taeyun.malanalter.repository.AlertRepository
+import taeyun.malanalter.alertitem.dto.ItemCondition
+import taeyun.malanalter.alertitem.dto.RegisteredItem
+import taeyun.malanalter.alertitem.repository.AlertRepository
+import taeyun.malanalter.user.UserService
 
 @RestController
-@RequestMapping("/malan-alter")
-class MalanAlterController(
+@RequestMapping("/alerter")
+class MalanAlerterController(
     val alertRepository: AlertRepository,
 ) {
 
@@ -22,12 +23,18 @@ class MalanAlterController(
     }
 
     @DeleteMapping
-    fun delete(@RequestParam itemId: Int) {
-        alertRepository.delete(itemId)
+    fun delete(@RequestParam alertId: Int) {
+        alertRepository.delete(alertId)
     }
 
     @GetMapping
     fun getCheckItemIdAndPriceMap(): List<RegisteredItem> {
         return alertRepository.getRegisteredItem()
+            .filter { it.userId == UserService.getLoginUserId() }
+    }
+
+    @PatchMapping("/toggle/{alertId}")
+    fun toggleAlarm(@PathVariable alertId: Int) {
+        alertRepository.toggleItemAlarm(alertId)
     }
 }

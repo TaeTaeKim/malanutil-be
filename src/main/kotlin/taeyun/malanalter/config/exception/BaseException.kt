@@ -18,8 +18,10 @@ class AlerterNotFoundException(
 
 class AlerterServerError(
     errorCode: ErrorCode = ErrorCode.INTERNAL_SERVER_ERROR,
-    message: String? = null
-) : BaseException(errorCode, message)
+    val uuid : String,
+    message: String,
+    val rootCause: Throwable?
+) : BaseException(errorCode, "[$uuid] $message"){}
 
 class AlerterBadRequest(
     errorCode: ErrorCode,

@@ -3,12 +3,12 @@ package taeyun.malanalter
 import lombok.RequiredArgsConstructor
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import taeyun.malanalter.dto.DiscordMessage
-import taeyun.malanalter.dto.ItemBidInfo
-import taeyun.malanalter.dto.MalanggBidRequest
+import taeyun.malanalter.alertitem.dto.DiscordMessage
+import taeyun.malanalter.alertitem.dto.ItemBidInfo
+import taeyun.malanalter.alertitem.dto.MalanggBidRequest
 import taeyun.malanalter.feignclient.DiscordClient
 import taeyun.malanalter.feignclient.MalanClient
-import taeyun.malanalter.repository.AlertRepository
+import taeyun.malanalter.alertitem.repository.AlertRepository
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -26,15 +26,16 @@ class ItemChecker(
         LocalDateTime.now(ZoneId.of("Asia/Seoul")).let {
             if (it.hour in 0..10) return
         }
-        val checkItemIdAndPriceMap = alertRepository.getRegisteredItem()
-        checkItemIdAndPriceMap.forEach { (itemId, itemCondition) ->
-            val sellingBids = malanClient.getItemBidList(itemId, MalanggBidRequest(itemCondition))
-                .filter { it.tradeType == ItemBidInfo.TradeType.SELL && it.tradeStatus }
-                .sortedBy { it.itemPrice.inc() }
-            if (sellingBids.isNotEmpty()) {
-                discordClient.sendDiscordMessage(DiscordMessage(sellingBids))
+        val alertItems = alertRepository.getRegisteredItem()
+        alertItems.filter { it.isAlarm}
+            .forEach { (itemId, itemCondition) ->
+                val sellingBids = malanClient.getItemBidList(itemId, MalanggBidRequest(itemCondition))
+                    .filter { it.tradeType == ItemBidInfo.TradeType.SELL && it.tradeStatus }
+                    .sortedBy { it.itemPrice.inc() }
+                if (sellingBids.isNotEmpty()) {
+                    discordClient.sendDiscordMessage(DiscordMessage(sellingBids))
+                }
             }
-        }
     }
 
 }

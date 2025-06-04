@@ -10,12 +10,14 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.mockk
 import jakarta.servlet.FilterChain
+import org.jetbrains.exposed.v1.dao.Entity
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.context.SecurityContextImpl
 import taeyun.malanalter.user.UserService
+import taeyun.malanalter.user.domain.UserEntity
 
 class JwtAuthenticationFilterTest : FunSpec({
 
@@ -70,11 +72,15 @@ class JwtAuthenticationFilterTest : FunSpec({
     test("유효한 토큰 + 정상적인 사용자일 경우 Context에 Authencation 이 생기고 다음 필터체인 호출한다.") {
         val fakeToken = "valid.jwt.token"
         val username = "alice"
+        val userEntity = mockk<UserEntity> ()
 
         every { jwtUtil.isExpiredToken(fakeToken) } returns false
         every { jwtUtil.getUsername(fakeToken) } returns username
         every { userService.existByUsername(username) } returns true
         every { userService.isLogoutUser((fakeToken)) } returns false
+        every { userService.findByUsername(username) } returns userEntity
+        every { userEntity.userId.value } returns 1
+        every { userEntity.username } returns username
 
         request.servletPath = "/authenticated/uri"
         request.addHeader("Authorization", "Bearer $fakeToken")
@@ -84,7 +90,7 @@ class JwtAuthenticationFilterTest : FunSpec({
         val authentication = SecurityContextHolder.getContext().authentication
         authentication.shouldNotBeNull()
         authentication.shouldBeInstanceOf<UsernamePasswordAuthenticationToken>()
-        authentication.principal shouldBe username
+        authentication.name shouldBe username
     }
 
 

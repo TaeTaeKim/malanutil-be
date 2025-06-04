@@ -1,38 +1,40 @@
-package taeyun.malanalter.repository
+package taeyun.malanalter.alertitem.repository
 
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
-import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.stereotype.Repository
-import taeyun.malanalter.dto.ItemCondition
-import taeyun.malanalter.dto.RegisteredItem
-import taeyun.malanalter.schema.AlertItemTable
+import taeyun.malanalter.alertitem.domain.AlertItemEntity
+import taeyun.malanalter.alertitem.domain.AlertItemTable
+import taeyun.malanalter.alertitem.dto.ItemCondition
+import taeyun.malanalter.alertitem.dto.RegisteredItem
+import taeyun.malanalter.user.UserService
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("UNREACHABLE_CODE")
 @Repository
-class ExposedRepository : AlertRepository {
+class AlertItemRepository : AlertRepository {
 
     companion object {
         val itemNameMap: ConcurrentHashMap<Int, String> = ConcurrentHashMap()
     }
 
     override fun getRegisteredItem(): List<RegisteredItem> = transaction {
-        AlertItemTable.selectAll().map { row -> RegisteredItem(row) }
+        AlertItemEntity.all().map { RegisteredItem(it) }
     }
 
     override fun save(itemId: Int, itemCondition: ItemCondition): Unit = transaction {
         AlertItemTable.insert {
             it[AlertItemTable.itemId] = itemId
             it[AlertItemTable.itemCondition] = itemCondition
+            it[userId] = UserService.getLoginUserId()
         }
     }
 
-    override fun delete(itemId: Int): Unit = transaction {
-        AlertItemTable.deleteWhere { AlertItemTable.itemId eq itemId }
+    override fun delete(alertId: Int): Unit = transaction {
+        AlertItemTable.deleteWhere { AlertItemTable.id eq alertId }
     }
 
     override fun update(itemId: Int, itemCondition: ItemCondition): Unit = transaction {
@@ -52,5 +54,11 @@ class ExposedRepository : AlertRepository {
         return itemNameMap[itemId] ?: "이름 없음"
     }
 
-
+    override fun toggleItemAlarm(alertId: Int) {
+        transaction {
+            AlertItemEntity.findByIdAndUpdate(alertId) {
+                it.isAlarm = !it.isAlarm
+            }
+        }
+    }
 }

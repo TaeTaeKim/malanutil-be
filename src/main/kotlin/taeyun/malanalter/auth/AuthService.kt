@@ -54,8 +54,8 @@ class AuthService(
             LogoutToken.new {
                 this.logoutToken = accessToken
             }
-            val findByUsername = UserEntity.findByUsername(username)
-            RefreshToken.deleteByUserId(findByUsername!!.userId.value)
+            val findUserEntity = UserEntity.findByUsername(username)
+            RefreshToken.deleteByUserId(findUserEntity!!.userId.value)
         }
     }
     fun renewToken(foundUser: UserEntity, refreshToken: String): AuthResponse {

@@ -43,4 +43,9 @@ class MalanAlerterController(
     fun discordTest(@RequestParam webhookUrl:String) {
         alertService.sendTestDiscordMessage(webhookUrl)
     }
+
+    @PatchMapping("/toggle-all")
+    fun toggleAllItem(@RequestParam toggleTo: Boolean){
+        alertRepository.toggleAllItemAlarm(toggleTo)
+    }
 }

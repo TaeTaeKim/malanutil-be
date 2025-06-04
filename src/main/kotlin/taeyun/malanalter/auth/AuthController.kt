@@ -30,9 +30,11 @@ class AuthController(
         try {
             userService.addUser(userRegisterRequest)
         } catch (e: Exception) {
-            val randomUUID = UUID.randomUUID()
-            logger.error { "$randomUUID ${e.message}" }
-            throw AlerterServerError(message = "[$randomUUID] Unexpected Error in Creating User")
+            throw AlerterServerError(
+                uuid = UUID.randomUUID().toString(),
+                message = "Unexpected Error in Creating User",
+                rootCause = e
+            )
         }
     }
 
@@ -51,9 +53,9 @@ class AuthController(
                 )
             )
         }catch (e: Exception) {
-            val randomUUID = UUID.randomUUID()
+            val randomUUID = UUID.randomUUID().toString()
             logger.error { "$randomUUID ${e.message}" }
-            throw AlerterServerError(message = "[$randomUUID] Unexpected error in login")
+            throw AlerterServerError(uuid = randomUUID, message = "Unexpected error in login", rootCause = e)
         }
 
     }

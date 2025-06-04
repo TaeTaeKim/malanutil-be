@@ -4,6 +4,7 @@ package taeyun.malanalter.auth
 import AuthResponse
 import kotlinx.datetime.toKotlinLocalDateTime
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import taeyun.malanalter.auth.domain.LogoutToken
@@ -13,6 +14,7 @@ import taeyun.malanalter.config.exception.AlerterBadRequest
 import taeyun.malanalter.config.exception.AlerterJwtException
 import taeyun.malanalter.config.exception.AlerterNotFoundException
 import taeyun.malanalter.config.exception.ErrorCode
+import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.UserEntity
 
 @Service
@@ -54,8 +56,7 @@ class AuthService(
             LogoutToken.new {
                 this.logoutToken = accessToken
             }
-            val findByUsername = UserEntity.findByUsername(username)
-            RefreshToken.deleteByUserId(findByUsername!!.userId.value)
+            RefreshToken.deleteByUserId(UserService.getLoginUserId())
         }
     }
     fun renewToken(foundUser: UserEntity, refreshToken: String): AuthResponse {

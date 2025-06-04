@@ -1,19 +1,36 @@
 package taeyun.malanalter.user
 
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import taeyun.malanalter.auth.AlerterUserPrincipal
 import taeyun.malanalter.auth.domain.LogoutToken
-import taeyun.malanalter.config.exception.AlerterBadRequest
-import taeyun.malanalter.config.exception.AlerterNotFoundException
-import taeyun.malanalter.config.exception.ErrorCode
+import taeyun.malanalter.config.exception.*
 import taeyun.malanalter.user.domain.UserEntity
 import taeyun.malanalter.user.dto.UserRegisterRequest
+import java.util.UUID
 
 @Service
 class UserService(
     val passwordEncoder: PasswordEncoder
 ) {
+
+    companion object{
+        fun getLoginUserId(): Long {
+            val authentication = SecurityContextHolder.getContext().authentication
+            if (authentication == null || !authentication.isAuthenticated) {
+                throw AlerterJwtException(ErrorCode.INVALID_TOKEN, "Not Authenticated User")
+            }
+
+            return when(val principal = authentication.principal){
+                is AlerterUserPrincipal -> principal.userId
+                else -> {
+                    throw AlerterServerError(uuid = UUID.randomUUID().toString(), message = "잘못된 Authentication 입니다.", rootCause = null)
+                }
+            }
+        }
+    }
 
     fun existByUsername(username: String): Boolean {
         return transaction {

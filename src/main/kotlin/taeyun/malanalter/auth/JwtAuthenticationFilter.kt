@@ -55,8 +55,9 @@ class JwtAuthenticationFilter(
                 throw AlerterNotFoundException(ErrorCode.USER_NOT_FOUND, "User $username not found")
             }
             if (SecurityContextHolder.getContext().authentication == null) {
+                val findUserEntity = userService.findByUsername(username)
                 val authToken = UsernamePasswordAuthenticationToken(
-                    username,
+                    AlerterUserPrincipal.of(findUserEntity),
                     null,
                     emptyList() // some additional role authorities
                 )
@@ -73,9 +74,11 @@ class JwtAuthenticationFilter(
                 "[UUID : $uuid] Error in checking JWT token See server log"
             )
         } catch (e: Exception) {
-            val uuid = UUID.randomUUID().toString()
-            logger.error("[$uuid] Unexpected Error occur when validate user token", e)
-            throw AlerterServerError(message = "[UUID : $uuid] Unexpected Error occur when validate user token")
+            throw AlerterServerError(
+                uuid = UUID.randomUUID().toString(),
+                message = "Unexpected Error occur when validate user token",
+                rootCause = e
+            )
         }
         filterChain.doFilter(request, response)
 

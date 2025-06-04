@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
+import java.util.UUID
 
 val logger = KotlinLogging.logger{}
 @ControllerAdvice
@@ -13,6 +14,10 @@ class GlobalControllerAdvice {
 
     @ExceptionHandler(BaseException::class)
     fun handleBaseException(ex: BaseException, request: HttpServletRequest): ResponseEntity<ErrorResponse> {
+        // 서버에러의 경우 추적할 수 있는 uuid 와 함께 root cause 와 함께
+        if (ex is AlerterServerError) {
+            logger.error { "[${ex.uuid}] Server Error occur : ${ex.rootCause?.message?:ex.message}" }
+        }
         val errorResponse = ErrorResponse.of(ex)
         return ResponseEntity.status(errorResponse.status).body(errorResponse)
     }

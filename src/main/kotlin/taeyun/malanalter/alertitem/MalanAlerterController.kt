@@ -10,6 +10,7 @@ import taeyun.malanalter.user.UserService
 @RequestMapping("/alerter")
 class MalanAlerterController(
     val alertRepository: AlertRepository,
+    val alertService: AlertService
 ) {
 
     @PostMapping
@@ -36,5 +37,10 @@ class MalanAlerterController(
     @PatchMapping("/toggle/{alertId}")
     fun toggleAlarm(@PathVariable alertId: Int) {
         alertRepository.toggleItemAlarm(alertId)
+    }
+
+    @GetMapping("/discord-test")
+    fun discordTest(@RequestParam webhookUrl:String) {
+        alertService.sendTestDiscordMessage(webhookUrl)
     }
 }

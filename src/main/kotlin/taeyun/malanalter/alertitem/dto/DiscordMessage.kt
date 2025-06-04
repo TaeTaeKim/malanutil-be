@@ -17,4 +17,10 @@ data class DiscordMessage (
             sb.toString()
         } else null
     )
+
+    companion object{
+        fun testDiscordMessage():DiscordMessage{
+            return DiscordMessage("테스트 메세지 입니다.")
+        }
+    }
 }

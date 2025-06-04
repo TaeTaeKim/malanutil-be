@@ -9,24 +9,28 @@ import taeyun.malanalter.auth.domain.LogoutToken
 import taeyun.malanalter.config.exception.*
 import taeyun.malanalter.user.domain.UserEntity
 import taeyun.malanalter.user.dto.UserRegisterRequest
-import java.util.UUID
+import java.util.*
 
 @Service
 class UserService(
     val passwordEncoder: PasswordEncoder
 ) {
 
-    companion object{
+    companion object {
         fun getLoginUserId(): Long {
             val authentication = SecurityContextHolder.getContext().authentication
             if (authentication == null || !authentication.isAuthenticated) {
                 throw AlerterJwtException(ErrorCode.INVALID_TOKEN, "Not Authenticated User")
             }
 
-            return when(val principal = authentication.principal){
+            return when (val principal = authentication.principal) {
                 is AlerterUserPrincipal -> principal.userId
                 else -> {
-                    throw AlerterServerError(uuid = UUID.randomUUID().toString(), message = "잘못된 Authentication 입니다.", rootCause = null)
+                    throw AlerterServerError(
+                        uuid = UUID.randomUUID().toString(),
+                        message = "잘못된 Authentication 입니다.",
+                        rootCause = null
+                    )
                 }
             }
         }
@@ -61,5 +65,11 @@ class UserService(
 
     fun isLogoutUser(token: String): Boolean {
         return transaction { LogoutToken.isLogoutToken(token) }
+    }
+
+    fun getAllUserEntityMap() : Map<Long, UserEntity>{
+        return transaction {
+            UserEntity.all().map { it.userId.value to it }.toMap()
+        }
     }
 }

@@ -61,4 +61,15 @@ class AlertItemRepository : AlertRepository {
             }
         }
     }
+
+    override fun toggleAllItemAlarm(toggleTo: Boolean) {
+        val loginUserId = UserService.getLoginUserId()
+        transaction {
+            AlertItemTable.update(
+                where = {AlertItemTable.userId eq loginUserId}
+            ){
+                it[isAalarm] = toggleTo
+            }
+        }
+    }
 }

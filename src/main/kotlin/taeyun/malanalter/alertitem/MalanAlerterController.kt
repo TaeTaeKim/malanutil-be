@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.*
 import taeyun.malanalter.alertitem.dto.ItemCondition
 import taeyun.malanalter.alertitem.dto.RegisteredItem
 import taeyun.malanalter.alertitem.repository.AlertRepository
+import taeyun.malanalter.user.UserService
 
 @RestController
 @RequestMapping("/alerter")
@@ -29,6 +30,7 @@ class MalanAlerterController(
     @GetMapping
     fun getCheckItemIdAndPriceMap(): List<RegisteredItem> {
         return alertRepository.getRegisteredItem()
+            .filter { it.userId == UserService.getLoginUserId() }
     }
 
     @PatchMapping("/toggle/{alertId}")

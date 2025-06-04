@@ -26,15 +26,16 @@ class ItemChecker(
         LocalDateTime.now(ZoneId.of("Asia/Seoul")).let {
             if (it.hour in 0..10) return
         }
-        val checkItemIdAndPriceMap = alertRepository.getRegisteredItem()
-        checkItemIdAndPriceMap.forEach { (itemId, itemCondition) ->
-            val sellingBids = malanClient.getItemBidList(itemId, MalanggBidRequest(itemCondition))
-                .filter { it.tradeType == ItemBidInfo.TradeType.SELL && it.tradeStatus }
-                .sortedBy { it.itemPrice.inc() }
-            if (sellingBids.isNotEmpty()) {
-                discordClient.sendDiscordMessage(DiscordMessage(sellingBids))
+        val alertItems = alertRepository.getRegisteredItem()
+        alertItems.filter { it.isAlarm}
+            .forEach { (itemId, itemCondition) ->
+                val sellingBids = malanClient.getItemBidList(itemId, MalanggBidRequest(itemCondition))
+                    .filter { it.tradeType == ItemBidInfo.TradeType.SELL && it.tradeStatus }
+                    .sortedBy { it.itemPrice.inc() }
+                if (sellingBids.isNotEmpty()) {
+                    discordClient.sendDiscordMessage(DiscordMessage(sellingBids))
+                }
             }
-        }
     }
 
 }

@@ -2,6 +2,7 @@ package taeyun.malanalter.auth.discord
 
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.env.Environment
 import org.springframework.core.env.Profiles
 import org.springframework.security.core.Authentication
@@ -27,16 +28,19 @@ class OAuth2SuccessHandler(
         val discordOAuth2User = authentication?.principal as DiscordOAuth2User
         if (userService.existById(discordOAuth2User.getId())) {
             userService.addLoginUser(discordOAuth2User)
+            discordService.sendDirectMessage(discordOAuth2User.getId(), "웰컴인사")
         } else {
             userService.updateLoginUser(discordOAuth2User)
         }
         discordService.addUserToServer(discordOAuth2User)
-        discordService.sendDirectMessage(discordOAuth2User.getId(), "웰컴인사")
         val generateAccessToken = jwtUtil.generateAccessToken(discordOAuth2User.getId())
         val generateRefreshToken = jwtUtil.generateRefreshToken()
 
         response!!.sendRedirect(getLoginCallBackUrl(generateAccessToken, generateRefreshToken))
     }
+
+    @Value("\${alerter.frontend.redirection-url}")
+    lateinit var frontRedirectionURL: String
 
     fun getLoginCallBackUrl(accessToken: String, refreshToken: String): String {
         val authCallback = if (environment.acceptsProfiles(Profiles.of("dev"))) {
@@ -44,7 +48,7 @@ class OAuth2SuccessHandler(
         } else {
             "/auth/callback"
         }
-        return "$authCallback?access_token=$accessToken&refresh_token=$refreshToken"
+        return "$frontRedirectionURL$authCallback?accessToken=$accessToken&refreshToken=$refreshToken"
 
 
     }

@@ -8,7 +8,6 @@ import org.springframework.security.core.Authentication
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler
 import org.springframework.stereotype.Component
 import taeyun.malanalter.auth.JwtUtil
-import taeyun.malanalter.auth.domain.RefreshToken
 import taeyun.malanalter.user.UserService
 
 @Component
@@ -26,7 +25,11 @@ class OAuth2SuccessHandler(
 
         // 로그인 유저를 user table에 등록
         val discordOAuth2User = authentication?.principal as DiscordOAuth2User
-        userService.addUser(discordOAuth2User)
+        if (userService.existById(discordOAuth2User.getId())) {
+            userService.addLoginUser(discordOAuth2User)
+        } else {
+            userService.updateLoginUser(discordOAuth2User)
+        }
         discordService.addUserToServer(discordOAuth2User)
         discordService.sendDirectMessage(discordOAuth2User.getId(), "웰컴인사")
         val generateAccessToken = jwtUtil.generateAccessToken(discordOAuth2User.getId())

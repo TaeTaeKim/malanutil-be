@@ -5,7 +5,6 @@ import io.jsonwebtoken.JwtException
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.springframework.security.authentication.AnonymousAuthenticationToken
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
@@ -50,13 +49,13 @@ class JwtAuthenticationFilter(
                 logger.info { "Expired Token with $jwt" }
                 throw AlerterJwtException(ErrorCode.EXPIRED_ACCESS_TOKEN, "Access Token expired")
             }
-            val username = jwtUtil.getUserFromExpiredToken(jwt)
+            val userId = jwtUtil.getUserFromExpiredToken(jwt)
             // 없는 사용자라면 exception 배출
-            if (!validUser(username)) {
-                throw AlerterNotFoundException(ErrorCode.USER_NOT_FOUND, "User $username not found")
+            if (!validUser(userId)) {
+                throw AlerterNotFoundException(ErrorCode.USER_NOT_FOUND, "User $userId not found")
             }
             if (SecurityContextHolder.getContext().authentication == null) {
-                val findUserEntity = userService.findByUsername(username)
+                val findUserEntity = userService.findById(userId)
                 val authToken = UsernamePasswordAuthenticationToken(
                     AlerterUserPrincipal.of(findUserEntity),
                     null,
@@ -87,8 +86,8 @@ class JwtAuthenticationFilter(
 
     }
 
-    private fun validUser(username: String): Boolean {
-        return username.isNotBlank() && userService.existByUsername(username)
+    private fun validUser(userId: Long): Boolean {
+        return userService.existById(userId)
 
     }
 

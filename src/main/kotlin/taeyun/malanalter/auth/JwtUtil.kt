@@ -34,9 +34,9 @@ class JwtUtil(val authProperties: AuthProperties) {
     }
 
 
-    fun generateAccessToken(username: String): String {
+    fun generateAccessToken(userId: Long): String {
         return Jwts.builder()
-            .subject(username)
+            .subject(userId.toString())
             .issuedAt(Date())
             .expiration(getExpiry(authProperties.accessTokenExpireDay))
             .claim("type", "access")
@@ -71,17 +71,18 @@ class JwtUtil(val authProperties: AuthProperties) {
     }
 
     // username 은 만료됬어도 반환한다.
-    fun getUserFromExpiredToken(token: String):String{
+    fun getUserFromExpiredToken(token: String):Long{
         return try {
+
             Jwts.parser()
                 .verifyWith(key)
                 .build()
                 .parseSignedClaims(token)
                 .payload
-                .subject
+                .subject.toLong()
         } catch (e: ExpiredJwtException) {
             // Extract subject from expired token
-            e.claims.subject
+            e.claims.subject.toLong()
         } catch (e: JwtException) {
             val randomUUID = UUID.randomUUID()
             logger.error { "$randomUUID ${e.message}" }

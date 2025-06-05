@@ -1,20 +1,22 @@
 package taeyun.malanalter.user
 
+import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import taeyun.malanalter.auth.AlerterUserPrincipal
+import taeyun.malanalter.auth.discord.DiscordOAuth2User
 import taeyun.malanalter.auth.domain.LogoutToken
-import taeyun.malanalter.config.exception.*
+import taeyun.malanalter.config.exception.AlerterJwtException
+import taeyun.malanalter.config.exception.AlerterNotFoundException
+import taeyun.malanalter.config.exception.AlerterServerError
+import taeyun.malanalter.config.exception.ErrorCode
 import taeyun.malanalter.user.domain.UserEntity
-import taeyun.malanalter.user.dto.UserRegisterRequest
+import taeyun.malanalter.user.domain.Users
 import java.util.*
 
 @Service
-class UserService(
-    val passwordEncoder: PasswordEncoder
-) {
+class UserService {
 
     companion object {
         fun getLoginUserId(): Long {
@@ -36,30 +38,27 @@ class UserService(
         }
     }
 
-    fun existByUsername(username: String): Boolean {
+    fun existById(userId: Long):Boolean {
         return transaction {
-            UserEntity.existByUsername(username)
+            UserEntity.findById(userId) != null
         }
     }
 
-    fun findByUsername(username: String): UserEntity {
-        return transaction {
-            UserEntity.findByUsername(username) ?: throw AlerterNotFoundException(
-                ErrorCode.USER_NOT_FOUND,
-                "Can't find user with username $username"
-            )
-        }
-    }
 
-    fun addUser(userRegisterRequest: UserRegisterRequest): UserEntity {
-        if (existByUsername(userRegisterRequest.username)) {
-            throw AlerterBadRequest(ErrorCode.USER_EXIST, "Username already exists")
-        }
-        return transaction {
-            UserEntity.new {
-                username = userRegisterRequest.username
-                pwdHash = passwordEncoder.encode(userRegisterRequest.password)
+    fun addUser(discordOAuth2User: DiscordOAuth2User) {
+        //fixme: 중복체크
+        transaction {
+            Users.insert {
+                it[id] = discordOAuth2User.getId()
+                it[username] = discordOAuth2User.getUsername()
             }
+        }
+
+    }
+
+    fun findById(userId: Long) : UserEntity{
+        return transaction {
+             UserEntity.findById(userId)?:throw AlerterNotFoundException(ErrorCode.USER_NOT_FOUND, "")
         }
     }
 
@@ -69,7 +68,7 @@ class UserService(
 
     fun getAllUserEntityMap() : Map<Long, UserEntity>{
         return transaction {
-            UserEntity.all().map { it.userId.value to it }.toMap()
+            UserEntity.all().map { it.id.value to it }.toMap()
         }
     }
 }

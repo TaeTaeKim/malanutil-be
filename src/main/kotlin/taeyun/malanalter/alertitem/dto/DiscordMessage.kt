@@ -23,4 +23,8 @@ data class DiscordMessage (
             return DiscordMessage("테스트 메세지 입니다.")
         }
     }
+
+    override fun toString(): String {
+        return super.toString()
+    }
 }

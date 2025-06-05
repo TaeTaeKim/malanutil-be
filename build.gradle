@@ -35,6 +35,7 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     testImplementation 'org.springframework.security:spring-security-test'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -79,6 +80,9 @@ dependencies {
 
     // logging
     implementation 'io.github.oshai:kotlin-logging-jvm:7.0.3'
+
+    // JDA
+    implementation("net.dv8tion:JDA:5.5.1")
 
 
 }

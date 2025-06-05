@@ -17,8 +17,13 @@ enum class ErrorCode(
     WRONG_PASSWORD(HttpStatus.NOT_ACCEPTABLE, "AUTH_005", "WRONG_PASSWORD"),
     LOGOUT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_005", "Logout Account"),
 
+    DISCORD_TOKEN_NOTFOUND(HttpStatus.BAD_REQUEST, "AUTH_006", "No discord access token found"),
+
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "User Not Found"),
     USER_EXIST(HttpStatus.BAD_REQUEST, "USER_002", "User Already Exist"),
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SERVER_001", "Internal Server Error")
+
+
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SERVER_001", "Internal Server Error"),
+    DEPRECATED_API(HttpStatus.BAD_REQUEST, "SERVER_002", "Request to deprecated API"),
 }

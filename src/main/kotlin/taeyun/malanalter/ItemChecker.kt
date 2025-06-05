@@ -9,6 +9,7 @@ import taeyun.malanalter.alertitem.dto.DiscordMessage
 import taeyun.malanalter.alertitem.dto.ItemBidInfo
 import taeyun.malanalter.alertitem.dto.MalanggBidRequest
 import taeyun.malanalter.alertitem.repository.AlertRepository
+import taeyun.malanalter.auth.discord.DiscordService
 import taeyun.malanalter.feignclient.DiscordClient
 import taeyun.malanalter.feignclient.MalanClient
 import taeyun.malanalter.user.UserService
@@ -22,7 +23,7 @@ class ItemChecker(
     private val alertRepository: AlertRepository,
     private val malanClient: MalanClient,
     private val userService: UserService,
-    private val feignBuilder: Feign.Builder
+    private val discordService: DiscordService
 ) {
     @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 5000L)
     fun checkItemV2() {
@@ -33,8 +34,6 @@ class ItemChecker(
         itemsByUser.forEach { (userId, items) ->
             // 유저의 알람 시간 검사
             val userEntity = allUserEntityMap[userId] ?: return@forEach
-            // 유저의 디스코드 url 없으면 바로 패스
-            userEntity.discordUrl ?: return@forEach
             // ─── “지금이 이 사용자의 알람 시간인지”  체크 ───
             if (!userEntity.isAlarmTime()) return@forEach
             // 실제 알람 로직: isAlarm 플래그가 true인 것만 필터해서 처리
@@ -45,8 +44,7 @@ class ItemChecker(
                         .sortedBy { it.itemPrice.inc() }
                     if(selectedBids.isNotEmpty()){
                         try{
-                            val discordClient = feignBuilder.target(DiscordClient::class.java, userEntity.discordUrl)
-                            discordClient.sendDiscordMessage(DiscordMessage(selectedBids))
+                            discordService.sendDirectMessage(userId, DiscordMessage(selectedBids).toString())
                         }catch (e: Exception){
                             logger.error { "Error when Sending discord message <UserId: $userId>" }
                         }

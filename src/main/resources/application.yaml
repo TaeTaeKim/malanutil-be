@@ -7,3 +7,21 @@ spring:
   autoconfigure:
     # 직접 구현한 UserService 사용
     exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  security:
+    oauth2:
+      client:
+        registration:
+          discord:
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            scope:
+              - identify
+              - email
+              - guilds.join
+            client-name: discord
+        provider:
+          discord:
+            authorizationUri: https://discordapp.com/oauth2/authorize
+            tokenUri: https://discordapp.com/api/oauth2/token
+            userInfoUri: https://discordapp.com/api/users/@me
+            user-name-attribute: username

@@ -13,7 +13,7 @@ data class AlerterUserPrincipal(
 
     companion object {
         fun of(userEntity: UserEntity):AlerterUserPrincipal{
-            return AlerterUserPrincipal(userEntity.userId.value, userEntity.username)
+            return AlerterUserPrincipal(userEntity.id.value, userEntity.username)
         }
     }
 }

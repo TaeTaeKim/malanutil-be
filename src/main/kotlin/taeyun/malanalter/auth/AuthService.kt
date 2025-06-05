@@ -13,6 +13,7 @@ import taeyun.malanalter.config.exception.AlerterBadRequest
 import taeyun.malanalter.config.exception.AlerterJwtException
 import taeyun.malanalter.config.exception.AlerterNotFoundException
 import taeyun.malanalter.config.exception.ErrorCode
+import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.UserEntity
 
 @Service
@@ -24,7 +25,7 @@ class AuthService(
 
     fun registerRefreshToken(user: UserEntity, refreshToken: String) {
         transaction {
-            RefreshToken.deleteByUserId(user.userId.value)
+            RefreshToken.deleteByUserId(user.id.value)
         }
         transaction {
             RefreshToken.new {
@@ -37,33 +38,20 @@ class AuthService(
         }
     }
 
-    fun loginUser(loginRequest: LoginRequest): UserEntity {
-        val user = transaction {
-            UserEntity.findByUsername(loginRequest.username) ?: throw AlerterNotFoundException(
-                ErrorCode.USER_NOT_FOUND,
-                "User not found"
-            )
-        }
-        if (!passwordEncoder.matches(loginRequest.password, user.pwdHash)) {
-            throw AlerterBadRequest(ErrorCode.WRONG_PASSWORD, "Wrong password")
-        }
-        return user
-    }
-
     fun logout(accessToken: String) {
-        val username = jwtUtil.getUserFromExpiredToken(accessToken)
+        val userId = jwtUtil.getUserFromExpiredToken(accessToken)
         transaction {
             // logout token 에 추가
             LogoutToken.new {
                 this.logoutToken = accessToken
             }
-            val findUserEntity = UserEntity.findByUsername(username)
-            RefreshToken.deleteByUserId(findUserEntity!!.userId.value)
+            val findUserEntity = UserEntity.findById(userId)
+            RefreshToken.deleteByUserId(UserService.getLoginUserId())
         }
     }
     fun renewToken(foundUser: UserEntity, refreshToken: String): AuthResponse {
         return transaction {
-            RefreshToken.findRefreshTokenByUserId(foundUser.userId.value, refreshToken)?.let { foundToken ->
+            RefreshToken.findRefreshTokenByUserId(foundUser.id.value, refreshToken)?.let { foundToken ->
                 if (foundToken.isExpired() && foundToken.isRevoked) {
                     throw AlerterJwtException(ErrorCode.EXPIRED_REFRESH_TOKEN, "Refresh Token Expired")
                 }
@@ -73,7 +61,7 @@ class AuthService(
                 // 새로운 refresh token 생성 후 등록
                 val generateRefreshToken = jwtUtil.generateRefreshToken()
                 registerRefreshToken(foundUser, generateRefreshToken)
-                val generateAccessToken = jwtUtil.generateAccessToken(foundUser.username)
+                val generateAccessToken = jwtUtil.generateAccessToken(foundUser.id.value)
                 AuthResponse(
                     accessToken = generateAccessToken,
                     refreshToken = generateRefreshToken,

@@ -12,10 +12,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher
 import taeyun.malanalter.auth.JwtAuthExceptionFilter
 import taeyun.malanalter.auth.JwtAuthenticationFilter
+import taeyun.malanalter.auth.discord.DiscordOAuth2UserService
+import taeyun.malanalter.auth.discord.OAuth2SuccessHandler
 
 @Configuration
 @EnableWebSecurity
 class SecurityConfig(
+    val discordOAuth2UserService: DiscordOAuth2UserService,
+    val oAuth2SuccessHandler: OAuth2SuccessHandler,
     val jwtAuthenticationFilter: JwtAuthenticationFilter,
     val jwtAuthExceptionFilter: JwtAuthExceptionFilter
 ) {
@@ -40,6 +44,11 @@ class SecurityConfig(
         return http
             .csrf(CsrfConfigurer<HttpSecurity>::disable)
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            .oauth2Login { oauth2 ->
+                oauth2
+                    .userInfoEndpoint { it.userService(discordOAuth2UserService) }
+                    .successHandler(oAuth2SuccessHandler)
+            }
             .authorizeHttpRequests {
                 it.requestMatchers(*getOpenUrlMatchers())
                     .permitAll()

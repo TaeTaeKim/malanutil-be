@@ -8,6 +8,7 @@ import org.springframework.core.env.Profiles
 import org.springframework.security.core.Authentication
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler
 import org.springframework.stereotype.Component
+import taeyun.malanalter.auth.AuthService
 import taeyun.malanalter.auth.JwtUtil
 import taeyun.malanalter.user.UserService
 
@@ -15,6 +16,7 @@ import taeyun.malanalter.user.UserService
 class OAuth2SuccessHandler(
     val userService: UserService,
     val discordService: DiscordService,
+    val authService: AuthService,
     val jwtUtil: JwtUtil,
     val environment: Environment
 ) : SimpleUrlAuthenticationSuccessHandler() {
@@ -26,15 +28,19 @@ class OAuth2SuccessHandler(
 
         // 로그인 유저를 user table에 등록
         val discordOAuth2User = authentication?.principal as DiscordOAuth2User
-        if (userService.existById(discordOAuth2User.getId())) {
-            userService.addLoginUser(discordOAuth2User)
-            discordService.sendDirectMessage(discordOAuth2User.getId(), "웰컴인사")
-        } else {
-            userService.updateLoginUser(discordOAuth2User)
-        }
-        discordService.addUserToServer(discordOAuth2User)
         val generateAccessToken = jwtUtil.generateAccessToken(discordOAuth2User.getId())
         val generateRefreshToken = jwtUtil.generateRefreshToken()
+        authService.registerRefreshToken(discordOAuth2User.getId(), generateRefreshToken)
+        if (userService.existById(discordOAuth2User.getId())) {
+            userService.updateLoginUser(discordOAuth2User)
+        } else {
+            userService.addLoginUser(discordOAuth2User)
+            discordService.sendDirectMessage(discordOAuth2User.getId(), "웰컴인사")
+        }
+        discordService.addUserToServer(discordOAuth2User)
+
+
+
 
         response!!.sendRedirect(getLoginCallBackUrl(generateAccessToken, generateRefreshToken))
     }

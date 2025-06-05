@@ -24,6 +24,9 @@ class AuthService(
 
     fun registerRefreshToken(user: UserEntity, refreshToken: String) {
         transaction {
+            RefreshToken.deleteByUserId(user.userId.value)
+        }
+        transaction {
             RefreshToken.new {
                 this.userId = user.id.value
                 this.token = refreshToken
@@ -48,7 +51,7 @@ class AuthService(
     }
 
     fun logout(accessToken: String) {
-        val username = jwtUtil.getUsername(accessToken)
+        val username = jwtUtil.getUserFromExpiredToken(accessToken)
         transaction {
             // logout token 에 추가
             LogoutToken.new {

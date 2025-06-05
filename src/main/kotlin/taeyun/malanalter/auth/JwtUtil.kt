@@ -62,15 +62,30 @@ class JwtUtil(val authProperties: AuthProperties) {
         return extractClaim(token, Claims::getExpiration)
     }
 
-    fun getUsername(token: String): String {
-        return extractClaim(token, Claims::getSubject)
-    }
-
     fun isExpiredToken(token: String): Boolean {
         return try {
             extractClaim(token, Claims::getExpiration).before(Date())
         } catch (e: ExpiredJwtException) {
             true
+        }
+    }
+
+    // username 은 만료됬어도 반환한다.
+    fun getUserFromExpiredToken(token: String):String{
+        return try {
+            Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .payload
+                .subject
+        } catch (e: ExpiredJwtException) {
+            // Extract subject from expired token
+            e.claims.subject
+        } catch (e: JwtException) {
+            val randomUUID = UUID.randomUUID()
+            logger.error { "$randomUUID ${e.message}" }
+            throw AlerterJwtException(ErrorCode.INVALID_TOKEN, "[$randomUUID] Error in extracting claim")
         }
     }
 

@@ -75,7 +75,7 @@ class JwtAuthenticationFilterTest : FunSpec({
         val userEntity = mockk<UserEntity> ()
 
         every { jwtUtil.isExpiredToken(fakeToken) } returns false
-        every { jwtUtil.getUsername(fakeToken) } returns username
+        every { jwtUtil.getUserFromExpiredToken(fakeToken) } returns username
         every { userService.existByUsername(username) } returns true
         every { userService.isLogoutUser((fakeToken)) } returns false
         every { userService.findByUsername(username) } returns userEntity

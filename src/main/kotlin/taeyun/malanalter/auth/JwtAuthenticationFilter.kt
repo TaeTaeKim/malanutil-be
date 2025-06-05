@@ -50,7 +50,7 @@ class JwtAuthenticationFilter(
                 logger.info { "Expired Token with $jwt" }
                 throw AlerterJwtException(ErrorCode.EXPIRED_ACCESS_TOKEN, "Access Token expired")
             }
-            val username = jwtUtil.getUsername(jwt)
+            val username = jwtUtil.getUserFromExpiredToken(jwt)
             // 없는 사용자라면 exception 배출
             if (!validUser(username)) {
                 throw AlerterNotFoundException(ErrorCode.USER_NOT_FOUND, "User $username not found")

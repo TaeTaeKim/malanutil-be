@@ -1,10 +1,8 @@
 package taeyun.malanalter.user.domain
 
 import org.jetbrains.exposed.v1.core.Column
-import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.dao.id.IdTable
-import org.jetbrains.exposed.v1.core.dao.id.ULongIdTable
 import org.jetbrains.exposed.v1.datetime.CurrentDateTime
 import org.jetbrains.exposed.v1.datetime.datetime
 import org.jetbrains.exposed.v1.datetime.time
@@ -16,6 +14,7 @@ object Users : IdTable<Long>() {
     var startTime = time("start_time")
     var endTime = time("end_time")
     var disabled = bool("disabled").default(false)
+    var avatar = text(name = "avatar").nullable()
 
     override val primaryKey = PrimaryKey(id)
 }

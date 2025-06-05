@@ -45,15 +45,24 @@ class UserService {
     }
 
 
-    fun addUser(discordOAuth2User: DiscordOAuth2User) {
-        //fixme: 중복체크
-        transaction {
-            Users.insert {
-                it[id] = discordOAuth2User.getId()
-                it[username] = discordOAuth2User.getUsername()
+    fun addLoginUser(discordOAuth2User: DiscordOAuth2User) {
+        if(!existById(discordOAuth2User.getId())){
+            transaction {
+                Users.insert {
+                    it[id] = discordOAuth2User.getId()
+                    it[username] = discordOAuth2User.getUsername()
+                    it[avatar] = discordOAuth2User.getAvatar()
+                }
             }
         }
 
+    }
+
+    fun updateLoginUser(discordUser: DiscordOAuth2User) {
+        transaction { UserEntity.findById(discordUser.getId())?.apply {
+            username = discordUser.getUsername()
+            avatar = discordUser.getAvatar()
+        }}
     }
 
     fun findById(userId: Long) : UserEntity{

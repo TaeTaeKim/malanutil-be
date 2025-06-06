@@ -31,17 +31,13 @@ class OAuth2SuccessHandler(
         val generateAccessToken = jwtUtil.generateAccessToken(discordOAuth2User.getId())
         val generateRefreshToken = jwtUtil.generateRefreshToken()
         authService.registerRefreshToken(discordOAuth2User.getId(), generateRefreshToken)
+        discordService.addUserToServer(discordOAuth2User)
         if (userService.existById(discordOAuth2User.getId())) {
             userService.updateLoginUser(discordOAuth2User)
         } else {
             userService.addLoginUser(discordOAuth2User)
             discordService.sendDirectMessage(discordOAuth2User.getId(), "웰컴인사")
         }
-        discordService.addUserToServer(discordOAuth2User)
-
-
-
-
         response!!.sendRedirect(getLoginCallBackUrl(generateAccessToken, generateRefreshToken))
     }
 

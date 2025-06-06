@@ -30,7 +30,6 @@ class OAuth2SuccessHandler(
         val discordOAuth2User = authentication?.principal as DiscordOAuth2User
         val generateAccessToken = jwtUtil.generateAccessToken(discordOAuth2User.getId())
         val generateRefreshToken = jwtUtil.generateRefreshToken()
-        authService.registerRefreshToken(discordOAuth2User.getId(), generateRefreshToken)
         discordService.addUserToServer(discordOAuth2User)
         if (userService.existById(discordOAuth2User.getId())) {
             userService.updateLoginUser(discordOAuth2User)
@@ -38,6 +37,7 @@ class OAuth2SuccessHandler(
             userService.addLoginUser(discordOAuth2User)
             discordService.sendDirectMessage(discordOAuth2User.getId(), "웰컴인사")
         }
+        authService.registerRefreshToken(discordOAuth2User.getId(), generateRefreshToken)
         response!!.sendRedirect(getLoginCallBackUrl(generateAccessToken, generateRefreshToken))
     }
 

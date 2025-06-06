@@ -1,15 +1,14 @@
 package taeyun.malanalter.alertitem
 
-import feign.Feign
 import org.springframework.stereotype.Service
 import taeyun.malanalter.alertitem.dto.DiscordMessage
-import taeyun.malanalter.feignclient.DiscordClient
+import taeyun.malanalter.auth.discord.DiscordService
+import taeyun.malanalter.user.UserService
 
 @Service
-class AlertService(val feignBuilder: Feign.Builder) {
-    fun sendTestDiscordMessage(webhookUrl: String) {
-        val client = feignBuilder.target(DiscordClient::class.java, webhookUrl)
-        client.sendDiscordMessage(DiscordMessage.testDiscordMessage())
-
+class AlertService(val discordService: DiscordService) {
+    fun sendTestDiscordMessage() {
+        val loginUserId = UserService.getLoginUserId()
+        discordService.sendDirectMessage(loginUserId, DiscordMessage.testDiscordMessage())
     }
 }

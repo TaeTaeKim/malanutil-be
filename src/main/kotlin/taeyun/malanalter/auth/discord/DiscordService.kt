@@ -27,7 +27,9 @@ class DiscordService(
     fun sendDirectMessage(userId: Long, message: String) {
         discord.retrieveUserById(userId.toString()).queue { user ->
             user.openPrivateChannel().queue { channel ->
-                channel.sendMessage(message).queue()
+                if(message.isNotBlank()){
+                    channel.sendMessage(message).queue()
+                }
             }
         }
     }

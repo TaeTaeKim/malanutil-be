@@ -20,9 +20,9 @@ class UserEntity(id: EntityID<Long>) : Entity<Long>(id) {
     var disabled by Users.disabled
     var avatar by Users.avatar
 
-    fun isAlarmTime(): Boolean {
+    fun isNotAlarmTime(): Boolean {
         val now = LocalTime.now(ZoneId.of("Asia/Seoul"))
-        return this.startTime.toJavaLocalTime().isBefore(now) &&
-                now.isBefore(this.endTime.toJavaLocalTime())
+        return now.isBefore(startTime.toJavaLocalTime()) || now.isAfter(endTime.toJavaLocalTime())
+
     }
 }

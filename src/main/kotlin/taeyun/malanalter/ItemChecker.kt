@@ -1,16 +1,12 @@
 package taeyun.malanalter
 
-import feign.Feign
 import io.github.oshai.kotlinlogging.KotlinLogging
 import lombok.RequiredArgsConstructor
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import taeyun.malanalter.alertitem.dto.DiscordMessage
-import taeyun.malanalter.alertitem.dto.ItemBidInfo
-import taeyun.malanalter.alertitem.dto.MalanggBidRequest
+import taeyun.malanalter.alertitem.dto.*
 import taeyun.malanalter.alertitem.repository.AlertRepository
 import taeyun.malanalter.auth.discord.DiscordService
-import taeyun.malanalter.feignclient.DiscordClient
 import taeyun.malanalter.feignclient.MalanClient
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.UserEntity
@@ -32,26 +28,29 @@ class ItemChecker(
 
         // user 별로 discord 보내는 로직 -> 특정 사람이 보내지지 않아도 그래도 보내야한다.
         itemsByUser.forEach { (userId, items) ->
-            // 유저의 알람 시간 검사
-            val userEntity = allUserEntityMap[userId] ?: return@forEach
+            // 존재하는 유저 확인
+            val userEntity = allUserEntityMap[userId] ?: run {
+                logger.warn { "User:$userId not found" }
+                return@forEach
+            }
             // ─── “지금이 이 사용자의 알람 시간인지”  체크 ───
-            if (!userEntity.isAlarmTime()) return@forEach
+            if (userEntity.isNotAlarmTime()) return@forEach
+            val discordMessage = DiscordMessage()
             // 실제 알람 로직: isAlarm 플래그가 true인 것만 필터해서 처리
             items.filter { it.isAlarm }
-                .forEach { item ->
-                    val selectedBids = malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
-                        .filter { bids -> bids.tradeType == ItemBidInfo.TradeType.SELL && bids.tradeStatus }
-                        .sortedBy { it.itemPrice.inc() }
-                    if(selectedBids.isNotEmpty()){
-                        try{
-                            discordService.sendDirectMessage(userId, DiscordMessage(selectedBids).toString())
-                        }catch (e: Exception){
-                            logger.error { "Error when Sending discord message <UserId: $userId>" }
-                        }
-                    }
-                }
+                .forEach { discordMessage.addBids(it.id, itemBidInfos(it)) }
+            val messageList = discordMessage.getDiscordMessageContents()
+            messageList.forEach{discordService.sendDirectMessage(userId, it)}
         }
     }
+
+    private fun itemBidInfos(item: RegisteredItem): List<ItemBidInfo> {
+        return malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
+            .filter { bids -> bids.tradeType == ItemBidInfo.TradeType.SELL && bids.tradeStatus }
+            .sortedBy { it.itemPrice.inc() }
+    }
+
+
 
 
 }

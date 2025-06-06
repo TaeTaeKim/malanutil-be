@@ -46,7 +46,7 @@ class OAuth2SuccessHandler(
 
     fun getLoginCallBackUrl(accessToken: String, refreshToken: String): String {
         val authCallback = if (environment.acceptsProfiles(Profiles.of("dev"))) {
-            "/alerter/auth/callback"
+            "/malan-alerter/auth/callback"
         } else {
             "/auth/callback"
         }

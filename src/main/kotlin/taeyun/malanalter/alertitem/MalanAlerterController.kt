@@ -40,8 +40,8 @@ class MalanAlerterController(
     }
 
     @GetMapping("/discord-test")
-    fun discordTest(@RequestParam webhookUrl:String) {
-        alertService.sendTestDiscordMessage(webhookUrl)
+    fun discordTest() {
+        alertService.sendTestDiscordMessage()
     }
 
     @PatchMapping("/toggle-all")

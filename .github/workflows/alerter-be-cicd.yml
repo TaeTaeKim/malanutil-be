@@ -56,7 +56,7 @@ jobs:
           tags: |
             ${{ secrets.CONTAINER_REGISTRY_URL }}/malan-alerter-be:0.${{ env.MINOR_VERSION }}.${{ steps.git-commit-sha.outputs.SHA_SHORT }}
 #            ${{ secrets.CONTAINER_REGISTRY_URL }}/malan-alerter-be:latest
-          platforms: linux/amd64
+          platforms: linux/arm64
 #          cache-from: type=registry,ref=${{ secrets.CONTAINER_REGISTRY_URL }}/malan-alerter-be:latest
 #          cache-to: type=inline
   deploy:

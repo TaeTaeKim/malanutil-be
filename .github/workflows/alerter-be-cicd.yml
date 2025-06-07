@@ -21,6 +21,8 @@ jobs:
         run: ./gradlew test
   build-and-push-image:
     runs-on: ubuntu-latest
+    outputs:
+      sha_short: ${{ steps.git-commit-sha.outputs.SHA_SHORT }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -72,4 +74,4 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/hc07car/malan-alerter
-            sh patch-be.sh 0.${{ env.MINOR_VERSION }}.${{ steps.git-commit-sha.outputs.SHA_SHORT  }}
+            sh patch-be.sh 0.${{ env.MINOR_VERSION }}.${{ needs.build-and-push-image.outputs.sha_short }}

@@ -22,6 +22,8 @@ jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
     steps:
+      - name: set time env
+        run: echo "NOW=$(date +'%m%d%H%M')" >> $GITHUB_ENV
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -48,7 +50,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ secrets.CONTAINER_REGISTRY_URL }}/malan-alerter-be:0.${{ env.MINOR_VERSION }}.${{ format('{0:MMddHHmm}', github.event.head_commit.timestamp) }}
+            ${{ secrets.CONTAINER_REGISTRY_URL }}/malan-alerter-be:0.${{ env.MINOR_VERSION }}.${{ env.NOW }}
 #            ${{ secrets.CONTAINER_REGISTRY_URL }}/malan-alerter-be:latest
           platforms: linux/amd64
 #          cache-from: type=registry,ref=${{ secrets.CONTAINER_REGISTRY_URL }}/malan-alerter-be:latest
@@ -68,4 +70,4 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/hc07car/malan-alerter
-            sh patch-be.sh 0.${{ env.MINOR_VERSION }}.${{ format('{0:MMddHHmm}', github.event.head_commit.timestamp) }}
+            sh patch-be.sh 0.${{ env.MINOR_VERSION }}.${{ env.NOW }}

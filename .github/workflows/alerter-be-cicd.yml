@@ -40,6 +40,10 @@ jobs:
           username: ${{ secrets.NCP_ACCESS_KEY }}
           password: ${{ secrets.NCP_SECRET_KEY }}
 
+      - name: Declare some variables
+        shell: bash
+        run: echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+
       # build push action
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -48,7 +52,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ secrets.CONTAINER_REGISTRY_URL }}/malan-alerter-be:0.${{ env.MINOR_VERSION }}.${{ github.sha::7 }}
+            ${{ secrets.CONTAINER_REGISTRY_URL }}/malan-alerter-be:0.${{ env.MINOR_VERSION }}.${{ env.sha_short }}
 #            ${{ secrets.CONTAINER_REGISTRY_URL }}/malan-alerter-be:latest
           platforms: linux/amd64
 #          cache-from: type=registry,ref=${{ secrets.CONTAINER_REGISTRY_URL }}/malan-alerter-be:latest
@@ -68,4 +72,4 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/hc07car/malan-alerter
-            sh patch-be.sh 0.${{ env.MINOR_VERSION }}.${{ github.sha::7  }}
+            sh patch-be.sh 0.${{ env.MINOR_VERSION }}.${{ env.sha_short  }}

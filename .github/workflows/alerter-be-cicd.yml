@@ -54,7 +54,9 @@ jobs:
 #          cache-from: type=registry,ref=${{ secrets.CONTAINER_REGISTRY_URL }}/malan-alerter-be:latest
 #          cache-to: type=inline
   deploy:
-    needs: build-and-push-image
+    needs:
+    - build-and-push-image
+    - test
     runs-on: ubuntu-latest
     steps:
       - name: Execute remote script

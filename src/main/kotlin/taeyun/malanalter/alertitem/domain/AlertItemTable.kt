@@ -13,7 +13,7 @@ val mapper = jacksonObjectMapper()
 
 object AlertItemTable : IntIdTable("alert_item") {
     val itemId = integer("item_id")
-    val itemCondition = jsonb(
+    val itemCondition = jsonb<ItemCondition>(
         "item_condition",
         { mapper.writeValueAsString(it)},
         { mapper.readValue(it, ItemCondition::class.java) }

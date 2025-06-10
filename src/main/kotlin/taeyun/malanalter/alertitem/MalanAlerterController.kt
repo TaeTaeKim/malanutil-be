@@ -19,8 +19,8 @@ class MalanAlerterController(
     }
 
     @PatchMapping
-    fun update(@RequestParam itemId: Int, @RequestBody itemCondition: ItemCondition) {
-        alertRepository.update(itemId, itemCondition)
+    fun update(@RequestParam alertId: Int, @RequestBody updateItemCondition: ItemCondition) {
+        alertRepository.update(alertId, updateItemCondition)
     }
 
     @DeleteMapping

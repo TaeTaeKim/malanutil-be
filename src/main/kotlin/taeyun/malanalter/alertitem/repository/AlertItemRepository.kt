@@ -37,12 +37,12 @@ class AlertItemRepository : AlertRepository {
         AlertItemTable.deleteWhere { AlertItemTable.id eq alertId }
     }
 
-    override fun update(itemId: Int, itemCondition: ItemCondition): Unit = transaction {
+    override fun update(alertId: Int, updateItemCondition: ItemCondition): Unit = transaction {
         // 현재 Exposed에서는 update 메서드를 직접 구현해야 함
         AlertItemTable.update(
-            where = { AlertItemTable.itemId eq itemId }
+            where = { AlertItemTable.id eq alertId }
         ) {
-            it[AlertItemTable.itemCondition] = itemCondition
+            it[itemCondition] = updateItemCondition
         }
     }
 

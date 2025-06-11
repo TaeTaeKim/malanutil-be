@@ -19,6 +19,12 @@ class AlertItemRepository : AlertRepository {
 
     companion object {
         val itemNameMap: ConcurrentHashMap<Int, String> = ConcurrentHashMap()
+
+
+        fun getItemName(itemId: Int): String {
+            return itemNameMap[itemId] ?: "이름 없음"
+        }
+
     }
 
     override fun getRegisteredItem(): List<RegisteredItem> = transaction {
@@ -50,9 +56,6 @@ class AlertItemRepository : AlertRepository {
         itemNameMap[itemId] = itemName
     }
 
-    override fun getItemName(itemId: Int): String {
-        return itemNameMap[itemId] ?: "이름 없음"
-    }
 
     override fun toggleItemAlarm(alertId: Int) {
         transaction {

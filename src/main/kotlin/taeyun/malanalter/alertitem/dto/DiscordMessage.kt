@@ -1,5 +1,9 @@
 package taeyun.malanalter.alertitem.dto
 
+import org.jetbrains.exposed.v1.core.idParam
+import taeyun.malanalter.alertitem.repository.AlertItemRepository
+import taeyun.malanalter.alertitem.repository.AlertRepository
+
 data class DiscordMessage(
     val catchBids: MutableMap<Int, List<ItemBidInfo>> = mutableMapOf()
 ) {
@@ -29,13 +33,13 @@ data class DiscordMessage(
                 })
             }
     }
-    companion object{
-        fun testDiscordMessage(): String{
+
+    companion object {
+        fun testDiscordMessage(): String {
             return "톡톡🎤 매랜지지 알리미가 보내는 테스트 메세지 입니다"
         }
 
-        fun welcomeMessage(): String{
-            // todo: 웰컴메세지에 추가 작성
+        fun welcomeMessage(): String {
             return """
                 안녕하세요! 👋
                 메랜지지 알리미에 오신 걸 환영합니다.
@@ -50,10 +54,19 @@ data class DiscordMessage(
                 감사합니다.
             """.trimIndent()
         }
+
+        fun alertItemRegisterMessage(itemId: Int, itemCondition: ItemCondition) = buildString {
+            append("## 아이템 등록알림\n")
+            val itemName = AlertItemRepository.getItemName(itemId)
+            append("**[$itemName]** 등록완료. **${itemCondition.price}메소** 이하 가격이 나오면 알려드릴게요\n\n")
+
+            val conditions = itemCondition.makeRegisterOptionMsg()
+            if (conditions.isNotEmpty()) {
+                append("**옵션** ")
+                conditions.forEach{append(it)}
+            }
+        }
     }
-
-
-
 }
 
 private fun getItemName(bidsList: List<ItemBidInfo>): String = bidsList.first().itemName

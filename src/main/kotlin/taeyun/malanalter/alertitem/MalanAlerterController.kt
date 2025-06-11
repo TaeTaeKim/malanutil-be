@@ -15,7 +15,7 @@ class MalanAlerterController(
 
     @PostMapping
     fun save(@RequestParam itemId: Int, @RequestBody itemCondition: ItemCondition) {
-        alertRepository.save(itemId, itemCondition)
+        alertService.saveNewAlertItem(itemId, itemCondition)
     }
 
     @PatchMapping

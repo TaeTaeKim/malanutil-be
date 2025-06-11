@@ -8,6 +8,7 @@ import org.springframework.core.env.Profiles
 import org.springframework.security.core.Authentication
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler
 import org.springframework.stereotype.Component
+import taeyun.malanalter.alertitem.dto.DiscordMessage
 import taeyun.malanalter.auth.AuthService
 import taeyun.malanalter.auth.JwtUtil
 import taeyun.malanalter.user.UserService
@@ -35,7 +36,7 @@ class OAuth2SuccessHandler(
             userService.updateLoginUser(discordOAuth2User)
         } else {
             userService.addLoginUser(discordOAuth2User)
-            discordService.sendDirectMessage(discordOAuth2User.getId(), "웰컴인사")
+            discordService.sendDirectMessage(discordOAuth2User.getId(), DiscordMessage.welcomeMessage())
         }
         authService.registerRefreshToken(discordOAuth2User.getId(), generateRefreshToken)
         response!!.sendRedirect(getLoginCallBackUrl(generateAccessToken, generateRefreshToken))

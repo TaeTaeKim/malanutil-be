@@ -13,6 +13,8 @@ import taeyun.malanalter.config.exception.AlerterServerError
 import taeyun.malanalter.config.exception.ErrorCode
 import taeyun.malanalter.user.domain.UserEntity
 import taeyun.malanalter.user.domain.Users
+import taeyun.malanalter.user.dto.AlarmTimeRequest
+import taeyun.malanalter.user.dto.LoginUser
 import java.util.*
 
 @Service
@@ -38,7 +40,7 @@ class UserService {
         }
     }
 
-    fun existById(userId: Long):Boolean {
+    fun existById(userId: Long): Boolean {
         return transaction {
             UserEntity.findById(userId) != null
         }
@@ -46,7 +48,7 @@ class UserService {
 
 
     fun addLoginUser(discordOAuth2User: DiscordOAuth2User) {
-        if(!existById(discordOAuth2User.getId())){
+        if (!existById(discordOAuth2User.getId())) {
             transaction {
                 Users.insert {
                     it[id] = discordOAuth2User.getId()
@@ -59,15 +61,17 @@ class UserService {
     }
 
     fun updateLoginUser(discordUser: DiscordOAuth2User) {
-        transaction { UserEntity.findById(discordUser.getId())?.apply {
-            username = discordUser.getUsername()
-            avatar = discordUser.getAvatar()
-        }}
+        transaction {
+            UserEntity.findById(discordUser.getId())?.apply {
+                username = discordUser.getUsername()
+                avatar = discordUser.getAvatar()
+            }
+        }
     }
 
-    fun findById(userId: Long) : UserEntity{
+    fun findById(userId: Long): UserEntity {
         return transaction {
-             UserEntity.findById(userId)?:throw AlerterNotFoundException(ErrorCode.USER_NOT_FOUND, "")
+            UserEntity.findById(userId) ?: throw AlerterNotFoundException(ErrorCode.USER_NOT_FOUND, "")
         }
     }
 
@@ -75,9 +79,35 @@ class UserService {
         return transaction { LogoutToken.isLogoutToken(token) }
     }
 
-    fun getAllUserEntityMap() : Map<Long, UserEntity>{
+    fun getAllUserEntityMap(): Map<Long, UserEntity> {
         return transaction {
             UserEntity.all().map { it.id.value to it }.toMap()
+        }
+    }
+
+    fun getCurrentUser(): LoginUser {
+        val loginUserId = getLoginUserId()
+        return transaction {
+            UserEntity.findById(loginUserId)?.let { LoginUser.from(it) }
+                ?: throw AlerterNotFoundException(ErrorCode.USER_NOT_FOUND, "Login User Not Found")
+        }
+
+    }
+
+    fun toggleAlarm() {
+        val loginUserId = getLoginUserId()
+        transaction {
+            UserEntity.findByIdAndUpdate(loginUserId) { it.isAlarm = !it.isAlarm }
+        }
+    }
+
+    fun updateUserAlarmTime(alarmTimeRequest: AlarmTimeRequest) {
+        val loginUserId = getLoginUserId()
+        transaction {
+            UserEntity.findByIdAndUpdate(loginUserId) { it: UserEntity ->
+                it.startTime = alarmTimeRequest.getMinLocalTime()
+                it.endTime = alarmTimeRequest.getMaxLocalTime()
+            }
         }
     }
 }

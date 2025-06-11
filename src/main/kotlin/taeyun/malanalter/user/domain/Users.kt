@@ -15,6 +15,7 @@ object Users : IdTable<Long>() {
     var endTime = time("end_time")
     var disabled = bool("disabled").default(false)
     var avatar = text(name = "avatar").nullable()
+    var isAlarm = bool("is_alarm").default(true)
 
     override val primaryKey = PrimaryKey(id)
 }

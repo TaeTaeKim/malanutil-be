@@ -9,7 +9,6 @@ interface AlertRepository {
     fun delete(alertId: Int)
     fun update(alertId: Int, updateItemCondition: ItemCondition)
     fun saveItemName(itemId: Int, itemName: String)
-    fun getItemName(itemId: Int): String
     fun toggleItemAlarm(alertId: Int)
     fun toggleAllItemAlarm(toggleTo:Boolean)
 }

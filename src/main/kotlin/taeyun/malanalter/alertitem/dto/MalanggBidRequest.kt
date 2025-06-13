@@ -18,8 +18,8 @@ data class MalanggBidRequest (
     val highHapma: Int? = null,
     val lowincSpeed: Int? = null,
     val highincSpeed: Int? = null,
-    val lowincAcc: Int? = null,
-    val highincAcc: Int? = null,
+    val lowincACC: Int? = null,
+    val highincACC: Int? = null,
 ){
     constructor(itemCondition: ItemCondition) : this(
         highPrice = itemCondition.price,
@@ -39,7 +39,7 @@ data class MalanggBidRequest (
         highHapma = itemCondition.hapma,
         lowincSpeed = itemCondition.speed,
         highincSpeed = itemCondition.speed,
-        lowincAcc = itemCondition.accuracy,
-        highincAcc = itemCondition.accuracy
+        lowincACC = itemCondition.accuracy,
+        highincACC = itemCondition.accuracy
     )
 }

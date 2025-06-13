@@ -12,9 +12,9 @@ import taeyun.malanalter.alertitem.dto.MalanggBidRequest
 @EnableFeignClients
 class FeignClientTest(private val malanClient: MalanClient) : StringSpec({
     "Malan Client로 null 필드가k 잘 요청되는지 확인" {
-        val itemCode = 2044002
+        val itemCode = 1432013
         val itemCondition = ItemCondition(
-            price = 100,
+            price = 2000000,
             str = null,
             dex = null,
             int = null,
@@ -23,12 +23,13 @@ class FeignClientTest(private val malanClient: MalanClient) : StringSpec({
             mad = null,
             hapma = null,
             speed = null,
-            accuracy = null
+            accuracy = 17
         )
         val malanggBidRequest = MalanggBidRequest(itemCondition)
         // not make exception in malanClient.getItemBidList
         shouldNotThrow<Exception>{
-            malanClient.getItemBidList(itemCode, malanggBidRequest)
+            val itemBidList = malanClient.getItemBidList(itemCode, malanggBidRequest)
+            println(itemBidList)
         }
     }
 })

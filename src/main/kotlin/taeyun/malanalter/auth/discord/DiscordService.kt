@@ -15,11 +15,11 @@ class DiscordService(
     fun addUserToServer(discordUser: DiscordOAuth2User) {
         val randomUUID = UUID.randomUUID().toString()
         try {
-
             val userSnowflake = UserSnowflake.fromId(discordUser.getId().toString())
             val guild = discord.getGuildById(discordProperties.serverId)!!
             guild.addMember(discordUser.getToken(), userSnowflake).queue()
         } catch (e: Exception) {
+            println(e.message)
             throw AlerterServerError(uuid = randomUUID, message = "Error in inviting user to server", rootCause = e)
         }
     }

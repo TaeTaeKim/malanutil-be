@@ -21,7 +21,7 @@ class AlerterServerError(
     val uuid : String,
     message: String,
     val rootCause: Throwable?
-) : BaseException(errorCode, "[$uuid] $message"){}
+) : BaseException(errorCode, rootCause?.message?:"[$uuid] $message")
 
 class AlerterBadRequest(
     errorCode: ErrorCode,

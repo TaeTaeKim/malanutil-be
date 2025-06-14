@@ -26,7 +26,7 @@ data class ItemBidInfo (
         }
     }
     fun toDiscordMessage(): String {
-        return "가격=$itemPrice, comment=$comment"
+        return "가격=${ItemCondition.changePriceToString(itemPrice)}, comment=$comment"
     }
 
 }

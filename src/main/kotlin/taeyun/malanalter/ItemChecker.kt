@@ -40,17 +40,18 @@ class ItemChecker(
             items.filter { it.isAlarm }
                 .forEach { discordMessage.addBids(it.id, itemBidInfos(it)) }
             val messageList = discordMessage.getDiscordMessageContents()
-            messageList.forEach{discordService.sendDirectMessage(userId, it)}
+            messageList.forEach { discordService.sendDirectMessage(userId, it) }
         }
     }
 
     private fun itemBidInfos(item: RegisteredItem): List<ItemBidInfo> {
-        return malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
-            .filter { bids -> bids.tradeType == ItemBidInfo.TradeType.SELL && bids.tradeStatus }
-            .sortedBy { it.itemPrice.inc() }
+        try {
+            return malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
+                .filter { bids -> bids.tradeType == ItemBidInfo.TradeType.SELL && bids.tradeStatus }
+                .sortedBy { it.itemPrice.inc() }
+        } catch (e: Exception) {
+            logger.error { "Error in Request to Malangg ${e.message}" }
+            return emptyList()
+        }
     }
-
-
-
-
 }

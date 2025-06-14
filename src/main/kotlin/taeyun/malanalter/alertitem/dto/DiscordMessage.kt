@@ -1,8 +1,6 @@
 package taeyun.malanalter.alertitem.dto
 
-import org.jetbrains.exposed.v1.core.idParam
 import taeyun.malanalter.alertitem.repository.AlertItemRepository
-import taeyun.malanalter.alertitem.repository.AlertRepository
 
 data class DiscordMessage(
     val catchBids: MutableMap<Int, List<ItemBidInfo>> = mutableMapOf()
@@ -58,7 +56,7 @@ data class DiscordMessage(
         fun alertItemRegisterMessage(itemId: Int, itemCondition: ItemCondition) = buildString {
             append("## 아이템 등록알림\n")
             val itemName = AlertItemRepository.getItemName(itemId)
-            append("**[$itemName]** 등록완료. **${itemCondition.price}메소** 이하 가격이 나오면 알려드릴게요\n\n")
+            append("**[$itemName]** 등록완료. **${itemCondition.lowPrice} ~ ${itemCondition.highPrice}메소** 가격이 나오면 알려드릴게요\n\n")
 
             val conditions = itemCondition.makeRegisterOptionMsg()
             if (conditions.isNotEmpty()) {

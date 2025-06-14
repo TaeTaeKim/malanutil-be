@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 
 data class ItemBidInfo (
     val tradeStatus: Boolean,
-    val itemPrice: ULong,
+    val itemPrice: Long,
     val comment: String,
     val itemName: String,
     val tradeType: TradeType

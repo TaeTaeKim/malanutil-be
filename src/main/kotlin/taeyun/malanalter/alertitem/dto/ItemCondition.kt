@@ -46,7 +46,7 @@ data class ItemCondition(
             return when {
                 price == null -> "0"
                 price >=100000000 -> String.format("%.2f", price.toDouble() / 100000000) + "억"
-                price >= 100000 -> "${price / 10000}만"
+                price >= 100000 -> String.format("%.2f", price.toDouble() / 10000) + "만"
                 else -> price.toString()
             }
         }
@@ -54,7 +54,7 @@ data class ItemCondition(
             return when {
                 price == null -> "0"
                 price >=100000000 -> String.format("%.2f", price.toDouble() / 100000000) + "억"
-                price >= 100000 -> "${price / 10000}만"
+                price >= 100000 -> String.format("%.2f", price.toDouble() / 10000) + "만"
                 else -> price.toString()
             }
         }

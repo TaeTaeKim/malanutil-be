@@ -7,7 +7,8 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class ItemCondition(
-    val price: Int? = null,
+    val lowPrice: Int? = null,
+    val highPrice: Int? = null,
     val str: Int? = null,
     val dex: Int? = null,
     val int: Int? = null,
@@ -30,5 +31,33 @@ data class ItemCondition(
             accuracy?.let { add("명중률: $it, ") }
             speed?.let { add("이속: $it, ") }
         }
+    }
+
+    fun getStringPrice(priceType: String): String {
+        return when (priceType) {
+            "low" -> changePriceToString(lowPrice)
+            "high" -> changePriceToString(highPrice)
+            else -> throw IllegalArgumentException("priceType $priceType is not valid, should be one of [low, high]")
+        }
+    }
+
+    companion object{
+        fun changePriceToString(price: Int?): String {
+            return when {
+                price == null -> "0"
+                price >=100000000 -> String.format("%.2f", price.toDouble() / 100000000) + "억"
+                price >= 1000000 -> "${price/10000}만"
+                else -> price.toString()
+            }
+        }
+        fun changePriceToString(price: Long?): String {
+            return when {
+                price == null -> "0"
+                price >=100000000 -> String.format("%.2f", price.toDouble() / 100000000) + "억"
+                price >= 1000000 -> "${price/10000}만"
+                else -> price.toString()
+            }
+        }
+
     }
 }

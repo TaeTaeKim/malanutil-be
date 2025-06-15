@@ -1,6 +1,7 @@
 package taeyun.malanalter.alertitem.dto
 
 data class MalanggBidRequest (
+    val lowPrice: Int? = null,
     val highPrice: Int? = null,
     val lowincINT: Int? = null,
     val highincINT: Int? = null,
@@ -22,7 +23,8 @@ data class MalanggBidRequest (
     val highincACC: Int? = null,
 ){
     constructor(itemCondition: ItemCondition) : this(
-        highPrice = itemCondition.price,
+        lowPrice = itemCondition.lowPrice,
+        highPrice = itemCondition.highPrice,
         lowincINT = itemCondition.int,
         highincINT = itemCondition.int,
         lowincSTR = itemCondition.str,

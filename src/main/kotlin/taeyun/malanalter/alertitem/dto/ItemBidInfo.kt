@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 
 data class ItemBidInfo (
     val tradeStatus: Boolean,
-    val itemPrice: ULong,
+    val itemPrice: Long,
     val comment: String,
     val itemName: String,
     val tradeType: TradeType
@@ -26,7 +26,7 @@ data class ItemBidInfo (
         }
     }
     fun toDiscordMessage(): String {
-        return "가격=$itemPrice, comment=$comment"
+        return "가격=${ItemCondition.changePriceToString(itemPrice)}, comment=$comment"
     }
 
 }

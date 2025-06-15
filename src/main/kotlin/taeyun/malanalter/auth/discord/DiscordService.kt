@@ -1,10 +1,13 @@
 package taeyun.malanalter.auth.discord
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.entities.UserSnowflake
 import org.springframework.stereotype.Service
 import taeyun.malanalter.config.exception.AlerterServerError
 import java.util.*
+
+private val logger = KotlinLogging.logger {  }
 
 @Service
 class DiscordService(
@@ -19,8 +22,12 @@ class DiscordService(
             val guild = discord.getGuildById(discordProperties.serverId)!!
             guild.addMember(discordUser.getToken(), userSnowflake).queue()
         } catch (e: Exception) {
-            println(e.message)
-            throw AlerterServerError(uuid = randomUUID, message = "Error in inviting user to server", rootCause = e)
+            if(e.message.equals("User is already in this guild")){
+                logger.error { "$randomUUID Error in inviting user to server ${e.message} ${e.javaClass}" }
+            }else{
+                throw AlerterServerError(uuid = randomUUID, message = "Error in inviting user to server", rootCause = e)
+            }
+
         }
     }
 

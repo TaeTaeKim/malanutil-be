@@ -7,23 +7,18 @@ enum class ErrorCode(
     val code: String,
     val defaultMessage: String // if exception's message not defined
 ) {
-    // AUTH_002, AUTH_003 은 무조건 전부 /login 으로 이동한다.
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_001", "Invalid Token"),
+    // AUTH_002, AUTH_003 은 무조건 전부 /login 으로 이동한다.
     EXPIRED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_002", "Expired AccessToken : refresh required"),
-    EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_003", "Expired Refresh Token RE-login required"),
-    REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "AUTH_004", "Refresh Token not found"),
-
-    // Login
-    WRONG_PASSWORD(HttpStatus.NOT_ACCEPTABLE, "AUTH_005", "WRONG_PASSWORD"),
-    LOGOUT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_005", "Logout Account"),
-
+    REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "AUTH_002", "Refresh Token not found"),
+    EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_002", "Expired Refresh Token RE-login required"),
+    LOGOUT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_002", "Logout Account"),
     DISCORD_TOKEN_NOTFOUND(HttpStatus.BAD_REQUEST, "AUTH_006", "No discord access token found"),
 
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "User Not Found"),
-    USER_EXIST(HttpStatus.BAD_REQUEST, "USER_002", "User Already Exist"),
 
+    BAD_REQUEST(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "잘못된 요청입니다."),
 
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SERVER_001", "Internal Server Error"),
-    DEPRECATED_API(HttpStatus.BAD_REQUEST, "SERVER_002", "Request to deprecated API"),
 }

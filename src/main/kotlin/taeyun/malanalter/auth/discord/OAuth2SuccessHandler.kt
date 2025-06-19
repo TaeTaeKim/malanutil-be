@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler
 import org.springframework.stereotype.Component
 import taeyun.malanalter.alertitem.dto.DiscordMessage
+import taeyun.malanalter.auth.AlerterCookieUtil
 import taeyun.malanalter.auth.AuthService
 import taeyun.malanalter.auth.JwtUtil
 import taeyun.malanalter.user.UserService
@@ -23,7 +24,7 @@ class OAuth2SuccessHandler(
 ) : SimpleUrlAuthenticationSuccessHandler() {
     override fun onAuthenticationSuccess(
         request: HttpServletRequest?,
-        response: HttpServletResponse?,
+        response: HttpServletResponse,
         authentication: Authentication?
     ) {
 
@@ -39,19 +40,20 @@ class OAuth2SuccessHandler(
             discordService.sendDirectMessage(discordOAuth2User.getId(), DiscordMessage.welcomeMessage())
         }
         authService.registerRefreshToken(discordOAuth2User.getId(), generateRefreshToken)
-        response!!.sendRedirect(getLoginCallBackUrl(generateAccessToken, generateRefreshToken))
+        response.addCookie(AlerterCookieUtil.makeRefreshTokenCookie(generateRefreshToken))
+        response.sendRedirect(getLoginCallBackUrl(generateAccessToken))
     }
 
     @Value("\${alerter.frontend.redirection-url}")
     lateinit var frontRedirectionURL: String
 
-    fun getLoginCallBackUrl(accessToken: String, refreshToken: String): String {
+    fun getLoginCallBackUrl(accessToken: String): String {
         val authCallback = if (environment.acceptsProfiles(Profiles.of("dev"))) {
             "/malan-alerter/auth/callback"
         } else {
             "/auth/callback"
         }
-        return "$frontRedirectionURL$authCallback?accessToken=$accessToken&refreshToken=$refreshToken"
+        return "$frontRedirectionURL$authCallback?accessToken=$accessToken"
 
 
     }

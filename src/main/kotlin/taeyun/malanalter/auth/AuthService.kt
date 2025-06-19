@@ -2,6 +2,7 @@ package taeyun.malanalter.auth
 
 
 import AuthResponse
+import jakarta.servlet.http.HttpServletResponse
 import kotlinx.datetime.toKotlinLocalDateTime
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.stereotype.Service
@@ -48,7 +49,10 @@ class AuthService(
         }
     }
 
-    fun renewToken(foundUser: UserEntity, refreshToken: String): AuthResponse {
+    /**
+     * 액세스 토큰 만료시 refreshToken 과 함께 액세스 토큰 재발급하는 메소드
+     */
+    fun renewToken(foundUser: UserEntity, refreshToken: String, response: HttpServletResponse): AuthResponse {
         return transaction {
             RefreshToken.findRefreshTokenByUserId(foundUser.id.value, refreshToken)?.let { foundToken ->
                 if (foundToken.isExpired() && foundToken.isRevoked) {
@@ -60,10 +64,10 @@ class AuthService(
                 // 새로운 refresh token 생성 후 등록
                 val generateRefreshToken = jwtUtil.generateRefreshToken()
                 registerRefreshToken(foundUser.id.value, generateRefreshToken)
+                response.addCookie(AlerterCookieUtil.makeRefreshTokenCookie(generateRefreshToken))
                 val generateAccessToken = jwtUtil.generateAccessToken(foundUser.id.value)
                 AuthResponse(
                     accessToken = generateAccessToken,
-                    refreshToken = generateRefreshToken,
                     expireAt = jwtUtil.getExpiryFromToken(generateAccessToken).toInstant().epochSecond
                 )
             } ?: throw AlerterNotFoundException(ErrorCode.REFRESH_TOKEN_NOT_FOUND)

@@ -1,14 +1,9 @@
 package taeyun.malanalter.auth.dto
 
-import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
 
 data class RefreshRequest (
-    @field:NotBlank
-    private val username: String?,
-    @field:NotBlank
+    @field:NotNull(message = "UserId 는 Null일 수 없습니다.")
+    val userId: Long?,
     val refreshToken: String?
-){
-    fun getUsername():Long{
-        return username!!.toLong()
-    }
-}
+)

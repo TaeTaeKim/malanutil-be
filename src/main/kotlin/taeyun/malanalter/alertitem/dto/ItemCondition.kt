@@ -13,11 +13,12 @@ data class ItemCondition(
     val dex: Int? = null,
     val int: Int? = null,
     val luk: Int? = null,
-    val pad: Int? = null,
-    val mad: Int? = null,
+    val pad: Int? = null,  // 공격력
+    val mad: Int? = null, // 마력
     val hapma: Int? = null, // 합마
     val accuracy: Int? = null, // 명중률
     val speed: Int? = null, // 이동속도
+    val jump: Int? = null, // 점프력
 ){
     fun makeRegisterOptionMsg():List<String>{
         return buildList {
@@ -30,6 +31,7 @@ data class ItemCondition(
             hapma?.let { add("합마: $it, ") }
             accuracy?.let { add("명중률: $it, ") }
             speed?.let { add("이속: $it, ") }
+            jump?.let { add("점프력: $it, ") }
         }
     }
 

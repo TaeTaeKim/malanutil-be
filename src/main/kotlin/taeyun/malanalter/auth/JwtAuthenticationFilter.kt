@@ -16,7 +16,7 @@ import taeyun.malanalter.user.UserService
 import java.util.*
 
 
-private val logger = KotlinLogging.logger {}
+private val log = KotlinLogging.logger {  }
 
 @Component
 class JwtAuthenticationFilter(
@@ -31,7 +31,7 @@ class JwtAuthenticationFilter(
     ) {
         // 인증이 필요없는 요청에 대해서는 filter pass -> Security Context 로 id가 들어가지 않는다.
         if (SecurityConfig.getOpenUrlMatchers().any { it.matches(request) }) {
-            logger.debug("skip check jwt for url ${request.requestURI}")
+            log.debug { "skip check jwt for url ${request.requestURI}" }
             filterChain.doFilter(request, response)
             return
         }
@@ -46,7 +46,7 @@ class JwtAuthenticationFilter(
             }
             // 만료검사 : 만료시에 바로 Exception 이 발생
             if (jwtUtil.isExpiredToken(jwt)) {
-                logger.info { "Expired Token with $jwt" }
+                log.info { "Expired Token with $jwt" }
                 throw AlerterJwtException(ErrorCode.EXPIRED_ACCESS_TOKEN, "Access Token expired")
             }
             val userId = jwtUtil.getUserFromExpiredToken(jwt)
@@ -68,14 +68,14 @@ class JwtAuthenticationFilter(
             throw e
         } catch (e: JwtException) { // jwt
             val uuid = UUID.randomUUID().toString()
-            logger.info("[$uuid]Error in Handling Token $jwt", e)
+            log.info{"[$uuid]Error in Handling Token $jwt $e"}
             throw AlerterJwtException(
                 ErrorCode.INVALID_TOKEN,
                 "[UUID : $uuid] Error in checking JWT token See server log"
             )
         } catch (e: Exception) {
             val uuid = UUID.randomUUID().toString()
-            logger.info("[$uuid] Unexpected Error occur when validate user token $jwt", e)
+            log.info{"[$uuid] Unexpected Error occur when validate user token $jwt $e"}
             throw AlerterServerError(
                 uuid = uuid,
                 message = "[$uuid] Unexpected Error occur when validate user token",

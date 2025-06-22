@@ -14,5 +14,5 @@ interface AlertRepository {
     fun toggleItemAlarm(alertId: Int)
     fun toggleAllItemAlarm(toggleTo:Boolean)
     fun getAllItemComments(): List<AlertComment>
-    fun syncBids(itemId: Int, detectedBids: List<ItemBidInfo>, existBidList: List<AlertComment>)
+    fun syncBids(alertItemId: Int, detectedBids: List<ItemBidInfo>, existBidList: List<AlertComment>)
 }

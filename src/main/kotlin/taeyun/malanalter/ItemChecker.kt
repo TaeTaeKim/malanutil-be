@@ -26,7 +26,7 @@ class ItemChecker(
     fun checkItemV2() {
         val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()
         val itemsByUser = alertRepository.getRegisteredItem().groupBy { it.userId }
-        val savedBidsByItemId: Map<Int, List<AlertComment>> = alertRepository.getAllItemComments().groupBy { it.itemId }
+        val savedBidsByItemId: Map<Int, List<AlertComment>> = alertRepository.getAllItemComments().groupBy { it.alertItemId }
 
         // user 별로 discord 보내는 로직 -> 특정 사람이 보내지지 않아도 그래도 보내야한다.
         itemsByUser.forEach { (userId, registeredItems) ->
@@ -57,7 +57,7 @@ class ItemChecker(
                     .filter { bids -> bids.tradeType == ItemBidInfo.TradeType.SELL && bids.tradeStatus }
                     .sortedBy { it.itemPrice.inc() }
             // 기존 Bid info 새로운 bidInfo Sync
-            alertRepository.syncBids(item.itemId, detectedBids, existBidList)
+            alertRepository.syncBids(item.id, detectedBids, existBidList)
             // 모든 알람에서 울려야하는 알람 5개만 반환
             return detectedBids
                 .filter { isAlarmComment(existBidList, it.id) }
@@ -69,7 +69,7 @@ class ItemChecker(
     }
 
     private fun isAlarmComment(existComment: List<AlertComment>, bidId: String): Boolean {
-        // isAlarm 인 true 인 코멘트에 포함되는지.
+        // 새로운 bid 이거나 Alarm이 on 된 bid만 리턴
         return  !existComment.map { it.id.value }.contains(bidId) || existComment.filter { it.isAlarm }.map { it.id.value }.contains(bidId)
     }
 }

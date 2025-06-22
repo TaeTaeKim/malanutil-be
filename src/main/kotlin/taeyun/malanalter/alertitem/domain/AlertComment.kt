@@ -7,7 +7,8 @@ import org.jetbrains.exposed.v1.dao.EntityClass
 class AlertComment(id: EntityID<String>) : Entity<String>(id) {
     companion object : EntityClass<String, AlertComment>(AlertComments)
 
-    var itemId by AlertComments.itemId
+    val alertItemId by AlertComments.alertItemId
     var isAlarm by AlertComments.isAlarm
-    var alertItem by AlertItemEntity referencedOn AlertComments.itemId
+    val comment by AlertComments.comment
+    val alertItem by AlertItemEntity referencedOn AlertComments.alertItemId
 }

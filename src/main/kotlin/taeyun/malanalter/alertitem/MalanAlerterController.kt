@@ -1,5 +1,6 @@
 package taeyun.malanalter.alertitem
 
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.*
 import taeyun.malanalter.alertitem.dto.ItemCondition
 import taeyun.malanalter.alertitem.dto.RegisteredItem
@@ -19,6 +20,7 @@ class MalanAlerterController(
     }
 
     @PatchMapping
+    @Operation(description = "사용자가 등록한 알람 아이템의 옵션을 변경하는 API")
     fun update(@RequestParam alertId: Int, @RequestBody updateItemCondition: ItemCondition) {
         alertRepository.update(alertId, updateItemCondition)
     }

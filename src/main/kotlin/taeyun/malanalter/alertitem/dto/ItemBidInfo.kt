@@ -1,6 +1,7 @@
 package taeyun.malanalter.alertitem.dto
 
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonProperty
 
 
 data class ItemBidInfo (
@@ -8,7 +9,9 @@ data class ItemBidInfo (
     val itemPrice: Long,
     val comment: String,
     val itemName: String,
-    val tradeType: TradeType
+    val tradeType: TradeType,
+    @JsonProperty("url")
+    val id: String,
 ){
     enum class TradeType {
         BUY, SELL;

@@ -6,9 +6,9 @@ data class DiscordMessage(
     val catchBids: MutableMap<Int, List<ItemBidInfo>> = mutableMapOf()
 ) {
 
-    fun addBids(alertId: Int, bidsList: List<ItemBidInfo>) {
+    fun addBids(alertItemId: Int, bidsList: List<ItemBidInfo>) {
         if (bidsList.isEmpty()) return
-        catchBids[alertId] = bidsList
+        catchBids[alertItemId] = bidsList
     }
 
 

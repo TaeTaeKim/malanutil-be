@@ -21,7 +21,7 @@ class AlertService(
         alertRepository.save(itemId, itemCondition)
         val loginUserId = UserService.getLoginUserId()
         discordService.sendDirectMessage(loginUserId, DiscordMessage.alertItemRegisterMessage(itemId, itemCondition))
-
-
     }
+
+
 }

@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import lombok.RequiredArgsConstructor
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import taeyun.malanalter.alertitem.domain.AlertComment
 import taeyun.malanalter.alertitem.dto.*
 import taeyun.malanalter.alertitem.repository.AlertRepository
 import taeyun.malanalter.auth.discord.DiscordService
@@ -25,9 +26,10 @@ class ItemChecker(
     fun checkItemV2() {
         val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()
         val itemsByUser = alertRepository.getRegisteredItem().groupBy { it.userId }
+        val savedBidsByItemId: Map<Int, List<AlertComment>> = alertRepository.getAllItemComments().groupBy { it.itemId }
 
         // user 별로 discord 보내는 로직 -> 특정 사람이 보내지지 않아도 그래도 보내야한다.
-        itemsByUser.forEach { (userId, items) ->
+        itemsByUser.forEach { (userId, registeredItems) ->
             // 존재하는 유저 확인
             val userEntity = allUserEntityMap[userId] ?: run {
                 logger.warn { "User:$userId not found" }
@@ -37,21 +39,37 @@ class ItemChecker(
             if (userEntity.isNotAlarmTime()) return@forEach
             val discordMessage = DiscordMessage()
             // 실제 알람 로직: isAlarm 플래그가 true인 것만 필터해서 처리
-            items.filter { it.isAlarm }
-                .forEach { discordMessage.addBids(it.id, itemBidInfos(it)) }
+            registeredItems.filter { it.isAlarm }
+                .forEach { discordMessage.addBids(it.id, requestItemBids(it, savedBidsByItemId[it.id] ?: emptyList())) }
             val messageList = discordMessage.getDiscordMessageContents()
             messageList.forEach { discordService.sendDirectMessage(userId, it) }
         }
     }
 
-    private fun itemBidInfos(item: RegisteredItem): List<ItemBidInfo> {
+    /**
+     * 실제로 메랜지지에 아이템 비드를 요청하는 로직
+     * 기존에 가지고 있던 비드 리스트를 업데이트하고 알람끈 내역은 반환하지 않는다.
+     */
+    private fun requestItemBids(item: RegisteredItem, existBidList: List<AlertComment>): List<ItemBidInfo> {
         try {
-            return malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
-                .filter { bids -> bids.tradeType == ItemBidInfo.TradeType.SELL && bids.tradeStatus }
-                .sortedBy { it.itemPrice.inc() }
+            val detectedBids: List<ItemBidInfo> =
+                malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
+                    .filter { bids -> bids.tradeType == ItemBidInfo.TradeType.SELL && bids.tradeStatus }
+                    .sortedBy { it.itemPrice.inc() }
+            // 기존 Bid info 새로운 bidInfo Sync
+            alertRepository.syncBids(item.itemId, detectedBids, existBidList)
+            // 모든 알람에서 울려야하는 알람 5개만 반환
+            return detectedBids
+                .filter { isAlarmComment(existBidList, it.id) }
+                .take(5)
         } catch (e: Exception) {
             logger.error { "Error in Request to Malangg ${e.message}" }
             return emptyList()
         }
+    }
+
+    private fun isAlarmComment(existComment: List<AlertComment>, bidId: String): Boolean {
+        // isAlarm 인 true 인 코멘트에 포함되는지.
+        return  !existComment.map { it.id.value }.contains(bidId) || existComment.filter { it.isAlarm }.map { it.id.value }.contains(bidId)
     }
 }

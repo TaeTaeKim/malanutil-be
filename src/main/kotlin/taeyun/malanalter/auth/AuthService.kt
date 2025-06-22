@@ -2,6 +2,7 @@ package taeyun.malanalter.auth
 
 
 import AuthResponse
+import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.servlet.http.HttpServletResponse
 import kotlinx.datetime.toKotlinLocalDateTime
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -13,6 +14,7 @@ import taeyun.malanalter.config.exception.AlerterNotFoundException
 import taeyun.malanalter.config.exception.ErrorCode
 import taeyun.malanalter.user.domain.UserEntity
 
+private val logger = KotlinLogging.logger {  }
 @Service
 class AuthService(
     val authProperties: AuthProperties,
@@ -65,6 +67,7 @@ class AuthService(
                 val generateRefreshToken = jwtUtil.generateRefreshToken()
                 registerRefreshToken(foundUser.id.value, generateRefreshToken)
                 response.addCookie(AlerterCookieUtil.makeRefreshTokenCookie(generateRefreshToken))
+                logger.info { "${foundUser.username} 리프레시 토큰 쿠키 전환됨." }
                 val generateAccessToken = jwtUtil.generateAccessToken(foundUser.id.value)
                 AuthResponse(
                     accessToken = generateAccessToken,

@@ -61,7 +61,6 @@ class ItemChecker(
             // 모든 알람에서 울려야하는 알람 5개만 반환
             return detectedBids
                 .filter { isAlarmComment(existBidList, it.id) }
-                .take(5)
         } catch (e: Exception) {
             logger.error { "Error in Request to Malangg ${e.message}" }
             return emptyList()

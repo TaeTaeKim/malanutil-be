@@ -21,12 +21,11 @@ data class DiscordMessage(
                 add(buildString {
                     chunk.forEach { (_, bids) ->
                         append("### ${getItemName(bids)} 지지알림\n")
-                        append("```\n")
                         bids.take(5).forEach { bid ->
                             append(bid.toDiscordMessage())
                             append("\n")
                         }
-                        append("```\n")
+                        append("\n")
                     }
                 })
             }

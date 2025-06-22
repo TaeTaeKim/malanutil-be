@@ -42,12 +42,7 @@ class AlertItemRepository : AlertRepository {
     override fun syncBids(alertItemId: Int, detectedBids: List<ItemBidInfo>, existBidList: List<AlertComment>)  {
         transaction {
             if (existBidList.isEmpty()) {
-                AlertComments.batchInsert(detectedBids) { bid ->
-                    this[AlertComments.id] = bid.id
-                    this[AlertComments.comment] = bid.comment
-                    this[AlertComments.alertItemId] = alertItemId
-                    this[AlertComments.isAlarm] = true
-                }
+                bulkSaveFromBids(alertItemId, detectedBids)
             } else {
                 val detectedBidIds = detectedBids.map { it.id }.toSet()
                 val existingBidIds = existBidList.map { it.id.value }
@@ -59,12 +54,17 @@ class AlertItemRepository : AlertRepository {
 
                 val idsToAdd = detectedBidIds - existingBidIds
                 val newBids = detectedBids.filter { it.id in idsToAdd }
-                AlertComments.batchInsert(newBids) { bid ->
-                    this[AlertComments.id] = bid.id
-                    this[AlertComments.alertItemId] = alertItemId
-                    this[AlertComments.isAlarm] = true
-                }
+                bulkSaveFromBids(alertItemId, newBids)
             }
+        }
+    }
+
+    private fun bulkSaveFromBids(alertItemId: Int, bids: List<ItemBidInfo>) {
+        AlertComments.batchInsert(bids) { bid ->
+            this[AlertComments.id] = bid.id
+            this[AlertComments.comment] = bid.comment
+            this[AlertComments.alertItemId] = alertItemId
+            this[AlertComments.isAlarm] = true
         }
     }
 

@@ -22,7 +22,7 @@ class DiscordService(
             val guild = discord.getGuildById(discordProperties.serverId)!!
             guild.addMember(discordUser.getToken(), userSnowflake).queue()
         } catch (e: Exception) {
-            if(e.message.equals("User is already in this guild")){
+            if(e is IllegalArgumentException || e.message.equals("User is already in this guild")){
                 logger.error { "$randomUUID Error in inviting user to server ${e.message} ${e.javaClass}" }
             }else{
                 throw AlerterServerError(uuid = randomUUID, message = "Error in inviting user to server", rootCause = e)
@@ -32,12 +32,17 @@ class DiscordService(
     }
 
     fun sendDirectMessage(userId: Long, message: String) {
-        discord.retrieveUserById(userId.toString()).queue { user ->
-            user.openPrivateChannel().queue { channel ->
-                if(message.isNotBlank()){
-                    channel.sendMessage(message).queue()
+        try {
+            discord.retrieveUserById(userId.toString()).queue { user ->
+                user.openPrivateChannel().queue { channel ->
+                    if (message.isNotBlank()) {
+                        channel.sendMessage(message).queue()
+                    }
                 }
             }
+        } catch (e: Exception) {
+            logger.error { "유저 $userId 에게 메세지 전송실패 메세지 $message" }
+            throw AlerterServerError(uuid = "NO UUID", message = "Error in Sending Message to User", rootCause = e)
         }
     }
 

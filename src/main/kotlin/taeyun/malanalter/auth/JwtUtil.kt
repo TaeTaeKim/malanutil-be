@@ -22,7 +22,7 @@ class JwtUtil(val authProperties: AuthProperties) {
     companion object {
         fun getTokenFromRequest(request: HttpServletRequest) : String {
             val authHeader = request.getHeader("Authorization")
-            if (authHeader == null || !authHeader.startsWith("Bearer")) {
+            if (authHeader.isNullOrEmpty() || !authHeader.startsWith("Bearer")) {
                 logger.info{"No Auth Requested From Host :  ${request.requestURL}"}
                 throw AlerterJwtException(ErrorCode.INVALID_TOKEN, "No Auth header in request")
             }
@@ -67,13 +67,15 @@ class JwtUtil(val authProperties: AuthProperties) {
             extractClaim(token, Claims::getExpiration).before(Date())
         } catch (e: ExpiredJwtException) {
             true
+        }catch (e:JwtException){
+            logger.error { "만료일 추출중 에러발생 토큰: $token" }
+            throw e
         }
     }
 
     // username 은 만료됬어도 반환한다.
     fun getUserFromExpiredToken(token: String):Long{
         return try {
-
             Jwts.parser()
                 .verifyWith(key)
                 .build()

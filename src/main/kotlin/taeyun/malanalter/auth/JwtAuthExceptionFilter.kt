@@ -1,24 +1,21 @@
 package taeyun.malanalter.auth
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
+import taeyun.malanalter.config.exception.AlerterJwtException
 import taeyun.malanalter.config.exception.BaseException
-import taeyun.malanalter.config.exception.ErrorCode
 import taeyun.malanalter.config.exception.ErrorResponse
-import java.util.*
 
-private val logger = KotlinLogging.logger {  }
+private val log = KotlinLogging.logger {  }
 @Component
-class JwtAuthExceptionFilter(private val jacksonObjectMapper: ObjectMapper) : OncePerRequestFilter() {
+class JwtAuthExceptionFilter() : OncePerRequestFilter() {
 
     override fun doFilterInternal(
         request: HttpServletRequest,
@@ -27,36 +24,18 @@ class JwtAuthExceptionFilter(private val jacksonObjectMapper: ObjectMapper) : On
     ) {
         try {
             filterChain.doFilter(request, response)
-        }catch (alerterException: BaseException){
-            setResponseWithBaseException(response, alerterException)
-        }catch (exception : Exception){
-            setResponseWithException(response, exception)
+        } catch (jwtException: AlerterJwtException) {
+            setResponseWithBaseException(response, jwtException)
         }
     }
 
     fun setResponseWithBaseException(response: HttpServletResponse, exception: BaseException) {
         val objectMapper = jacksonObjectMapper().registerModules(JavaTimeModule())
         val errorBody = ErrorResponse.of(exception)
+        log.warn{"JWT 인증 중 의도된 예외발생 : ${exception.message} "}
         response.status = exception.errorCode.status.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.characterEncoding = "UTF-8"
         response.writer.write(objectMapper.writeValueAsString(errorBody))
     }
-
-    fun setResponseWithException(response: HttpServletResponse, exception: Exception){
-        val objectMapper = jacksonObjectMapper().registerModules(JavaTimeModule())
-        val randomUUID = UUID.randomUUID()
-        logger.error("$randomUUID ${exception.message}")
-        val errorResponse = ErrorResponse(
-            status = HttpStatus.INTERNAL_SERVER_ERROR,
-            code = ErrorCode.INTERNAL_SERVER_ERROR.code,
-            message = randomUUID.toString()
-        )
-        response.status = HttpStatus.INTERNAL_SERVER_ERROR.value()
-        response.contentType = MediaType.APPLICATION_JSON_VALUE
-        response.characterEncoding = "UTF-8"
-        response.writer.write(objectMapper.writeValueAsString(errorResponse))
-
-    }
-
 }

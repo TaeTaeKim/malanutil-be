@@ -73,7 +73,7 @@ class AuthService(
                     accessToken = generateAccessToken,
                     expireAt = jwtUtil.getExpiryFromToken(generateAccessToken).toInstant().epochSecond
                 )
-            } ?: throw AlerterNotFoundException(ErrorCode.REFRESH_TOKEN_NOT_FOUND)
+            } ?: throw AlerterNotFoundException(ErrorCode.REFRESH_TOKEN_NOT_FOUND, "액세스 토큰 재발급에서 Token을 찾을 수 없음 유저 : ${foundUser.username} 리프레시 토큰: [$refreshToken] ")
         }
     }
 

@@ -88,7 +88,7 @@ class JwtUtil(val authProperties: AuthProperties) {
         } catch (e: JwtException) {
             val randomUUID = UUID.randomUUID()
             logger.error { "$randomUUID ${e.message}" }
-            throw AlerterJwtException(ErrorCode.INVALID_TOKEN, "[$randomUUID] Error in extracting claim")
+            throw AlerterJwtException(ErrorCode.INVALID_TOKEN, "[$randomUUID] Error in Extract User from Token")
         }
     }
 

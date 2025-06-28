@@ -45,6 +45,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4'
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
     // validation
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
@@ -80,7 +81,7 @@ dependencies {
     implementation 'io.github.oshai:kotlin-logging-jvm:7.0.3'
 
     // JDA
-    implementation("net.dv8tion:JDA:5.5.1")
+    implementation("net.dv8tion:JDA:5.6.1")
 
 
 }

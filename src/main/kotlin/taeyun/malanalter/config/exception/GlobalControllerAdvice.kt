@@ -7,17 +7,20 @@ import org.springframework.http.ResponseEntity
 import org.springframework.validation.BindException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.reactive.function.client.WebClient
+
 
 val logger = KotlinLogging.logger{}
 
 @RestControllerAdvice
-class GlobalControllerAdvice {
+class GlobalControllerAdvice(val discordClient: WebClient) {
 
     @ExceptionHandler(BaseException::class)
     fun handleBaseException(ex: BaseException, request: HttpServletRequest): ResponseEntity<ErrorResponse> {
         // 서버에러의 경우 추적할 수 있는 uuid 와 함께 root cause 와 함께
         if (ex is AlerterServerError) {
             logger.error { "[${ex.uuid}] Server Error occur : ${ex.rootCause?.message ?: ex.message}\n 스택 트레이스 ${ex.rootCause?.printStackTrace()}" }
+            discordClient.post().bodyValue(ErrorNotification.fromException(ex)).retrieve()
         }
         logger.warn { "[${ex.errorCode.status}]  ${ex.message}" }
         val errorResponse = ErrorResponse.of(ex)
@@ -27,6 +30,7 @@ class GlobalControllerAdvice {
     @ExceptionHandler(RuntimeException::class)
     fun handleServerError(ex: RuntimeException): ResponseEntity<ErrorResponse> {
         logger.error { "Internal Server Error with ${ex.message} \n\n ${ex.printStackTrace()}" }
+        discordClient.post().bodyValue(ErrorNotification.fromException(ex)).retrieve()
         val errorResponse = ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR)
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse)
     }

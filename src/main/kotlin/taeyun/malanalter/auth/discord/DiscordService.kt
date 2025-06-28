@@ -32,18 +32,30 @@ class DiscordService(
     }
 
     fun sendDirectMessage(userId: Long, message: String) {
-        try {
-            discord.retrieveUserById(userId.toString()).queue { user ->
-                user.openPrivateChannel().queue { channel ->
-                    if (message.isNotBlank()) {
-                        channel.sendMessage(message).queue()
+        discord.retrieveUserById(userId.toString()).queue(
+            { user -> // onSuccess for user retrieval
+                user.openPrivateChannel().queue(
+                    { channel -> // onSuccess for channel opening
+                        if (message.isNotBlank()) {
+                            channel.sendMessage(message).queue(
+                                { // onSuccess for message sending
+                                    logger.info { "Message sent successfully to user $userId" }
+                                },
+                                { error -> // onFailure for message sending
+                                    logger.error { "Failed to send message to user $userId: ${error.message}" }
+                                }
+                            )
+                        }
+                    },
+                    { error -> // onFailure for channel opening
+                        logger.error { "Failed to open private channel for user $userId: ${error.message}" }
                     }
-                }
+                )
+            },
+            { error -> // onFailure for user retrieval
+                logger.error { "Failed to retrieve user $userId: ${error.message}" }
             }
-        } catch (e: Exception) {
-            logger.error { "유저 $userId 에게 메세지 전송실패 메세지 $message" }
-            throw AlerterServerError(uuid = "NO UUID", message = "Error in Sending Message to User", rootCause = e)
-        }
+        )
     }
 
 

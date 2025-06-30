@@ -2,6 +2,7 @@ package taeyun.malanalter
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import lombok.RequiredArgsConstructor
+import org.jetbrains.annotations.VisibleForTesting
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import taeyun.malanalter.alertitem.domain.AlertComment
@@ -50,7 +51,8 @@ class ItemChecker(
      * 실제로 메랜지지에 아이템 비드를 요청하는 로직
      * 기존에 가지고 있던 비드 리스트를 업데이트하고 알람끈 내역은 반환하지 않는다.
      */
-    private fun requestItemBids(item: RegisteredItem, existBidList: List<AlertComment>): List<ItemBidInfo> {
+    @VisibleForTesting
+    internal fun requestItemBids(item: RegisteredItem, existBidList: List<AlertComment>): List<ItemBidInfo> {
         try {
             val detectedBids: List<ItemBidInfo> =
                 malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
@@ -61,6 +63,7 @@ class ItemChecker(
             // 모든 알람에서 울려야하는 알람 5개만 반환
             return detectedBids
                 .filter { isAlarmComment(existBidList, it.id) }
+                .take(5)
         } catch (e: Exception) {
             logger.error { "Error in Request to Malangg ${e.message}" }
             return emptyList()

@@ -3,25 +3,25 @@ package taeyun.malanalter.alertitem.dto
 import taeyun.malanalter.alertitem.repository.AlertItemRepository
 
 data class DiscordMessage(
-    val catchBids: MutableMap<Int, List<ItemBidInfo>> = mutableMapOf()
+    val bidsToBeSent: MutableMap<Int, List<ItemBidInfo>> = mutableMapOf()
 ) {
 
     fun addBids(alertItemId: Int, bidsList: List<ItemBidInfo>) {
         if (bidsList.isEmpty()) return
-        catchBids[alertItemId] = bidsList
+        bidsToBeSent[alertItemId] = bidsList
     }
 
 
     fun getDiscordMessageContents(): List<String> = buildList {
         // iterate catchedBids map
-        catchBids.entries.chunked(3)
+        bidsToBeSent.entries.chunked(3)
             // 청크 순회
             .forEach { chunk ->
                 // 각 청크별로 MessageContent 생성
                 add(buildString {
                     chunk.forEach { (_, bids) ->
                         append("### ${getItemName(bids)} 지지알림\n")
-                        bids.take(5).forEach { bid ->
+                        bids.forEach { bid ->
                             append(bid.toDiscordMessage())
                             append("\n")
                         }

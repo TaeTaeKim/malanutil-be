@@ -23,7 +23,7 @@ class ItemChecker(
     private val userService: UserService,
     private val discordService: DiscordService
 ) {
-    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 5000L)
+//    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 5000L)
     fun checkItemV2() {
         val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()
         val itemsByUser = alertRepository.getRegisteredItem().groupBy { it.userId }
@@ -38,12 +38,15 @@ class ItemChecker(
             }
             // ─── “지금이 이 사용자의 알람 시간인지”  체크 ───
             if (userEntity.isNotAlarmTime()) return@forEach
-            val discordMessage = DiscordMessage()
-            // 실제 알람 로직: isAlarm 플래그가 true인 것만 필터해서 처리
+            val messageContainer = DiscordMessageContainer()
+            // 알람 true인 아이템들만 순회
+            // 순회하면서 응답된 bid 5개까지 container에 저장
             registeredItems.filter { it.isAlarm }
-                .forEach { discordMessage.addBids(it.id, requestItemBids(it, savedBidsByItemId[it.id] ?: emptyList())) }
-            val messageList = discordMessage.getDiscordMessageContents()
-            messageList.forEach { discordService.sendDirectMessage(userId, it) }
+                .forEach { messageContainer.addBids(it.id, requestItemBids(it, savedBidsByItemId[it.id] ?: emptyList())) }
+            val chunkedMessageList:List<String> = messageContainer.getMessageContentList()
+            if (chunkedMessageList.isNotEmpty()) {
+                chunkedMessageList.forEach { discordService.sendDirectMessage(userId, it) }
+            }
         }
     }
 
@@ -58,6 +61,7 @@ class ItemChecker(
                 malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
                     .filter { bids -> bids.tradeType == ItemBidInfo.TradeType.SELL && bids.tradeStatus }
                     .sortedBy { it.itemPrice.inc() }
+                    .take(100)
             // 기존 Bid info 새로운 bidInfo Sync
             alertRepository.syncBids(item.id, detectedBids, existBidList)
             // 모든 알람에서 울려야하는 알람 5개만 반환

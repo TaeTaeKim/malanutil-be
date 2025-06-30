@@ -8,7 +8,7 @@ import org.springframework.core.env.Profiles
 import org.springframework.security.core.Authentication
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler
 import org.springframework.stereotype.Component
-import taeyun.malanalter.alertitem.dto.DiscordMessage
+import taeyun.malanalter.alertitem.dto.DiscordMessageContainer
 import taeyun.malanalter.auth.AlerterCookieUtil
 import taeyun.malanalter.auth.AuthService
 import taeyun.malanalter.auth.JwtUtil
@@ -37,7 +37,7 @@ class OAuth2SuccessHandler(
             userService.updateLoginUser(discordOAuth2User)
         } else {
             userService.addLoginUser(discordOAuth2User)
-            discordService.sendDirectMessage(discordOAuth2User.getId(), DiscordMessage.welcomeMessage())
+            discordService.sendDirectMessage(discordOAuth2User.getId(), DiscordMessageContainer.welcomeMessage())
         }
         authService.registerRefreshToken(discordOAuth2User.getId(), generateRefreshToken)
         response.addCookie(AlerterCookieUtil.makeRefreshTokenCookie(generateRefreshToken))

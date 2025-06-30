@@ -26,6 +26,4 @@ class TestDatabaseConfig {
         }
         return db
     }
-
-
 }

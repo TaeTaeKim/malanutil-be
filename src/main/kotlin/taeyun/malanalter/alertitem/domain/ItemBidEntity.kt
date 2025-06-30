@@ -9,5 +9,6 @@ class ItemBidEntity(id: EntityID<String>) : Entity<String>(id) {
     var alertItemId by ItemBidTable.alertItemId
     var isAlarm by ItemBidTable.isAlarm
     var comment by ItemBidTable.comment
+    var price by ItemBidTable.price
     var alertItem by AlertItemEntity referencedOn ItemBidTable.alertItemId
 }

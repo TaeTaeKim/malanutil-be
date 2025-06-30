@@ -2,6 +2,7 @@ package taeyun.malanalter.alertitem
 
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.*
+import taeyun.malanalter.alertitem.dto.ItemBidDto
 import taeyun.malanalter.alertitem.dto.ItemCondition
 import taeyun.malanalter.alertitem.dto.RegisteredItem
 import taeyun.malanalter.alertitem.repository.AlertRepository
@@ -31,9 +32,14 @@ class MalanAlerterController(
     }
 
     @GetMapping
-    fun getCheckItemIdAndPriceMap(): List<RegisteredItem> {
+    fun getRegisteredItem(): List<RegisteredItem> {
         return alertRepository.getRegisteredItem()
             .filter { it.userId == UserService.getLoginUserId() }
+    }
+
+    @GetMapping("/bid")
+    fun getBids(): Map<Int, List<ItemBidDto>> {
+        return alertService.getAllBidOfUser()
     }
 
     @PatchMapping("/toggle/{alertId}")

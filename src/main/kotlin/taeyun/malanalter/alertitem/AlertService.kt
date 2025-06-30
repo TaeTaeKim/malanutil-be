@@ -2,6 +2,7 @@ package taeyun.malanalter.alertitem
 
 import org.springframework.stereotype.Service
 import taeyun.malanalter.alertitem.dto.DiscordMessage
+import taeyun.malanalter.alertitem.dto.ItemBidDto
 import taeyun.malanalter.alertitem.dto.ItemCondition
 import taeyun.malanalter.alertitem.repository.AlertRepository
 import taeyun.malanalter.auth.discord.DiscordService
@@ -21,6 +22,10 @@ class AlertService(
         alertRepository.save(itemId, itemCondition)
         val loginUserId = UserService.getLoginUserId()
         discordService.sendDirectMessage(loginUserId, DiscordMessage.alertItemRegisterMessage(itemId, itemCondition))
+    }
+
+    fun getAllBidOfUser(): Map<Int, List<ItemBidDto>> {
+        return emptyMap()
     }
 
 

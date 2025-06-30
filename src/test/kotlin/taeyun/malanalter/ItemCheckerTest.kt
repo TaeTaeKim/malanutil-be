@@ -3,7 +3,7 @@ package taeyun.malanalter
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.*
-import taeyun.malanalter.alertitem.domain.AlertComment
+import taeyun.malanalter.alertitem.domain.ItemBidEntity
 import taeyun.malanalter.alertitem.dto.ItemBidInfo
 import taeyun.malanalter.alertitem.dto.ItemCondition
 import taeyun.malanalter.alertitem.dto.MalanggBidRequest
@@ -31,7 +31,7 @@ class ItemCheckerTest : StringSpec({
 
         // 기존에 존재하던
         val existBids = listOf(
-            mockk<AlertComment>{
+            mockk<ItemBidEntity>{
                 every { id.value } returns "bid-3"
                 every { isAlarm } returns false
             }

@@ -5,7 +5,7 @@ import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
-import taeyun.malanalter.alertitem.domain.AlertComments
+import taeyun.malanalter.alertitem.domain.ItemBidTable
 import taeyun.malanalter.alertitem.domain.AlertItemTable
 import taeyun.malanalter.user.domain.Users
 import javax.sql.DataSource
@@ -20,7 +20,7 @@ class TestDatabaseConfig {
         transaction {
             SchemaUtils.create(
                 AlertItemTable,
-                AlertComments,
+                ItemBidTable,
                 Users,
             )
         }

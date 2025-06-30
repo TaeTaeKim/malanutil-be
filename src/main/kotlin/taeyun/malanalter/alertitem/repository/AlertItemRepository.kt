@@ -5,8 +5,8 @@ import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.stereotype.Repository
-import taeyun.malanalter.alertitem.domain.AlertComment
-import taeyun.malanalter.alertitem.domain.AlertComments
+import taeyun.malanalter.alertitem.domain.ItemBidEntity
+import taeyun.malanalter.alertitem.domain.ItemBidTable
 import taeyun.malanalter.alertitem.domain.AlertItemEntity
 import taeyun.malanalter.alertitem.domain.AlertItemTable
 import taeyun.malanalter.alertitem.dto.ItemBidInfo
@@ -33,13 +33,13 @@ class AlertItemRepository : AlertRepository {
         AlertItemEntity.all().map { RegisteredItem(it) }
     }
 
-    override fun getAllItemComments(): List<AlertComment> {
+    override fun getAllItemComments(): List<ItemBidEntity> {
         return transaction {
-            AlertComment.all().toList()
+            ItemBidEntity.all().toList()
         }
     }
 
-    override fun syncBids(alertItemId: Int, detectedBids: List<ItemBidInfo>, existBidList: List<AlertComment>)  {
+    override fun syncBids(alertItemId: Int, detectedBids: List<ItemBidInfo>, existBidList: List<ItemBidEntity>)  {
         transaction {
             if (existBidList.isEmpty()) {
                 bulkSaveFromBids(alertItemId, detectedBids)
@@ -49,7 +49,7 @@ class AlertItemRepository : AlertRepository {
 
                 val idsToRemove = existingBidIds - detectedBidIds;
                 if (idsToRemove.isNotEmpty()) {
-                    AlertComments.deleteWhere { id inList idsToRemove }
+                    ItemBidTable.deleteWhere { id inList idsToRemove }
                 }
 
                 val idsToAdd = detectedBidIds - existingBidIds
@@ -60,11 +60,12 @@ class AlertItemRepository : AlertRepository {
     }
 
     private fun bulkSaveFromBids(alertItemId: Int, bids: List<ItemBidInfo>) {
-        AlertComments.batchInsert(bids) { bid ->
-            this[AlertComments.id] = bid.id
-            this[AlertComments.comment] = bid.comment
-            this[AlertComments.alertItemId] = alertItemId
-            this[AlertComments.isAlarm] = true
+        ItemBidTable.batchInsert(bids) { bid ->
+            this[ItemBidTable.id] = bid.id
+            this[ItemBidTable.comment] = bid.comment
+            this[ItemBidTable.alertItemId] = alertItemId
+            this[ItemBidTable.price] = bid.itemPrice
+            this[ItemBidTable.isAlarm] = true
         }
     }
 

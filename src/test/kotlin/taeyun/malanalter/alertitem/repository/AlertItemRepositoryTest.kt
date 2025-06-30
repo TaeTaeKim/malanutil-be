@@ -8,8 +8,8 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.context.annotation.Import
 import taeyun.malanalter.ExposedTest
-import taeyun.malanalter.alertitem.domain.AlertComment
-import taeyun.malanalter.alertitem.domain.AlertComments
+import taeyun.malanalter.alertitem.domain.ItemBidEntity
+import taeyun.malanalter.alertitem.domain.ItemBidTable
 import taeyun.malanalter.alertitem.domain.AlertItemTable
 import taeyun.malanalter.alertitem.dto.ItemBidInfo
 import taeyun.malanalter.alertitem.dto.ItemCondition
@@ -43,7 +43,7 @@ class AlertItemRepositoryTest(
 
     beforeTest {
         transaction {
-            AlertComments.deleteAll()
+            ItemBidTable.deleteAll()
         }
     }
 
@@ -53,13 +53,13 @@ class AlertItemRepositoryTest(
             ItemBidInfo(true, 100L, "comment1", "testName1", ItemBidInfo.TradeType.SELL, "testUrl1"),
             ItemBidInfo(true, 200L, "comment2", "testName2", ItemBidInfo.TradeType.SELL, "testUrl2")
         )
-        val emptyExistBids = emptyList<AlertComment>()
+        val emptyExistBids = emptyList<ItemBidEntity>()
 
         alertItemRepository.syncBids(alertId, detectedBids, emptyExistBids)
 
         //then
         transaction {
-            val savedBids = AlertComment.all().toList()
+            val savedBids = ItemBidEntity.all().toList()
             savedBids.size shouldBe 2
             savedBids.map { it.id.value }.toSet() shouldBe setOf("testUrl1", "testUrl2")
             savedBids.all { it.alertItemId == alertId } shouldBe true
@@ -71,8 +71,9 @@ class AlertItemRepositoryTest(
     "아이템에 대한 bid가 있을때는 sync를 맞춘다." {
 
         transaction {
-            AlertComments.insert {
+            ItemBidTable.insert {
                 it[id] = "testUrl1"
+                it[price] = 1000
                 it[alertItemId] = alertId
                 it[isAlarm] = true
             }
@@ -83,15 +84,15 @@ class AlertItemRepositoryTest(
             ItemBidInfo(true, 200L, "comment2", "testName2", ItemBidInfo.TradeType.SELL, "testUrl2")
         )
 
-        val existBids: List<AlertComment> = transaction {
-            AlertComment.find { AlertComments.alertItemId eq alertId }.toList()
+        val existBids: List<ItemBidEntity> = transaction {
+            ItemBidEntity.find { ItemBidTable.alertItemId eq alertId }.toList()
         }
 
         alertItemRepository.syncBids(alertId, detectedBids, existBids)
 
         //then
         transaction {
-            val remainBis = AlertComment.all().toList()
+            val remainBis = ItemBidEntity.all().toList()
             remainBis.size shouldBe 1
             val get = remainBis.get(0)
             get.id.value shouldBe "testUrl2"

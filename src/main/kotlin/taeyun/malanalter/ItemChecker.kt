@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor
 import org.jetbrains.annotations.VisibleForTesting
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import taeyun.malanalter.alertitem.domain.AlertComment
+import taeyun.malanalter.alertitem.domain.ItemBidEntity
 import taeyun.malanalter.alertitem.dto.*
 import taeyun.malanalter.alertitem.repository.AlertRepository
 import taeyun.malanalter.auth.discord.DiscordService
@@ -27,7 +27,7 @@ class ItemChecker(
     fun checkItemV2() {
         val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()
         val itemsByUser = alertRepository.getRegisteredItem().groupBy { it.userId }
-        val savedBidsByItemId: Map<Int, List<AlertComment>> = alertRepository.getAllItemComments().groupBy { it.alertItemId }
+        val savedBidsByItemId: Map<Int, List<ItemBidEntity>> = alertRepository.getAllItemComments().groupBy { it.alertItemId }
 
         // user 별로 discord 보내는 로직 -> 특정 사람이 보내지지 않아도 그래도 보내야한다.
         itemsByUser.forEach { (userId, registeredItems) ->
@@ -52,7 +52,7 @@ class ItemChecker(
      * 기존에 가지고 있던 비드 리스트를 업데이트하고 알람끈 내역은 반환하지 않는다.
      */
     @VisibleForTesting
-    internal fun requestItemBids(item: RegisteredItem, existBidList: List<AlertComment>): List<ItemBidInfo> {
+    internal fun requestItemBids(item: RegisteredItem, existBidList: List<ItemBidEntity>): List<ItemBidInfo> {
         try {
             val detectedBids: List<ItemBidInfo> =
                 malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
@@ -70,7 +70,7 @@ class ItemChecker(
         }
     }
 
-    private fun isAlarmComment(existComment: List<AlertComment>, bidId: String): Boolean {
+    private fun isAlarmComment(existComment: List<ItemBidEntity>, bidId: String): Boolean {
         // 새로운 bid 이거나 Alarm이 on 된 bid만 리턴
         return  !existComment.map { it.id.value }.contains(bidId) || existComment.filter { it.isAlarm }.map { it.id.value }.contains(bidId)
     }

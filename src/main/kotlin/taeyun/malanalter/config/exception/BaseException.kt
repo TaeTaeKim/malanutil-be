@@ -20,7 +20,7 @@ class AlerterServerError(
     errorCode: ErrorCode = ErrorCode.INTERNAL_SERVER_ERROR,
     val uuid : String,
     message: String,
-    val rootCause: Throwable?
+    val rootCause: Exception?
 ) : BaseException(errorCode, rootCause?.message?:"[$uuid] $message")
 
 class AlerterBadRequest(

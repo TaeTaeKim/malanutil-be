@@ -8,11 +8,14 @@ enum class ErrorCode(
     val defaultMessage: String // if exception's message not defined
 ) {
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_001", "Invalid Token"),
-    // AUTH_002, AUTH_003 은 무조건 전부 /login 으로 이동한다.
+    // AUTH_002 는 리프레시 요청
     EXPIRED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_002", "Expired AccessToken : refresh required"),
-    REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "AUTH_002", "Refresh Token not found"),
-    EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_002", "Expired Refresh Token RE-login required"),
-    LOGOUT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_002", "Logout Account"),
+
+    // AUTH_003 은 로그인으로 푸시한다(FE).
+    LOGOUT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_003", "Logout Account"),
+    REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "AUTH_003", "Refresh Token not found"),
+    EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_003", "Expired Refresh Token RE-login required"),
+
     DISCORD_TOKEN_NOTFOUND(HttpStatus.BAD_REQUEST, "AUTH_006", "No discord access token found"),
 
     // User

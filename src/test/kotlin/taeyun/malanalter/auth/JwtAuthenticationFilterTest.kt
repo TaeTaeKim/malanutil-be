@@ -16,6 +16,7 @@ import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.context.SecurityContextImpl
+import org.springframework.web.reactive.function.client.WebClient
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.UserEntity
 
@@ -23,7 +24,8 @@ class JwtAuthenticationFilterTest : FunSpec({
 
     val jwtUtil = mockk<JwtUtil>()
     val userService = mockk<UserService>()
-    val jwtFilter = JwtAuthenticationFilter(jwtUtil, userService)
+    val  discordClient = mockk<WebClient>()
+    val jwtFilter = JwtAuthenticationFilter(jwtUtil, userService,discordClient)
     val filterChain = mockk<FilterChain>(relaxed = true)
 
     lateinit var request: MockHttpServletRequest

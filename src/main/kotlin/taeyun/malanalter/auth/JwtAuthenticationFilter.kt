@@ -5,24 +5,28 @@ import io.jsonwebtoken.JwtException
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
+import org.springframework.web.reactive.function.client.WebClient
 import taeyun.malanalter.config.SecurityConfig
 import taeyun.malanalter.config.exception.*
 import taeyun.malanalter.user.UserService
 import java.util.*
 
 
-private val log = KotlinLogging.logger {  }
+private val log = KotlinLogging.logger {}
 
 @Component
 class JwtAuthenticationFilter(
     val jwtUtil: JwtUtil,
-    val userService: UserService
+    val userService: UserService,
+    @Qualifier(value = "discordClient") val discordClient: WebClient
 ) : OncePerRequestFilter() {
+
 
     override fun doFilterInternal(
         request: HttpServletRequest,
@@ -31,7 +35,7 @@ class JwtAuthenticationFilter(
     ) {
         // 인증이 필요없는 요청에 대해서는 filter pass -> Security Context 로 id가 들어가지 않는다.
         if (SecurityConfig.getOpenUrlMatchers().any { it.matches(request) }) {
-            log.debug { "skip check jwt for url ${request.requestURI}" }
+            log.debug{"skip check jwt for url ${request.requestURI}"}
             filterChain.doFilter(request, response)
             return
         }
@@ -40,19 +44,19 @@ class JwtAuthenticationFilter(
 
         // 검증로직
         try {
+            val userId = jwtUtil.getUserFromExpiredToken(jwt)
             // 로그아웃된 토큰 검사
             if (userService.isLogoutUser(jwt)) {
-                throw AlerterJwtException(ErrorCode.LOGOUT_TOKEN, "Already Logout Token")
+                throw AlerterJwtException(ErrorCode.LOGOUT_TOKEN, "로그아웃된 토큰 요청 : 유저 $userId, Token: $jwt")
             }
             // 만료검사 : 만료시에 바로 Exception 이 발생
             if (jwtUtil.isExpiredToken(jwt)) {
-                log.info { "Expired Token with $jwt" }
-                throw AlerterJwtException(ErrorCode.EXPIRED_ACCESS_TOKEN, "Access Token expired")
+                throw AlerterJwtException(ErrorCode.EXPIRED_ACCESS_TOKEN, "만료된 액세스 토큰 요청")
             }
-            val userId = jwtUtil.getUserFromExpiredToken(jwt)
+
             // 없는 사용자라면 exception 배출
             if (!validUser(userId)) {
-                throw AlerterNotFoundException(ErrorCode.USER_NOT_FOUND, "User $userId not found")
+                throw AlerterJwtException(ErrorCode.USER_NOT_FOUND, "User $userId not found")
             }
             if (SecurityContextHolder.getContext().authentication == null) {
                 val findUserEntity = userService.findById(userId)
@@ -68,17 +72,19 @@ class JwtAuthenticationFilter(
             throw e
         } catch (e: JwtException) { // jwt
             val uuid = UUID.randomUUID().toString()
-            log.info{"[$uuid]Error in Handling Token $jwt $e"}
+            log.error{"[$uuid]Error in Handling Token $jwt ${e.printStackTrace()}"}
+            discordClient.post().bodyValue(ErrorNotification.fromException(e)).retrieve()
             throw AlerterJwtException(
                 ErrorCode.INVALID_TOKEN,
                 "[UUID : $uuid] Error in checking JWT token See server log"
             )
         } catch (e: Exception) {
             val uuid = UUID.randomUUID().toString()
-            log.info{"[$uuid] Unexpected Error occur when validate user token $jwt $e"}
+            log.error{"[$uuid] Unexpected Error occur when validate user token $jwt ${e.printStackTrace()}"}
+            discordClient.post().bodyValue(ErrorNotification.fromException(e)).retrieve()
             throw AlerterServerError(
                 uuid = uuid,
-                message = "[$uuid] Unexpected Error occur when validate user token",
+                message = "[$uuid] Unexpected Error occur when validate user token See Sever log",
                 rootCause = e
             )
         }

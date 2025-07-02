@@ -10,7 +10,7 @@ interface AlertRepository {
     fun save(itemId: Int, itemCondition: ItemCondition)
     fun delete(alertId: Int)
     fun update(alertId: Int, updateItemCondition: ItemCondition)
-    fun saveItemName(itemId: Int, itemName: kotlin.String)
+    fun saveItemName(itemId: Int, itemName: String)
     fun toggleItemAlarm(alertId: Int)
     fun toggleAllItemAlarm(toggleTo:Boolean)
     fun getAllItemComments(): List<ItemBidEntity>

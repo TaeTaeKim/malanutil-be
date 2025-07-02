@@ -3,13 +3,14 @@ package taeyun.malanalter.alertitem.dto
 import taeyun.malanalter.alertitem.domain.ItemBidEntity
 
 data class ItemBidDto(
-    val url: String,
+    val id: Long,
     val price: Long,
+    val url: String,
     val comment: String?
-){
-    companion object{
-        fun from(entity: ItemBidEntity): ItemBidDto{
-            return ItemBidDto(entity.url,entity.price, entity.comment)
+) {
+    companion object {
+        fun from(entity: ItemBidEntity): ItemBidDto {
+            return ItemBidDto(entity.id.value, entity.price, entity.url, entity.comment)
         }
     }
 }

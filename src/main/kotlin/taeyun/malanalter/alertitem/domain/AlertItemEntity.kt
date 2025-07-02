@@ -10,6 +10,6 @@ class AlertItemEntity(id: EntityID<Int>) : IntEntity(id) {
     var itemId by AlertItemTable.itemId
     var itemCondition by AlertItemTable.itemCondition
     var isAlarm by AlertItemTable.isAalarm
-    val userId by AlertItemTable.userId
+    var userId by AlertItemTable.userId
     val bids by ItemBidEntity referrersOn ItemBidTable.alertItemId orderBy ItemBidTable.price
 }

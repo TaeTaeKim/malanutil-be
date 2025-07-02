@@ -27,6 +27,7 @@ class MalanAlerterController(
     }
 
     @DeleteMapping
+    @Operation(description = "알람 아이템을 삭제하는 API")
     fun delete(@RequestParam alertId: Int) {
         alertRepository.delete(alertId)
     }
@@ -38,8 +39,15 @@ class MalanAlerterController(
     }
 
     @GetMapping("/bid")
+    @Operation(description = "사용자가 등록한 아이템들의 bid를 반환하는 API")
     fun getBids(): Map<Int, List<ItemBidDto>> {
         return alertService.getAllBidOfUser()
+    }
+
+    @DeleteMapping("/bid/{bidId}")
+    @Operation(description = "bid의 알림을 끄는 API")
+    fun turnOffBids(@PathVariable bidId: Long) {
+        return alertService.turnOffBid(bidId)
     }
 
     @PatchMapping("/toggle/{alertId}")

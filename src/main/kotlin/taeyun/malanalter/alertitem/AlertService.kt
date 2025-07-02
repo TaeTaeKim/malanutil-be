@@ -1,9 +1,7 @@
 package taeyun.malanalter.alertitem
 
-import org.jetbrains.exposed.v1.core.StdOutSqlLogger
 import org.jetbrains.exposed.v1.dao.with
 import org.jetbrains.exposed.v1.jdbc.SizedIterable
-import org.jetbrains.exposed.v1.jdbc.addLogger
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
@@ -16,6 +14,8 @@ import taeyun.malanalter.alertitem.dto.ItemCondition
 import taeyun.malanalter.alertitem.repository.AlertRepository
 import taeyun.malanalter.auth.AlerterUserPrincipal
 import taeyun.malanalter.auth.discord.DiscordService
+import taeyun.malanalter.config.exception.AlerterBadRequest
+import taeyun.malanalter.config.exception.ErrorCode
 import taeyun.malanalter.user.UserService
 
 @Service
@@ -31,7 +31,10 @@ class AlertService(
     fun saveNewAlertItem(itemId: Int, itemCondition: ItemCondition) {
         alertRepository.save(itemId, itemCondition)
         val loginUserId = UserService.getLoginUserId()
-        discordService.sendDirectMessage(loginUserId, DiscordMessageContainer.alertItemRegisterMessage(itemId, itemCondition))
+        discordService.sendDirectMessage(
+            loginUserId,
+            DiscordMessageContainer.alertItemRegisterMessage(itemId, itemCondition)
+        )
     }
 
     fun getAllBidOfUser(): Map<Int, List<ItemBidDto>> {
@@ -49,5 +52,15 @@ class AlertService(
     private fun take5BidDto(bids: SizedIterable<ItemBidEntity>): List<ItemBidDto> =
         bids.filter { it.isAlarm }.take(5).map { ItemBidDto.from(it) }
 
-
+    fun turnOffBid(bidId: Long) {
+        transaction {
+            ItemBidEntity.findByIdAndUpdate(bidId) {
+                if (it.alertItem.userId == UserService.getLoginUserId()) {
+                    it.isAlarm = false
+                } else {
+                    throw AlerterBadRequest(ErrorCode.UNAUTHORIZED, "인가되지 않은 bid에 대한 삭제요청", true)
+                }
+            }
+        }
+    }
 }

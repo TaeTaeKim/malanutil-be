@@ -64,7 +64,6 @@ class AlertItemRepository : AlertRepository {
             this[ItemBidTable.comment] = bid.comment
             this[ItemBidTable.alertItemId] = alertItemId
             this[ItemBidTable.price] = bid.itemPrice
-            this[ItemBidTable.isAlarm] = true
         }
     }
 
@@ -89,7 +88,7 @@ class AlertItemRepository : AlertRepository {
             it[itemCondition] = updateItemCondition
         }
 
-        // todo: 해당 아이템의 코멘트 리스트를 모두 제거해야한다.
+        ItemBidTable.deleteWhere { alertItemId eq alertId }
     }
 
     override fun saveItemName(itemId: Int, itemName: String) {

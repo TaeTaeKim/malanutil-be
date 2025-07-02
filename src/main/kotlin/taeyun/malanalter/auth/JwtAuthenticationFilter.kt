@@ -5,15 +5,14 @@ import io.jsonwebtoken.JwtException
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
-import org.springframework.web.reactive.function.client.WebClient
 import taeyun.malanalter.config.SecurityConfig
 import taeyun.malanalter.config.exception.*
+import taeyun.malanalter.feignclient.DiscordAlertClient
 import taeyun.malanalter.user.UserService
 import java.util.*
 
@@ -24,7 +23,7 @@ private val log = KotlinLogging.logger {}
 class JwtAuthenticationFilter(
     val jwtUtil: JwtUtil,
     val userService: UserService,
-    @Qualifier(value = "discordClient") val discordClient: WebClient
+    val discordClient: DiscordAlertClient
 ) : OncePerRequestFilter() {
 
 
@@ -73,15 +72,15 @@ class JwtAuthenticationFilter(
         } catch (e: JwtException) { // jwt
             val uuid = UUID.randomUUID().toString()
             log.error{"[$uuid]Error in Handling Token $jwt ${e.printStackTrace()}"}
-            discordClient.post().bodyValue(ErrorNotification.fromException(e)).retrieve()
+            discordClient.sendAlarm(ErrorNotification.fromException(e))
             throw AlerterJwtException(
                 ErrorCode.INVALID_TOKEN,
                 "[UUID : $uuid] Error in checking JWT token See server log"
             )
         } catch (e: Exception) {
             val uuid = UUID.randomUUID().toString()
-            log.error{"[$uuid] Unexpected Error occur when validate user token $jwt ${e.printStackTrace()}"}
-            discordClient.post().bodyValue(ErrorNotification.fromException(e)).retrieve()
+            log.error{ "[$uuid] Unexpected Error occur when validate user token $jwt ${e.printStackTrace()}"}
+            discordClient.sendAlarm(ErrorNotification.fromException(e))
             throw AlerterServerError(
                 uuid = uuid,
                 message = "[$uuid] Unexpected Error occur when validate user token See Sever log",

@@ -7,10 +7,12 @@ import io.kotest.matchers.ints.lte
 import io.kotest.matchers.shouldBe
 import org.springframework.cloud.openfeign.EnableFeignClients
 import org.springframework.test.context.TestConstructor
+import org.springframework.test.context.TestPropertySource
 import taeyun.malanalter.alertitem.dto.ItemCondition
 import taeyun.malanalter.alertitem.dto.MalanggBidRequest
 
 @FeignTest
+@TestPropertySource(properties = ["alerter.discord.webhook-url=test"])
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 @EnableFeignClients
 class FeignClientTest(private val malanClient: MalanClient) : StringSpec({

@@ -17,5 +17,4 @@ class MalanalterApplication
 fun main(args: Array<String>) {
 	TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
 	runApplication<MalanalterApplication>(*args)
-
 }

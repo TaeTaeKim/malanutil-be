@@ -1,19 +1,20 @@
 package taeyun.malanalter.alertitem.repository
 
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.v1.jdbc.deleteWhere
-import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.stereotype.Repository
+import taeyun.malanalter.alertitem.domain.ItemBidEntity
+import taeyun.malanalter.alertitem.domain.ItemBidTable
 import taeyun.malanalter.alertitem.domain.AlertItemEntity
 import taeyun.malanalter.alertitem.domain.AlertItemTable
+import taeyun.malanalter.alertitem.dto.ItemBidInfo
 import taeyun.malanalter.alertitem.dto.ItemCondition
 import taeyun.malanalter.alertitem.dto.RegisteredItem
 import taeyun.malanalter.user.UserService
 import java.util.concurrent.ConcurrentHashMap
 
-@Suppress("UNREACHABLE_CODE")
 @Repository
 class AlertItemRepository : AlertRepository {
 
@@ -31,6 +32,41 @@ class AlertItemRepository : AlertRepository {
         AlertItemEntity.all().map { RegisteredItem(it) }
     }
 
+    override fun getAllItemComments(): List<ItemBidEntity> {
+        return transaction {
+            ItemBidEntity.all().toList()
+        }
+    }
+
+    override fun syncBids(alertItemId: Int, detectedBids: List<ItemBidInfo>, existBidList: List<ItemBidEntity>)  {
+        transaction {
+            if (existBidList.isEmpty()) {
+                bulkSaveFromBids(alertItemId, detectedBids)
+            } else {
+                val detectedBidIds = detectedBids.map { it.url }.toSet()
+                val existingBidIds = existBidList.map { it.url }.toSet()
+
+                val idsToRemove = existingBidIds - detectedBidIds
+                if (idsToRemove.isNotEmpty()) {
+                    ItemBidTable.deleteWhere { url inList idsToRemove }
+                }
+
+                val idsToAdd = detectedBidIds - existingBidIds
+                val newBids = detectedBids.filter { it.url in idsToAdd }
+                bulkSaveFromBids(alertItemId, newBids)
+            }
+        }
+    }
+
+    private fun bulkSaveFromBids(alertItemId: Int, bids: List<ItemBidInfo>) {
+        ItemBidTable.batchInsert(bids) { bid ->
+            this[ItemBidTable.url] = bid.url
+            this[ItemBidTable.comment] = bid.comment
+            this[ItemBidTable.alertItemId] = alertItemId
+            this[ItemBidTable.price] = bid.itemPrice
+        }
+    }
+
     override fun save(itemId: Int, itemCondition: ItemCondition): Unit = transaction {
         AlertItemTable.insert {
             it[AlertItemTable.itemId] = itemId
@@ -44,12 +80,15 @@ class AlertItemRepository : AlertRepository {
     }
 
     override fun update(alertId: Int, updateItemCondition: ItemCondition): Unit = transaction {
+
         // 현재 Exposed에서는 update 메서드를 직접 구현해야 함
         AlertItemTable.update(
             where = { AlertItemTable.id eq alertId }
         ) {
             it[itemCondition] = updateItemCondition
         }
+
+        ItemBidTable.deleteWhere { alertItemId eq alertId }
     }
 
     override fun saveItemName(itemId: Int, itemName: String) {
@@ -69,8 +108,8 @@ class AlertItemRepository : AlertRepository {
         val loginUserId = UserService.getLoginUserId()
         transaction {
             AlertItemTable.update(
-                where = {AlertItemTable.userId eq loginUserId}
-            ){
+                where = { AlertItemTable.userId eq loginUserId }
+            ) {
                 it[isAalarm] = toggleTo
             }
         }

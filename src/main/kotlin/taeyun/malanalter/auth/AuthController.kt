@@ -44,7 +44,7 @@ class AuthController(
             logger.warn { "이전 버전의 refresh 요청 : ${LocalTime.now(ZoneId.of("Asia/Seoul"))} 유저 ${refreshRequest.userId}" }
         }
         val refreshToken = refreshTokenFromCookie ?: refreshRequest.refreshToken
-        ?: throw AlerterBadRequest(ErrorCode.REFRESH_TOKEN_NOT_FOUND, "Refresh token not found in request body")
+        ?: throw AlerterBadRequest(ErrorCode.REFRESH_TOKEN_NOT_FOUND, "Refresh token not found in request body", true)
         val findById = userService.findById(refreshRequest.userId!!)
         return authService.renewToken(findById, refreshToken, response)
     }

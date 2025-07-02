@@ -1,6 +1,7 @@
 package taeyun.malanalter.alertitem.dto
 
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonProperty
 
 
 data class ItemBidInfo (
@@ -8,7 +9,9 @@ data class ItemBidInfo (
     val itemPrice: Long,
     val comment: String,
     val itemName: String,
-    val tradeType: TradeType
+    val tradeType: TradeType,
+    @JsonProperty("url")
+    val url: String,
 ){
     enum class TradeType {
         BUY, SELL;
@@ -26,7 +29,7 @@ data class ItemBidInfo (
         }
     }
     fun toDiscordMessage(): String {
-        return "가격=${ItemCondition.changePriceToString(itemPrice)}, comment=$comment"
+        return "> 가격=${ItemCondition.changePriceToString(itemPrice)}, comment=${comment}  | [링크](https://mapleland.gg/trade/$url)"
     }
 
 }

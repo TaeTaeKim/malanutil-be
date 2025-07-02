@@ -2,31 +2,35 @@ package taeyun.malanalter.alertitem.dto
 
 import taeyun.malanalter.alertitem.repository.AlertItemRepository
 
-data class DiscordMessage(
-    val catchBids: MutableMap<Int, List<ItemBidInfo>> = mutableMapOf()
+data class DiscordMessageContainer(
+    val bidsToBeSent: MutableMap<Int, List<ItemBidInfo>> = mutableMapOf()
 ) {
 
-    fun addBids(alertId: Int, bidsList: List<ItemBidInfo>) {
+    fun addBids(alertItemId: Int, bidsList: List<ItemBidInfo>) {
         if (bidsList.isEmpty()) return
-        catchBids[alertId] = bidsList
+        bidsToBeSent[alertItemId] = bidsList
     }
 
 
-    fun getDiscordMessageContents(): List<String> = buildList {
+    // 한 메세지에 2000자를 넘으면 안되기에 아이템 3개씩 분할해서 메세지 생성
+    // 아이템 3개에 + 아이템당 5개의 코멘트로 메세지를 만든다.
+    fun getMessageContentList(): List<String> = buildList {
         // iterate catchedBids map
-        catchBids.entries.chunked(3)
+        if (bidsToBeSent.isEmpty()) {
+            return emptyList()
+        }
+        bidsToBeSent.entries.chunked(3)
             // 청크 순회
             .forEach { chunk ->
                 // 각 청크별로 MessageContent 생성
                 add(buildString {
                     chunk.forEach { (_, bids) ->
-                        append("### ${getItemName(bids)} 지지알림\n")
-                        append("```\n")
-                        bids.take(5).forEach { bid ->
+                        append("### ${getItemName(bids)} [알리미 홈페이지](https://malanutil.com/malan-alerter)\n")
+                        bids.forEach { bid ->
                             append(bid.toDiscordMessage())
                             append("\n")
                         }
-                        append("```\n")
+                        append("\n")
                     }
                 })
             }

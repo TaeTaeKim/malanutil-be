@@ -21,7 +21,10 @@ enum class ErrorCode(
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "User Not Found"),
 
+    // 400
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "잘못된 요청입니다."),
+    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "허가되지 않는 요청입니다."),
 
+    // 500
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SERVER_001", "Internal Server Error"),
 }

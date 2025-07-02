@@ -2,7 +2,7 @@ package taeyun.malanalter.config.exception
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
-import io.mockk.every
+import io.mockk.justRun
 import io.mockk.mockk
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Controller
@@ -11,20 +11,20 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClient.ResponseSpec
+import taeyun.malanalter.feignclient.DiscordAlertClient
 
 class GlobalControllerAdviceTest : FunSpec({
 
     lateinit var mockMvc: MockMvc
 
-    val discordClient = mockk<WebClient>()
+    val discordClient = mockk<DiscordAlertClient>()
     val mockResponse = mockk<ResponseSpec>()
 
     mockMvc = MockMvcBuilders.standaloneSetup(TestController())
         .setControllerAdvice(GlobalControllerAdvice(discordClient))
         .build()
-    every { discordClient.post().bodyValue(any()).retrieve() } returns mockResponse
+    justRun { discordClient.sendAlarm(any()) }
 
     test("BaseException 핸들링 - Cause의 메세지가 있으면 Cause의 메세지 출력"){
         val result = mockMvc.perform(get("/test/base-exception/message").contentType(MediaType.APPLICATION_JSON))

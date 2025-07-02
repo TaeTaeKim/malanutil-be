@@ -4,27 +4,21 @@ import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldBeNull
-import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.mockk
 import jakarta.servlet.FilterChain
-import org.jetbrains.exposed.v1.dao.Entity
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.context.SecurityContextImpl
-import org.springframework.web.reactive.function.client.WebClient
+import taeyun.malanalter.feignclient.DiscordAlertClient
 import taeyun.malanalter.user.UserService
-import taeyun.malanalter.user.domain.UserEntity
 
 class JwtAuthenticationFilterTest : FunSpec({
 
     val jwtUtil = mockk<JwtUtil>()
     val userService = mockk<UserService>()
-    val  discordClient = mockk<WebClient>()
+    val  discordClient = mockk<DiscordAlertClient>()
     val jwtFilter = JwtAuthenticationFilter(jwtUtil, userService,discordClient)
     val filterChain = mockk<FilterChain>(relaxed = true)
 

@@ -32,7 +32,7 @@ class ItemCheckerTest : StringSpec({
         // 기존에 존재하던
         val existBids = listOf(
             mockk<ItemBidEntity>{
-                every { id.value } returns "bid-3"
+                every { url } returns "bid-3"
                 every { isAlarm } returns false
             }
         )
@@ -54,7 +54,7 @@ class ItemCheckerTest : StringSpec({
 
         // then
         result.size shouldBe 5
-        result.map { it.id } shouldBe listOf("bid-1", "bid-2", "bid-4", "bid-5", "bid-6")
+        result.map { it.url } shouldBe listOf("bid-1", "bid-2", "bid-4", "bid-5", "bid-6")
     }
 
 

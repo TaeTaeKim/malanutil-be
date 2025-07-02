@@ -11,7 +11,7 @@ data class ItemBidInfo (
     val itemName: String,
     val tradeType: TradeType,
     @JsonProperty("url")
-    val id: String,
+    val url: String,
 ){
     enum class TradeType {
         BUY, SELL;
@@ -29,7 +29,7 @@ data class ItemBidInfo (
         }
     }
     fun toDiscordMessage(): String {
-        return "> 가격=${ItemCondition.changePriceToString(itemPrice)}, comment=${comment}  | [링크](https://mapleland.gg/trade/$id)"
+        return "> 가격=${ItemCondition.changePriceToString(itemPrice)}, comment=${comment}  | [링크](https://mapleland.gg/trade/$url)"
     }
 
 }

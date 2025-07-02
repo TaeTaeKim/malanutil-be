@@ -61,7 +61,7 @@ class AlertItemRepositoryTest(
         transaction {
             val savedBids = ItemBidEntity.all().toList()
             savedBids.size shouldBe 2
-            savedBids.map { it.id.value }.toSet() shouldBe setOf("testUrl1", "testUrl2")
+            savedBids.map { it.url }.toSet() shouldBe setOf("testUrl1", "testUrl2")
             savedBids.all { it.alertItemId == alertId } shouldBe true
         }
 
@@ -72,7 +72,7 @@ class AlertItemRepositoryTest(
 
         transaction {
             ItemBidTable.insert {
-                it[id] = "testUrl1"
+                it[url] = "testUrl1"
                 it[price] = 1000
                 it[alertItemId] = alertId
                 it[isAlarm] = true
@@ -95,11 +95,8 @@ class AlertItemRepositoryTest(
             val remainBis = ItemBidEntity.all().toList()
             remainBis.size shouldBe 1
             val get = remainBis.get(0)
-            get.id.value shouldBe "testUrl2"
+            get.url shouldBe "testUrl2"
         }
-
-
-
     }
 
 

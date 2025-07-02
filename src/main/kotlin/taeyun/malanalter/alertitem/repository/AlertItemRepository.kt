@@ -15,7 +15,6 @@ import taeyun.malanalter.alertitem.dto.RegisteredItem
 import taeyun.malanalter.user.UserService
 import java.util.concurrent.ConcurrentHashMap
 
-@Suppress("UNREACHABLE_CODE")
 @Repository
 class AlertItemRepository : AlertRepository {
 
@@ -44,16 +43,16 @@ class AlertItemRepository : AlertRepository {
             if (existBidList.isEmpty()) {
                 bulkSaveFromBids(alertItemId, detectedBids)
             } else {
-                val detectedBidIds = detectedBids.map { it.id }.toSet()
-                val existingBidIds = existBidList.map { it.id.value }
+                val detectedBidIds = detectedBids.map { it.url }.toSet()
+                val existingBidIds = existBidList.map { it.url }.toSet()
 
-                val idsToRemove = existingBidIds - detectedBidIds;
+                val idsToRemove = existingBidIds - detectedBidIds
                 if (idsToRemove.isNotEmpty()) {
-                    ItemBidTable.deleteWhere { id inList idsToRemove }
+                    ItemBidTable.deleteWhere { url inList idsToRemove }
                 }
 
                 val idsToAdd = detectedBidIds - existingBidIds
-                val newBids = detectedBids.filter { it.id in idsToAdd }
+                val newBids = detectedBids.filter { it.url in idsToAdd }
                 bulkSaveFromBids(alertItemId, newBids)
             }
         }
@@ -61,7 +60,7 @@ class AlertItemRepository : AlertRepository {
 
     private fun bulkSaveFromBids(alertItemId: Int, bids: List<ItemBidInfo>) {
         ItemBidTable.batchInsert(bids) { bid ->
-            this[ItemBidTable.id] = bid.id
+            this[ItemBidTable.url] = bid.url
             this[ItemBidTable.comment] = bid.comment
             this[ItemBidTable.alertItemId] = alertItemId
             this[ItemBidTable.price] = bid.itemPrice

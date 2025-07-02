@@ -23,7 +23,7 @@ class ItemChecker(
     private val userService: UserService,
     private val discordService: DiscordService
 ) {
-//    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 5000L)
+    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 5000L)
     fun checkItemV2() {
         val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()
         val itemsByUser = alertRepository.getRegisteredItem().groupBy { it.userId }
@@ -66,7 +66,7 @@ class ItemChecker(
             alertRepository.syncBids(item.id, detectedBids, existBidList)
             // 모든 알람에서 울려야하는 알람 5개만 반환
             return detectedBids
-                .filter { isAlarmComment(existBidList, it.id) }
+                .filter { isAlarmComment(existBidList, it.url) }
                 .take(5)
         } catch (e: Exception) {
             logger.error { "Error in Request to Malangg ${e.message}" }
@@ -74,8 +74,8 @@ class ItemChecker(
         }
     }
 
-    private fun isAlarmComment(existComment: List<ItemBidEntity>, bidId: String): Boolean {
+    private fun isAlarmComment(existComment: List<ItemBidEntity>, url: String): Boolean {
         // 새로운 bid 이거나 Alarm이 on 된 bid만 리턴
-        return  !existComment.map { it.id.value }.contains(bidId) || existComment.filter { it.isAlarm }.map { it.id.value }.contains(bidId)
+        return  !existComment.map { it.url }.contains(url) || existComment.filter { it.isAlarm }.map { it.url }.contains(url)
     }
 }

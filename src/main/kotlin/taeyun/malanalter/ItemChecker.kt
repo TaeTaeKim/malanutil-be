@@ -39,7 +39,7 @@ class ItemChecker(
                     return@forEach
                 }
                 // ─── “지금이 이 사용자의 알람 시간인지”  체크 ───
-                if (userEntity.isNotAlarmTime()) return@forEach
+                if (userEntity.isAlarmOff() || userEntity.isNotAlarmTime()) return@forEach
                 val messageContainer = DiscordMessageContainer()
                 // 알람 true인 아이템들만 순회
                 // 순회하면서 응답된 bid 5개까지 container에 저장

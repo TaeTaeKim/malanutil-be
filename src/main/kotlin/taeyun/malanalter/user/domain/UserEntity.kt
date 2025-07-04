@@ -21,10 +21,11 @@ class UserEntity(id: EntityID<Long>) : Entity<Long>(id) {
     var avatar by Users.avatar
     var isAlarm by Users.isAlarm
 
+    fun isAlarmOff():Boolean{
+        return !isAlarm
+    }
+
     fun isNotAlarmTime(): Boolean {
-        if (!isAlarm) {
-            return true
-        }
         val now = LocalTime.now(ZoneId.of("Asia/Seoul"))
         val start = startTime.toJavaLocalTime()
         val end = endTime.toJavaLocalTime()

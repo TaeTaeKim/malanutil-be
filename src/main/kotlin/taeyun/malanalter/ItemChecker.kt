@@ -9,6 +9,7 @@ import taeyun.malanalter.alertitem.domain.ItemBidEntity
 import taeyun.malanalter.alertitem.dto.*
 import taeyun.malanalter.alertitem.repository.AlertRepository
 import taeyun.malanalter.auth.discord.DiscordService
+import taeyun.malanalter.config.measureExecutionTime
 import taeyun.malanalter.feignclient.MalanClient
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.UserEntity
@@ -25,27 +26,29 @@ class ItemChecker(
 ) {
     @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 5000L)
     fun checkItemV2() {
-        val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()
-        val itemsByUser = alertRepository.getRegisteredItem().groupBy { it.userId }
-        val savedBidsByItemId: Map<Int, List<ItemBidEntity>> = alertRepository.getAllItemComments().groupBy { it.alertItemId }
+        measureExecutionTime("메랜지지 체크 배치") {
+            val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()
+            val itemsByUser = alertRepository.getRegisteredItem().groupBy { it.userId }
+            val savedBidsByItemId: Map<Int, List<ItemBidEntity>> = alertRepository.getAllItemComments().groupBy { it.alertItemId }
 
-        // user 별로 discord 보내는 로직 -> 특정 사람이 보내지지 않아도 그래도 보내야한다.
-        itemsByUser.forEach { (userId, registeredItems) ->
-            // 존재하는 유저 확인
-            val userEntity = allUserEntityMap[userId] ?: run {
-                logger.warn { "User:$userId not found" }
-                return@forEach
-            }
-            // ─── “지금이 이 사용자의 알람 시간인지”  체크 ───
-            if (userEntity.isNotAlarmTime()) return@forEach
-            val messageContainer = DiscordMessageContainer()
-            // 알람 true인 아이템들만 순회
-            // 순회하면서 응답된 bid 5개까지 container에 저장
-            registeredItems.filter { it.isAlarm }
-                .forEach { messageContainer.addBids(it.id, requestItemBids(it, savedBidsByItemId[it.id] ?: emptyList())) }
-            val chunkedMessageList:List<String> = messageContainer.getMessageContentList()
-            if (chunkedMessageList.isNotEmpty()) {
-                chunkedMessageList.forEach { discordService.sendDirectMessage(userId, it) }
+            // user 별로 discord 보내는 로직 -> 특정 사람이 보내지지 않아도 그래도 보내야한다.
+            itemsByUser.forEach { (userId, registeredItems) ->
+                // 존재하는 유저 확인
+                val userEntity = allUserEntityMap[userId] ?: run {
+                    logger.warn { "User:$userId not found" }
+                    return@forEach
+                }
+                // ─── “지금이 이 사용자의 알람 시간인지”  체크 ───
+                if (userEntity.isNotAlarmTime()) return@forEach
+                val messageContainer = DiscordMessageContainer()
+                // 알람 true인 아이템들만 순회
+                // 순회하면서 응답된 bid 5개까지 container에 저장
+                registeredItems.filter { it.isAlarm }
+                    .forEach { messageContainer.addBids(it.id, requestItemBids(it, savedBidsByItemId[it.id] ?: emptyList())) }
+                val chunkedMessageList:List<String> = messageContainer.getMessageContentList()
+                if (chunkedMessageList.isNotEmpty()) {
+                    chunkedMessageList.forEach { discordService.sendDirectMessage(userId, it) }
+                }
             }
         }
     }

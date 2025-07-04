@@ -1,5 +1,6 @@
 package taeyun.malanalter.alertitem
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.dao.with
 import org.jetbrains.exposed.v1.jdbc.SizedIterable
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -11,12 +12,15 @@ import taeyun.malanalter.alertitem.domain.ItemBidEntity
 import taeyun.malanalter.alertitem.dto.DiscordMessageContainer
 import taeyun.malanalter.alertitem.dto.ItemBidDto
 import taeyun.malanalter.alertitem.dto.ItemCondition
+import taeyun.malanalter.alertitem.repository.AlertItemRepository
 import taeyun.malanalter.alertitem.repository.AlertRepository
 import taeyun.malanalter.auth.AlerterUserPrincipal
 import taeyun.malanalter.auth.discord.DiscordService
 import taeyun.malanalter.config.exception.AlerterBadRequest
 import taeyun.malanalter.config.exception.ErrorCode
 import taeyun.malanalter.user.UserService
+
+private val logger = KotlinLogging.logger {  }
 
 @Service
 class AlertService(
@@ -35,12 +39,15 @@ class AlertService(
             loginUserId,
             DiscordMessageContainer.alertItemRegisterMessage(itemId, itemCondition)
         )
+
+        logger.info { "유저 $loginUserId 아이템 등록 ${AlertItemRepository.getItemName(itemId)}" }
     }
 
     fun getAllBidOfUser(): Map<Int, List<ItemBidDto>> {
         val principal = SecurityContextHolder.getContext().authentication.principal as AlerterUserPrincipal
         return transaction {
 //            addLogger(StdOutSqlLogger)
+            // fixme : exposed N+1 처리의 이상함?
             // with 절을 하면 bid는 in 절에 한번에 가져오는데 이 후에 왜 다시 하나씩 alert_item을 조회?
             // 없애면 item 개수만큼 bid에서 가져온다.
             AlertItemEntity.find { AlertItemTable.userId eq principal.userId }

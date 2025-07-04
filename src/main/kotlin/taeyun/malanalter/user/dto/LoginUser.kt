@@ -5,7 +5,8 @@ import taeyun.malanalter.user.domain.UserEntity
 data class LoginUser(
     val isAlarm: Boolean,
     val minTime: Int,
-    val maxTime: Int
+    val maxTime: Int,
+    val isAlarmTime: Boolean
 ){
     companion object{
         fun from(userEntity: UserEntity) : LoginUser{
@@ -15,7 +16,8 @@ data class LoginUser(
             return LoginUser(
                 isAlarm = userEntity.isAlarm,
                 minTime = minMinutes,
-                maxTime = maxMinutes
+                maxTime = maxMinutes,
+                isAlarmTime = !userEntity.isNotAlarmTime()
             )
         }
     }

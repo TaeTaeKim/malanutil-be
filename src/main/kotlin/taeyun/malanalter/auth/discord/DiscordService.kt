@@ -39,7 +39,7 @@ class DiscordService(
                         if (message.isNotBlank()) {
                             channel.sendMessage(message).queue(
                                 { // onSuccess for message sending
-                                    logger.info { "Message sent successfully to user $userId" }
+                                    logger.debug { "Message sent successfully to user $userId" }
                                 },
                                 { error -> // onFailure for message sending
                                     logger.error { "Failed to send message to user $userId: ${error.message}" }

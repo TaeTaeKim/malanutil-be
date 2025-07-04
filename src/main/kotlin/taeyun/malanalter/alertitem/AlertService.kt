@@ -50,7 +50,7 @@ class AlertService(
     }
 
     private fun take5BidDto(bids: SizedIterable<ItemBidEntity>): List<ItemBidDto> =
-        bids.filter { it.isAlarm }.take(5).map { ItemBidDto.from(it) }
+        bids.filter { it.isAlarm }.sortedBy { it.price.inc() }.take(5).map { ItemBidDto.from(it) }
 
     fun turnOffBid(bidId: Long) {
         transaction {

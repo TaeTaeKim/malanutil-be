@@ -26,7 +26,7 @@ class ItemChecker(
 ) {
     @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 5000L)
     fun checkItemV2() {
-        measureExecutionTime("메랜지지 체크 배치") {
+        measureExecutionTime("메랜지지 체크 배치", threshold = 3000) {
             val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()
             val itemsByUser = alertRepository.getRegisteredItem().groupBy { it.userId }
             val savedBidsByItemId: Map<Int, List<ItemBidEntity>> = alertRepository.getAllItemComments().groupBy { it.alertItemId }

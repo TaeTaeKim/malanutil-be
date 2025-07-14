@@ -20,7 +20,7 @@ class DiscordService(
         try {
             val userSnowflake = UserSnowflake.fromId(discordUser.getId().toString())
             val guild = discord.getGuildById(discordProperties.serverId)!!
-            guild.addMember(discordUser.getToken(), userSnowflake).queue()
+            guild.addMember(discordUser.getToken(), userSnowflake).complete()
         } catch (e: Exception) {
             if(e is IllegalArgumentException || e.message.equals("User is already in this guild")){
                 logger.error { "$randomUUID Error in inviting user to server ${e.message} ${e.javaClass}" }
@@ -42,7 +42,7 @@ class DiscordService(
                                     logger.debug { "Message sent successfully to user $userId" }
                                 },
                                 { error -> // onFailure for message sending
-                                    logger.error { "Failed to send message to user $userId: ${error.message}" }
+                                    logger.error { "Failed to send message to user $userId: ${error.message}\n message : ${message.substring(0,15)}" }
                                 }
                             )
                         }

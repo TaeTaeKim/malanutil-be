@@ -16,18 +16,22 @@ private val logger =KotlinLogging.logger {  }
 @Service
 class MinioService(val minioClient: MinioClient, val properties: MinioProperties) {
 
-    suspend fun uploadFile(file: MultipartFile) = withContext(Dispatchers.IO) {
+    suspend fun uploadFile(file: MultipartFile, isSuccess: Boolean) = withContext(Dispatchers.IO) {
+        val pathPrefix = if (isSuccess) "success/" else "failure/"
         val fileName = generateFileName(file.originalFilename ?: "unknown")
+        val objectName = pathPrefix + fileName
         try {
             minioClient.putObject(
                 PutObjectArgs.builder()
                     .bucket(properties.bucketName)
-                    .`object`(fileName)
+                    .`object`(objectName)
                     .stream(file.inputStream, file.size, -1)
                     .contentType(file.contentType ?: MediaType.APPLICATION_OCTET_STREAM_VALUE)
                     .build()
             )
-            logger.info { "파일 업로드 성공 파일 이름 : $fileName" }
+            if (!isSuccess) {
+                logger.info { "추론 실패 이미지 저장 : $fileName" }
+            }
         } catch (e: Exception) {
             logger.error { "파일 업로드 실패 ${e.message}" }
         }

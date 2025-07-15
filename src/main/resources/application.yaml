@@ -7,6 +7,10 @@ spring:
   autoconfigure:
     # 직접 구현한 UserService 사용
     exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
   security:
     oauth2:
       client:

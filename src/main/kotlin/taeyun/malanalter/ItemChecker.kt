@@ -6,7 +6,10 @@ import org.jetbrains.annotations.VisibleForTesting
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import taeyun.malanalter.alertitem.domain.ItemBidEntity
-import taeyun.malanalter.alertitem.dto.*
+import taeyun.malanalter.alertitem.dto.DiscordMessageContainer
+import taeyun.malanalter.alertitem.dto.ItemBidInfo
+import taeyun.malanalter.alertitem.dto.MalanggBidRequest
+import taeyun.malanalter.alertitem.dto.RegisteredItem
 import taeyun.malanalter.alertitem.repository.AlertRepository
 import taeyun.malanalter.auth.discord.DiscordService
 import taeyun.malanalter.config.measureExecutionTime
@@ -26,7 +29,7 @@ class ItemChecker(
 ) {
     @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 5000L)
     fun checkItemV2() {
-        measureExecutionTime("메랜지지 체크 배치", threshold = 3000) {
+        measureExecutionTime("메랜지지 배치", threshold = 5000) {
             val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()
             val itemsByUser = alertRepository.getRegisteredItem().groupBy { it.userId }
             val savedBidsByItemId: Map<Int, List<ItemBidEntity>> = alertRepository.getAllItemComments().groupBy { it.alertItemId }

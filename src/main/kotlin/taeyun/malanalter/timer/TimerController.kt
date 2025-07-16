@@ -34,4 +34,9 @@ class TimerController(val minioService: MinioService, val presetService: PresetS
     fun savePreset(@RequestBody saveRequest: PresetSaveRequest){
         presetService.savePreset(saveRequest)
     }
+
+    @DeleteMapping("/api/preset/{presetId}")
+    fun deletePreset(@PathVariable presetId: Long) {
+        presetService.deletePreset(presetId)
+    }
 }

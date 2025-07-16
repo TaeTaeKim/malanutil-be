@@ -1,6 +1,7 @@
 package taeyun.malanalter.timer.preset
 
 import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.stereotype.Service
@@ -46,6 +47,12 @@ class PresetService {
                 this[PresetItemTable.itemId] = it.itemId
                 this[PresetItemTable.price] = it.price
             }
+        }
+    }
+    fun deletePreset(presetId: Long) {
+        val loginUserId = UserService.getLoginUserId()
+        transaction {
+            PresetEntity.find { PresetTable.userId eq loginUserId and (PresetTable.id eq presetId) }.firstOrNull()?.delete()
         }
     }
 }

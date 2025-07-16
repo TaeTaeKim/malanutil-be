@@ -2,13 +2,11 @@ package taeyun.malanalter.timer
 
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import taeyun.malanalter.timer.preset.PresetService
 import taeyun.malanalter.timer.preset.dto.PresetDto
+import taeyun.malanalter.timer.preset.dto.PresetSaveRequest
 
 @RestController
 class TimerController(val minioService: MinioService, val presetService: PresetService) {
@@ -30,5 +28,10 @@ class TimerController(val minioService: MinioService, val presetService: PresetS
     @GetMapping("/api/preset")
     fun getUserPresetList(): List<PresetDto> {
         return presetService.getUserPreset()
+    }
+
+    @PostMapping("/api/preset")
+    fun savePreset(@RequestBody saveRequest: PresetSaveRequest){
+        presetService.savePreset(saveRequest)
     }
 }

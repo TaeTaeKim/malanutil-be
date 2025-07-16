@@ -10,6 +10,7 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher
+import taeyun.malanalter.auth.AlerterCookieOauth2AuthRequestRepository
 import taeyun.malanalter.auth.JwtAuthExceptionFilter
 import taeyun.malanalter.auth.JwtAuthenticationFilter
 import taeyun.malanalter.auth.discord.DiscordOAuth2UserService
@@ -21,7 +22,8 @@ class SecurityConfig(
     val discordOAuth2UserService: DiscordOAuth2UserService,
     val oAuth2SuccessHandler: OAuth2SuccessHandler,
     val jwtAuthenticationFilter: JwtAuthenticationFilter,
-    val jwtAuthExceptionFilter: JwtAuthExceptionFilter
+    val jwtAuthExceptionFilter: JwtAuthExceptionFilter,
+    val alerterCookieOauth2AuthRequestRepository: AlerterCookieOauth2AuthRequestRepository
 ) {
     companion object {
         private val openedUrlMatcher = arrayOf(
@@ -47,6 +49,9 @@ class SecurityConfig(
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .oauth2Login { oauth2 ->
                 oauth2
+                    .authorizationEndpoint{
+                        it.authorizationRequestRepository(alerterCookieOauth2AuthRequestRepository)
+                    }
                     .userInfoEndpoint { it.userService(discordOAuth2UserService) }
                     .successHandler(oAuth2SuccessHandler)
             }

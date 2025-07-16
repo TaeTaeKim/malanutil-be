@@ -27,7 +27,7 @@ class ItemChecker(
     private val userService: UserService,
     private val discordService: DiscordService
 ) {
-    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 5000L)
+    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 1000 * 60 * 5)
     fun checkItemV2() {
         measureExecutionTime("메랜지지 배치", threshold = 5000) {
             val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()

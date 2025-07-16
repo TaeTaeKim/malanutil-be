@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import taeyun.malanalter.timer.preset.PresetService
 import taeyun.malanalter.timer.preset.dto.PresetDto
+import taeyun.malanalter.timer.preset.dto.PresetItemDto
 import taeyun.malanalter.timer.preset.dto.PresetSaveRequest
 
 @RestController
@@ -25,18 +26,25 @@ class TimerController(val minioService: MinioService, val presetService: PresetS
     }
 
 
-    @GetMapping("/api/preset")
+    @GetMapping("/preset")
     fun getUserPresetList(): List<PresetDto> {
         return presetService.getUserPreset()
     }
 
-    @PostMapping("/api/preset")
+    @PostMapping("/preset")
     fun savePreset(@RequestBody saveRequest: PresetSaveRequest){
         presetService.savePreset(saveRequest)
     }
 
-    @DeleteMapping("/api/preset/{presetId}")
+    @DeleteMapping("/preset/{presetId}")
     fun deletePreset(@PathVariable presetId: Long) {
         presetService.deletePreset(presetId)
+    }
+
+    @GetMapping("/preset/{presetId}")
+    fun getPresetItems(@PathVariable presetId: Long): List<PresetItemDto> {
+        return presetService.getPresetItems(presetId).map {
+            PresetItemDto(it.itemId, it.price)
+        }
     }
 }

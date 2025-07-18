@@ -98,7 +98,7 @@ class ItemCheckerV2(
             try {
                 val detectedBids: List<ItemBidInfo> =
                     malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
-                        .filter { bids -> bids.tradeType == ItemBidInfo.TradeType.SELL && bids.tradeStatus }
+                        .filter { bids -> bids.tradeType ==  item.tradeType && bids.tradeStatus }
                         .sortedBy { it.itemPrice.inc() }
                         .take(100)
                 // 기존 Bid info 새로운 bidInfo Sync

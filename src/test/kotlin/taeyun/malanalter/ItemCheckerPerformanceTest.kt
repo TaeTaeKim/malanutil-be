@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.test.context.ActiveProfiles
 import taeyun.malanalter.alertitem.dto.ItemCondition
 import taeyun.malanalter.alertitem.dto.RegisteredItem
+import taeyun.malanalter.alertitem.dto.TradeType
 import taeyun.malanalter.alertitem.repository.AlertRepository
 import taeyun.malanalter.auth.discord.DiscordService
 import taeyun.malanalter.feignclient.MalanClient
@@ -31,13 +32,11 @@ class ItemCheckerPerformanceTest {
     @MockK
     private lateinit var discordService: DiscordService
 
-    private lateinit var syncChecker: ItemChecker
     private lateinit var asyncChecker: ItemCheckerV2
 
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
-        syncChecker = ItemChecker(alertRepository, malanClient, userService, discordService)
         asyncChecker = ItemCheckerV2(alertRepository, malanClient, userService, discordService)
 
         // Mock UserEntity objects
@@ -52,12 +51,12 @@ class ItemCheckerPerformanceTest {
         val users = mapOf(1L to user1, 2L to user2)
 
         val items = listOf(
-            RegisteredItem(1, 11, ItemCondition(), "item1", true,1L),
-            RegisteredItem(2, 12, ItemCondition(), "item2", true,1L),
-            RegisteredItem(3, 13, ItemCondition(), "item3", true,1L),
-            RegisteredItem(4, 21, ItemCondition(), "item4", true,2L),
-            RegisteredItem(5, 22, ItemCondition(), "item5", true,2L),
-            RegisteredItem(6, 23, ItemCondition(), "item6", true,2L)
+            RegisteredItem(1, 11, ItemCondition(), "item1",TradeType.SELL, true,1L),
+            RegisteredItem(2, 12, ItemCondition(), "item2", TradeType.SELL, true,1L),
+            RegisteredItem(3, 13, ItemCondition(), "item3", TradeType.SELL, true,1L),
+            RegisteredItem(4, 21, ItemCondition(), "item4", TradeType.SELL, true,2L),
+            RegisteredItem(5, 22, ItemCondition(), "item5", TradeType.SELL, true,2L),
+            RegisteredItem(6, 23, ItemCondition(), "item6", TradeType.SELL, true,2L)
         )
 
         // Common mock behaviors
@@ -67,22 +66,6 @@ class ItemCheckerPerformanceTest {
         every { alertRepository.syncBids(any(), any(), any()) } just runs
         every { discordService.sendDirectMessage(any(), any()) } just runs
     }
-
-    @Test
-    fun `Synchronous Checker Performance Test`() {
-        // Mock network call with blocking sleep
-        every { malanClient.getItemBidList(any(), any()) } answers { 
-            Thread.sleep(100)
-            emptyList()
-        }
-
-        val time = measureTimeMillis {
-            syncChecker.checkItemV2()
-        }
-        println("Synchronous Checker took: $time ms")
-        // Expected time: 6 items * 100ms = ~600ms
-    }
-
     @Test
     fun `Asynchronous Checker Performance Test`() = runBlocking {
         // Mock network call with non-blocking delay

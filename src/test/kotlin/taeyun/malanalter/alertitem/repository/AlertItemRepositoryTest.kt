@@ -8,11 +8,12 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.context.annotation.Import
 import taeyun.malanalter.ExposedTest
+import taeyun.malanalter.alertitem.domain.AlertItemTable
 import taeyun.malanalter.alertitem.domain.ItemBidEntity
 import taeyun.malanalter.alertitem.domain.ItemBidTable
-import taeyun.malanalter.alertitem.domain.AlertItemTable
 import taeyun.malanalter.alertitem.dto.ItemBidInfo
 import taeyun.malanalter.alertitem.dto.ItemCondition
+import taeyun.malanalter.alertitem.dto.TradeType
 import taeyun.malanalter.user.domain.Users
 
 @ExposedTest
@@ -35,6 +36,7 @@ class AlertItemRepositoryTest(
             AlertItemTable.insert {
                 it[AlertItemTable.id] = alertId
                 it[itemId] = 12345
+                it[tradeType] = TradeType.SELL
                 it[itemCondition] = ItemCondition()
                 it[AlertItemTable.userId] = userId
             }
@@ -50,8 +52,8 @@ class AlertItemRepositoryTest(
     "아이템에 대한 bid list 가 없으면 bulk insert" {
 
         val detectedBids = listOf(
-            ItemBidInfo(true, 100L, "comment1", "testName1", ItemBidInfo.TradeType.SELL, "testUrl1"),
-            ItemBidInfo(true, 200L, "comment2", "testName2", ItemBidInfo.TradeType.SELL, "testUrl2")
+            ItemBidInfo(true, 100L, "comment1", "testName1", TradeType.SELL, "testUrl1"),
+            ItemBidInfo(true, 200L, "comment2", "testName2", TradeType.SELL, "testUrl2")
         )
         val emptyExistBids = emptyList<ItemBidEntity>()
 
@@ -81,7 +83,7 @@ class AlertItemRepositoryTest(
 
         // testUrl1은 삭제된 상황
         val detectedBids = listOf(
-            ItemBidInfo(true, 200L, "comment2", "testName2", ItemBidInfo.TradeType.SELL, "testUrl2")
+            ItemBidInfo(true, 200L, "comment2", "testName2", TradeType.SELL, "testUrl2")
         )
 
         val existBids: List<ItemBidEntity> = transaction {

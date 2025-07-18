@@ -39,7 +39,7 @@ class AlertService(
         val loginUserId = UserService.getLoginUserId()
         discordService.sendDirectMessage(
             loginUserId,
-            DiscordMessageContainer.alertItemRegisterMessage(itemId, itemCondition)
+            DiscordMessageContainer.alertItemRegisterMessage(itemId, itemCondition, tradeType?: TradeType.SELL)
         )
 
         logger.info { "유저 $loginUserId 아이템 등록 ${AlertItemRepository.getItemName(itemId)}" }

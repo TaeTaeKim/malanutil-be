@@ -13,7 +13,7 @@ data class ItemBidInfo (
     val url: String,
 ){
     fun toDiscordMessage(): String {
-        return "> 가격=${ItemCondition.changePriceToString(itemPrice)}, comment=${comment}  | [링크](https://mapleland.gg/trade/$url)"
+        return ">[${tradeType.toKorean()}] 가격=${ItemCondition.changePriceToString(itemPrice)}, comment=${comment}  | [링크](https://mapleland.gg/trade/$url)"
     }
 
 }

@@ -9,6 +9,13 @@ import com.fasterxml.jackson.annotation.JsonCreator
 enum class TradeType {
     BUY, SELL;
 
+    fun toKorean(): String {
+        return when (this) {
+            BUY -> "삽니다"
+            SELL -> "팝니다"
+        }
+    }
+
     companion object {
         @JvmStatic
         @JsonCreator(mode = JsonCreator.Mode.DELEGATING)

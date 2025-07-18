@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*
 import taeyun.malanalter.alertitem.dto.ItemBidDto
 import taeyun.malanalter.alertitem.dto.ItemCondition
 import taeyun.malanalter.alertitem.dto.RegisteredItem
+import taeyun.malanalter.alertitem.dto.TradeType
 import taeyun.malanalter.alertitem.repository.AlertRepository
 import taeyun.malanalter.user.UserService
 
@@ -16,8 +17,8 @@ class MalanAlerterController(
 ) {
 
     @PostMapping
-    fun save(@RequestParam itemId: Int, @RequestBody itemCondition: ItemCondition) {
-        alertService.saveNewAlertItem(itemId, itemCondition)
+    fun save(@RequestParam itemId: Int, @RequestParam tradeType: TradeType, @RequestBody itemCondition: ItemCondition) {
+        alertService.saveNewAlertItem(itemId, itemCondition, tradeType)
     }
 
     @PatchMapping

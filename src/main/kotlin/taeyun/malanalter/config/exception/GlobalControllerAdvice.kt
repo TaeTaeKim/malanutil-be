@@ -44,4 +44,12 @@ class GlobalControllerAdvice(val discordClient: DiscordAlertClient) {
         return ResponseEntity.status(errorResponse.status).body(errorResponse)
     }
 
+    @ExceptionHandler(Exception::class)
+    fun handleException(ex: Exception): ResponseEntity<ErrorResponse> {
+        logger.error { "Unexpected Error: ${ex.message} \n\n ${ex.printStackTrace()}" }
+        discordClient.sendAlarm(ErrorNotification.fromException(ex))
+        val errorResponse = ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR)
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse)
+    }
+
 }

@@ -12,6 +12,7 @@ import taeyun.malanalter.alertitem.domain.ItemBidEntity
 import taeyun.malanalter.alertitem.dto.DiscordMessageContainer
 import taeyun.malanalter.alertitem.dto.ItemBidDto
 import taeyun.malanalter.alertitem.dto.ItemCondition
+import taeyun.malanalter.alertitem.dto.TradeType
 import taeyun.malanalter.alertitem.repository.AlertItemRepository
 import taeyun.malanalter.alertitem.repository.AlertRepository
 import taeyun.malanalter.auth.AlerterUserPrincipal
@@ -20,7 +21,7 @@ import taeyun.malanalter.config.exception.AlerterBadRequest
 import taeyun.malanalter.config.exception.ErrorCode
 import taeyun.malanalter.user.UserService
 
-private val logger = KotlinLogging.logger {  }
+private val logger = KotlinLogging.logger { }
 
 @Service
 class AlertService(
@@ -32,8 +33,9 @@ class AlertService(
         discordService.sendDirectMessage(loginUserId, DiscordMessageContainer.testDiscordMessage())
     }
 
-    fun saveNewAlertItem(itemId: Int, itemCondition: ItemCondition) {
-        alertRepository.save(itemId, itemCondition)
+    fun saveNewAlertItem(itemId: Int, itemCondition: ItemCondition, tradeType: TradeType?) {
+        // todo : FE 반영전에는 무조건 SELL로 저장
+        alertRepository.save(itemId, itemCondition, tradeType ?: TradeType.SELL)
         val loginUserId = UserService.getLoginUserId()
         discordService.sendDirectMessage(
             loginUserId,

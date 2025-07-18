@@ -2,16 +2,20 @@ package taeyun.malanalter.alertitem.repository
 
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.inList
-import org.jetbrains.exposed.v1.jdbc.*
+import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.stereotype.Repository
-import taeyun.malanalter.alertitem.domain.ItemBidEntity
-import taeyun.malanalter.alertitem.domain.ItemBidTable
 import taeyun.malanalter.alertitem.domain.AlertItemEntity
 import taeyun.malanalter.alertitem.domain.AlertItemTable
+import taeyun.malanalter.alertitem.domain.ItemBidEntity
+import taeyun.malanalter.alertitem.domain.ItemBidTable
 import taeyun.malanalter.alertitem.dto.ItemBidInfo
 import taeyun.malanalter.alertitem.dto.ItemCondition
 import taeyun.malanalter.alertitem.dto.RegisteredItem
+import taeyun.malanalter.alertitem.dto.TradeType
 import taeyun.malanalter.user.UserService
 import java.util.concurrent.ConcurrentHashMap
 
@@ -67,10 +71,11 @@ class AlertItemRepository : AlertRepository {
         }
     }
 
-    override fun save(itemId: Int, itemCondition: ItemCondition): Unit = transaction {
+    override fun save(itemId: Int, itemCondition: ItemCondition, tradeType: TradeType): Unit = transaction {
         AlertItemTable.insert {
             it[AlertItemTable.itemId] = itemId
             it[AlertItemTable.itemCondition] = itemCondition
+            it[AlertItemTable.tradeType] = tradeType
             it[userId] = UserService.getLoginUserId()
         }
     }

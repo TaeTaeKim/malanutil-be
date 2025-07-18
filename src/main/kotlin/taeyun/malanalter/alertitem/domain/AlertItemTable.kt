@@ -7,6 +7,7 @@ import org.jetbrains.exposed.v1.datetime.CurrentDateTime
 import org.jetbrains.exposed.v1.datetime.datetime
 import org.jetbrains.exposed.v1.json.jsonb
 import taeyun.malanalter.alertitem.dto.ItemCondition
+import taeyun.malanalter.alertitem.dto.TradeType
 import taeyun.malanalter.user.domain.Users
 
 val mapper = jacksonObjectMapper()
@@ -19,6 +20,7 @@ object AlertItemTable : IntIdTable("alert_item") {
         { mapper.readValue(it, ItemCondition::class.java) }
     )
     val isAalarm = bool("is_alarm").default(true)
+    val tradeType = enumerationByName("trade_type", 255, TradeType::class)
     val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
     val userId = long("user_id").references(Users.id, onDelete = ReferenceOption.CASCADE)
 }

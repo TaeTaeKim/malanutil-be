@@ -63,7 +63,13 @@ data class DiscordMessageContainer(
         fun alertItemRegisterMessage(itemId: Int, itemCondition: ItemCondition, tradeType: TradeType) = buildString {
             append("## 아이템 등록알림\n")
             val itemName = AlertItemRepository.getItemName(itemId)
-            append("**[$itemName]** 등록완료. **${itemCondition.getStringPrice("low")} ~ ${itemCondition.getStringPrice("high")}메소** 로 \n_**[${tradeType.toKorean()}]**_ 매물이 나오면 알려드릴게요\n\n")
+            append("**[$itemName]** 등록완료. **${itemCondition.getStringPrice("low")}")
+            if (itemCondition.highPrice != null) {
+                append("~ ${ItemCondition.changePriceToString(itemCondition.highPrice)}** 메소로")
+            }else {
+                append("메소 이상의**")
+            }
+            append(" **[${tradeType.toKorean()}]** 매물이 나오면 알려드릴게요\n")
 
             val conditions = itemCondition.makeRegisterOptionMsg()
             if (conditions.isNotEmpty()) {

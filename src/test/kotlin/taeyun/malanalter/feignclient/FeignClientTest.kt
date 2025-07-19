@@ -2,8 +2,8 @@ package taeyun.malanalter.feignclient
 
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.ints.gte
-import io.kotest.matchers.ints.lte
+import io.kotest.matchers.longs.gte
+import io.kotest.matchers.longs.lte
 import io.kotest.matchers.shouldBe
 import org.springframework.cloud.openfeign.EnableFeignClients
 import org.springframework.test.context.TestConstructor
@@ -42,8 +42,8 @@ class FeignClientTest(private val malanClient: MalanClient) : StringSpec({
     "price 범위를 설정하면 그 사이 매물만 검색 "{
         val itemCode = 1382007 // 이블윙즈
         val itemCondition = ItemCondition(
-            lowPrice = 4000000,
-            highPrice = 5000000
+            lowPrice = 4000000L,
+            highPrice = 5000000L
         )
         val malanggBidRequest = MalanggBidRequest(itemCondition)
         shouldNotThrow<Exception> {

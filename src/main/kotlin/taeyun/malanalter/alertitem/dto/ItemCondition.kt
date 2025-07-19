@@ -7,8 +7,8 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class ItemCondition(
-    val lowPrice: Int? = null,
-    val highPrice: Int? = null,
+    val lowPrice: Long? = null,
+    val highPrice: Long? = null,
     val str: Int? = null,
     val dex: Int? = null,
     val int: Int? = null,

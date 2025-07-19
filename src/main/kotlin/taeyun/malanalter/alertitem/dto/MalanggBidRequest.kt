@@ -1,8 +1,8 @@
 package taeyun.malanalter.alertitem.dto
 
 data class MalanggBidRequest (
-    val lowPrice: Int? = null,
-    val highPrice: Int? = null,
+    val lowPrice: Long? = null,
+    val highPrice: Long? = null,
     val lowincINT: Int? = null,
     val highincINT: Int? = null,
     val lowincSTR: Int? = null,

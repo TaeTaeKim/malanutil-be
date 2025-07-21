@@ -1,10 +1,12 @@
 package taeyun.malanalter.auth.domain
 
 import kotlinx.datetime.toJavaLocalDateTime
+import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.dao.LongEntity
 import org.jetbrains.exposed.v1.dao.LongEntityClass
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 
 class RefreshToken(id: EntityID<Long>) : LongEntity(id) {
     companion object : LongEntityClass<RefreshToken>(RefreshTokens) {
@@ -13,7 +15,7 @@ class RefreshToken(id: EntityID<Long>) : LongEntity(id) {
         }
 
         fun deleteByUserId(id: Long){
-            RefreshToken.find { RefreshTokens.userId eq id }.firstOrNull()?.delete()
+            RefreshTokens.deleteWhere { userId eq id}
         }
     }
 

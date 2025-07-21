@@ -23,9 +23,6 @@ class AuthService(
 
     fun registerRefreshToken(userId: Long, refreshToken: String) {
         transaction {
-            RefreshToken.deleteByUserId(userId)
-        }
-        transaction {
             RefreshToken.new {
                 this.userId = userId
                 this.token = refreshToken
@@ -58,16 +55,10 @@ class AuthService(
         return transaction {
             RefreshToken.findRefreshTokenByUserId(foundUser.id.value, refreshToken)?.let { foundToken ->
                 if (foundToken.isExpired() && foundToken.isRevoked) {
+                    // 만료된 리프레시 토큰은 삭제하고 예외 발생
+                    foundToken.delete()
                     throw AlerterJwtException(ErrorCode.EXPIRED_REFRESH_TOKEN, "Refresh Token Expired")
                 }
-                // 기존 리프레시 토큰 삭제
-                foundToken.delete()
-
-                // 새로운 refresh token 생성 후 등록
-                val generateRefreshToken = jwtUtil.generateRefreshToken()
-                registerRefreshToken(foundUser.id.value, generateRefreshToken)
-                response.addCookie(AlerterCookieUtil.makeRefreshTokenCookie(generateRefreshToken))
-                logger.info { "${foundUser.username} 리프레시 토큰 쿠키 전환됨." }
                 val generateAccessToken = jwtUtil.generateAccessToken(foundUser.id.value)
                 AuthResponse(
                     accessToken = generateAccessToken,

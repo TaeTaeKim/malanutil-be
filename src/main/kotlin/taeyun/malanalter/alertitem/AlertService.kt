@@ -1,6 +1,7 @@
 package taeyun.malanalter.alertitem
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.dao.with
 import org.jetbrains.exposed.v1.jdbc.SizedIterable
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -52,7 +53,7 @@ class AlertService(
             // fixme : exposed N+1 처리의 이상함?
             // with 절을 하면 bid는 in 절에 한번에 가져오는데 이 후에 왜 다시 하나씩 alert_item을 조회?
             // 없애면 item 개수만큼 bid에서 가져온다.
-            AlertItemEntity.find { AlertItemTable.userId eq principal.userId }
+            AlertItemEntity.find { AlertItemTable.userId eq principal.userId and (AlertItemTable.isAalarm eq true) }
                 .with(AlertItemEntity::bids)
                 .associate { it.id.value to take5BidDto(it.bids) }
         }

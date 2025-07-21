@@ -50,7 +50,7 @@ class JwtAuthenticationFilter(
             }
             // 만료검사 : 만료시에 바로 Exception 이 발생
             if (jwtUtil.isExpiredToken(jwt)) {
-                throw AlerterJwtException(ErrorCode.EXPIRED_ACCESS_TOKEN, "만료된 액세스 토큰 요청")
+                throw AlerterJwtException(ErrorCode.EXPIRED_ACCESS_TOKEN, "$userId 만료된 액세스 토큰 요청")
             }
 
             // 없는 사용자라면 exception 배출

@@ -10,15 +10,25 @@ data class ItemCondition(
     val lowPrice: Long? = null,
     val highPrice: Long? = null,
     val str: Int? = null,
+    val highSTR: Int? = null,
     val dex: Int? = null,
+    val highDEX: Int? = null,
     val int: Int? = null,
+    val highINT: Int? = null,
     val luk: Int? = null,
+    val highLUK: Int? = null,
     val pad: Int? = null,  // 공격력
+    val highPAD: Int? = null, // 최고 공격력
     val mad: Int? = null, // 마력
+    val highMAD: Int? = null, // 최고 마력
     val hapma: Int? = null, // 합마
+    val highHAPMA: Int? = null, // 최고 합마
     val accuracy: Int? = null, // 명중률
+    val highACCURACY: Int? = null, // 최고 명중률
     val speed: Int? = null, // 이동속도
+    val highSPEED: Int? = null, // 최고 이동속도
     val jump: Int? = null, // 점프력
+    val highJUMP: Int? = null // 최고 점프력
 ){
     fun makeRegisterOptionMsg():List<String>{
         return buildList {
@@ -44,14 +54,6 @@ data class ItemCondition(
     }
 
     companion object{
-        fun changePriceToString(price: Int?): String {
-            return when {
-                price == null -> "0"
-                price >=100000000 -> String.format("%.2f", price.toDouble() / 100000000) + "억"
-                price >= 1000000 -> "${price/10000}만"
-                else -> price.toString()
-            }
-        }
         fun changePriceToString(price: Long?): String {
             return when {
                 price == null -> "0"

@@ -37,6 +37,7 @@ class MalanAlerterController(
     fun getRegisteredItem(): List<RegisteredItem> {
         return alertRepository.getRegisteredItem()
             .filter { it.userId == UserService.getLoginUserId() }
+            .sortedByDescending { it.createdAt }
     }
 
     @GetMapping("/bid")

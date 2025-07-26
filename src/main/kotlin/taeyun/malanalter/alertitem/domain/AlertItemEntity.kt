@@ -12,6 +12,7 @@ class AlertItemEntity(id: EntityID<Int>) : IntEntity(id) {
     var isAlarm by AlertItemTable.isAalarm
     var tradeType by AlertItemTable.tradeType
     var userId by AlertItemTable.userId
+    val createdAt by AlertItemTable.createdAt
     val bids by ItemBidEntity referrersOn ItemBidTable.alertItemId orderBy ItemBidTable.price
 
     fun getId(): Int {

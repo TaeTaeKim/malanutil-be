@@ -11,5 +11,6 @@ class ItemBidEntity(id: EntityID<Long>) : LongEntity(id) {
     var isAlarm by ItemBidTable.isAlarm
     var comment by ItemBidTable.comment
     var price by ItemBidTable.price
+    var isSent by ItemBidTable.isSent
     var alertItem by AlertItemEntity referencedOn ItemBidTable.alertItemId
 }

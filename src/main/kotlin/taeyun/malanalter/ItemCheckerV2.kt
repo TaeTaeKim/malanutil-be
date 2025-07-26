@@ -88,6 +88,7 @@ class ItemCheckerV2(
     }
 
     /**
+     * @return 가격순으로 알람이 켜져있고 보내지 않은 비드를 최대 5개까지 반환한다.
      * 실제로 메랜지지에 아이템 비드를 요청하는 로직
      * 기존에 가지고 있던 비드 리스트를 업데이트하고 알람끈 내역은 반환하지 않는다.
      */
@@ -98,24 +99,32 @@ class ItemCheckerV2(
             try {
                 val detectedBids: List<ItemBidInfo> =
                     malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
-                        .filter { bids -> bids.tradeType ==  item.tradeType && bids.tradeStatus }
-                        .sortedBy { it.itemPrice.inc() }
+                        .filter { bids -> bids.tradeType == item.tradeType && bids.tradeStatus }
+                        .sortedWith(compareBy<ItemBidInfo> { it.itemPrice }.thenBy { it.comment })
                         .take(100)
                 // 기존 Bid info 새로운 bidInfo Sync
                 alertRepository.syncBids(item.id, detectedBids, existBidList)
-                // 모든 알람에서 울려야하는 알람 5개만 반환
+                // 모든 비드에서 보내야할 알람 반환
                 return@withContext detectedBids
                     .filter { isAlarmComment(existBidList, it.url) }
                     .take(5)
+                    .filter { notSentAlarm(existBidList, it.url) }
             } catch (e: Exception) {
                 logger.error { "Error in Request to Malangg ${e.message}" }
                 return@withContext emptyList()
             }
         }
 
-    private fun isAlarmComment(existComment: List<ItemBidEntity>, url: String): Boolean {
-        // 새로운 bid 이거나 Alarm이 on 된 bid만 리턴
-        return !existComment.map { it.url }.contains(url) || existComment.filter { it.isAlarm }.map { it.url }
-            .contains(url)
+    private fun notSentAlarm(
+        existBidList: List<ItemBidEntity>,
+        url: String
+    ): Boolean {
+        val existingBid = existBidList.find { it.url == url }
+        return existingBid == null || !existingBid.isSent // 새로운 비드이거나 한번도 알람을 보내지 않은 경우
+    }
+
+    private fun isAlarmComment(existComment: List<ItemBidEntity>, bidId: String): Boolean {
+        val existingBid = existComment.find { it.url == bidId }
+        return existingBid == null || (existingBid.isAlarm) // 알람이 켜져있거나 기존에 없던 비드인 경우
     }
 }

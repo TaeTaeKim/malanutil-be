@@ -7,10 +7,7 @@ import org.jetbrains.annotations.VisibleForTesting
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import taeyun.malanalter.alertitem.domain.ItemBidEntity
-import taeyun.malanalter.alertitem.dto.DiscordMessageContainer
-import taeyun.malanalter.alertitem.dto.ItemBidInfo
-import taeyun.malanalter.alertitem.dto.MalanggBidRequest
-import taeyun.malanalter.alertitem.dto.RegisteredItem
+import taeyun.malanalter.alertitem.dto.*
 import taeyun.malanalter.alertitem.repository.AlertRepository
 import taeyun.malanalter.auth.discord.DiscordService
 import taeyun.malanalter.feignclient.MalanClient
@@ -100,7 +97,13 @@ class ItemCheckerV2(
                 val detectedBids: List<ItemBidInfo> =
                     malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
                         .filter { bids -> bids.tradeType == item.tradeType && bids.tradeStatus }
-                        .sortedWith(compareBy<ItemBidInfo> { it.itemPrice }.thenBy { it.comment })
+                        .sortedWith(
+                            if (item.tradeType == TradeType.BUY) {
+                                compareByDescending<ItemBidInfo> { it.itemPrice }.thenBy { it.comment }
+                            } else {
+                                compareBy<ItemBidInfo> { it.itemPrice }.thenBy { it.comment }
+                            }
+                        )
                         .take(100)
                 // 기존 Bid info 새로운 bidInfo Sync
                 alertRepository.syncBids(item.id, detectedBids, existBidList)

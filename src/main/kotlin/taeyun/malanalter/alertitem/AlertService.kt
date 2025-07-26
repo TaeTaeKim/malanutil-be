@@ -59,8 +59,22 @@ class AlertService(
         }
     }
 
-    private fun take5BidDto(bids: SizedIterable<ItemBidEntity>): List<ItemBidDto> =
-        bids.filter { it.isAlarm }.sortedBy { it.price.inc() }.take(5).map { ItemBidDto.from(it) }
+    private fun take5BidDto(bids: SizedIterable<ItemBidEntity>): List<ItemBidDto> {
+        val filteredBids = bids.filter { it.isAlarm }
+        if (filteredBids.isEmpty()) return emptyList()
+        
+        val tradeType = filteredBids.first().alertItem.tradeType
+        return filteredBids
+            .sortedWith(
+                if (tradeType == TradeType.BUY) {
+                    compareByDescending { it.price }
+                } else {
+                    compareBy { it.price }
+                }
+            )
+            .take(5)
+            .map { ItemBidDto.from(it) }
+    }
 
     fun turnOffBid(bidId: Long) {
         transaction {

@@ -8,6 +8,7 @@ object ItemBidTable: LongIdTable("item_bid") {
     val url = varchar("bid_url", 255).index(isUnique = false)
     val price = long("price")
     val comment = varchar("comment", 255).nullable()
+    val isSent = bool("is_sent").default(false)
     val isAlarm = bool("is_alarm").default(true)
 
 }

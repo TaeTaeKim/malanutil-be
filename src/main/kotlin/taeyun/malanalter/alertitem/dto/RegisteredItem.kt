@@ -9,8 +9,7 @@ data class RegisteredItem (
     val itemOptions: ItemCondition,
     val itemName: String,
     val tradeType: TradeType,
-    val isAlarm: Boolean,
-    val userId : Long
+    val isAlarm: Boolean
 ){
     constructor(alertItemEntity: AlertItemEntity) :this(
         id = alertItemEntity.id.value,
@@ -18,7 +17,6 @@ data class RegisteredItem (
         itemOptions= alertItemEntity.itemCondition,
         tradeType = alertItemEntity.tradeType,
         itemName = AlertItemRepository.itemNameMap[alertItemEntity.itemId] ?: "이름 없음",
-        isAlarm = alertItemEntity.isAlarm,
-        userId = alertItemEntity.userId
+        isAlarm = alertItemEntity.isAlarm
     )
 }

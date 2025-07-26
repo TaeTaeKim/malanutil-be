@@ -51,12 +51,12 @@ class ItemCheckerPerformanceTest {
         val users = mapOf(1L to user1, 2L to user2)
 
         val items = listOf(
-            RegisteredItem(1, 11, ItemCondition(), "item1",TradeType.SELL, true,1L),
-            RegisteredItem(2, 12, ItemCondition(), "item2", TradeType.SELL, true,1L),
-            RegisteredItem(3, 13, ItemCondition(), "item3", TradeType.SELL, true,1L),
-            RegisteredItem(4, 21, ItemCondition(), "item4", TradeType.SELL, true,2L),
-            RegisteredItem(5, 22, ItemCondition(), "item5", TradeType.SELL, true,2L),
-            RegisteredItem(6, 23, ItemCondition(), "item6", TradeType.SELL, true,2L)
+            RegisteredItem(1, 11, ItemCondition(), "item1",TradeType.SELL, true,1L, 0),
+            RegisteredItem(2, 12, ItemCondition(), "item2", TradeType.SELL, true,1L, 0),
+            RegisteredItem(3, 13, ItemCondition(), "item3", TradeType.SELL, true,1L, 0),
+            RegisteredItem(4, 21, ItemCondition(), "item4", TradeType.SELL, true,2L, 0),
+            RegisteredItem(5, 22, ItemCondition(), "item5", TradeType.SELL, true,2L, 0),
+            RegisteredItem(6, 23, ItemCondition(), "item6", TradeType.SELL, true,2L, 0)
         )
 
         // Common mock behaviors

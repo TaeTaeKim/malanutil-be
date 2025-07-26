@@ -41,7 +41,8 @@ class ItemCheckerTest : StringSpec({
         itemId = 10,
         tradeType = TradeType.SELL,
         itemOptions = ItemCondition(),
-        isAlarm = true
+        isAlarm = true,
+        createdAt = 0L
     )
 
     "메랜 지지 응답에서 유저가 off 한 comment(bid) 가 있으면 제외하고 가격 오름차순 5개를 보여준다." {

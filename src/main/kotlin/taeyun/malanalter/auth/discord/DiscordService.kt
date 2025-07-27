@@ -11,7 +11,9 @@ import taeyun.malanalter.alertitem.domain.AlertItemTable
 import taeyun.malanalter.alertitem.domain.ItemBidEntity
 import taeyun.malanalter.alertitem.domain.ItemBidTable
 import taeyun.malanalter.config.exception.AlerterServerError
+import taeyun.malanalter.user.domain.UserEntity
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 private val logger = KotlinLogging.logger { }
 
@@ -20,9 +22,11 @@ class DiscordService(
     val discordProperties: DiscordProperties
 ) {
     private val discord = JDABuilder.createDefault(discordProperties.botToken).build().awaitReady()
+    private val userFailureCount = ConcurrentHashMap<Long, Int>()
 
     companion object {
         val URL_PATTERN = Regex("\\[링크]\\(https://mapleland\\.gg/trade/([^)]+)\\)")
+        const val MAX_FAILURE_COUNT = 3
     }
 
     fun addUserToServer(discordUser: DiscordOAuth2User) {
@@ -55,17 +59,17 @@ class DiscordService(
                             channel.sendMessage(message).queue(
                                 { // onSuccess for message sending
                                     logger.debug { "Message sent successfully to user $userId" }
+                                    userFailureCount.remove(userId) // Reset failure count on success
                                     val extractBidUrlFromMessage = extractBidUrlFromMessage(message)
                                     makeBidSent(userId, extractBidUrlFromMessage)
                                 },
                                 { error -> // onFailure for message sending
                                     logger.error {
-                                        "Failed to send message to user $userId: ${error.message}\n message : ${
-                                            message.substring(
-                                                0,
-                                                15
-                                            )
-                                        }..."
+                                        "Failed to send message to user $userId: ${error.message}\n message : ${message.substring(0,15)}..."
+                                    }
+
+                                    if (error.toString().contains("50007") || error.toString().contains("CANNOT_SEND_TO_USER")) {
+                                        handleCannotSendToUserError(userId)
                                     }
                                 }
                             )
@@ -99,6 +103,25 @@ class DiscordService(
             }.forEach { it.isSent = true }
         }
 
+    }
+
+    private fun handleCannotSendToUserError(userId: Long) {
+        val currentCount = userFailureCount.getOrDefault(userId, 0) + 1
+        userFailureCount[userId] = currentCount
+        
+        if (currentCount >= MAX_FAILURE_COUNT) {
+            disableUser(userId)
+            userFailureCount.remove(userId) // Clean up memory
+        }
+    }
+
+    private fun disableUser(userId: Long) {
+        transaction {
+            UserEntity.findById(userId)?.let { user ->
+                user.disabled = true
+                logger.info { "User $userId has been disabled due to repeated CANNOT_SEND_TO_USER errors" }
+            }
+        }
     }
 
 }

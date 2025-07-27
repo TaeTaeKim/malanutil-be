@@ -65,6 +65,7 @@ class UserService {
             UserEntity.findById(discordUser.getId())?.apply {
                 username = discordUser.getUsername()
                 avatar = discordUser.getAvatar()
+                disabled = false
             }
         }
     }
@@ -81,7 +82,7 @@ class UserService {
 
     fun getAllUserEntityMap(): Map<Long, UserEntity> {
         return transaction {
-            UserEntity.all().map { it.id.value to it }.toMap()
+            UserEntity.all().associateBy { it.id.value }
         }
     }
 

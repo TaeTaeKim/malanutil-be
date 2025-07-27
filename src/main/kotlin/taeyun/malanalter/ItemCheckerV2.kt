@@ -55,6 +55,10 @@ class ItemCheckerV2(
                 launch {
                     logger.debug { "[User Coroutine] Start processing for User:$userId on thread: ${Thread.currentThread().name}" }
                     val userEntity = allUserEntityMap[userId] ?: return@launch
+                    if (userEntity.disabled) {
+                        logger.warn { "[User Coroutine] User:$userId is disabled, skipping." }
+                        return@launch
+                    }
                     if (userEntity.isAlarmOff() || userEntity.isNotAlarmTime()) return@launch
 
                     val messageContainer = DiscordMessageContainer()

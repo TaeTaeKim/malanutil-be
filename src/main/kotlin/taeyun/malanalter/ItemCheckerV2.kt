@@ -10,6 +10,7 @@ import taeyun.malanalter.alertitem.domain.ItemBidEntity
 import taeyun.malanalter.alertitem.dto.*
 import taeyun.malanalter.alertitem.repository.AlertRepository
 import taeyun.malanalter.auth.discord.DiscordService
+import taeyun.malanalter.config.MetricsService
 import taeyun.malanalter.feignclient.MalanClient
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.UserEntity
@@ -24,17 +25,20 @@ class ItemCheckerV2(
     private val malanClient: MalanClient,
     private val userService: UserService,
     private val discordService: DiscordService,
+    private val metricsService: MetricsService
 ) {
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 
     @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 1000 * 60 * 5)
     fun callCheckItem() {
+        metricsService.resetCycleMetrics()
         val time = measureTimeMillis {
             val checkItem = checkItem()
             runBlocking {
                 checkItem.join() // Wait for the job to complete
             }
         }
+        metricsService.recordAlertProcessingTime(time)
         if (time > 1000 * 3) {
             logger.error { "[Scheduler] checkItem took too long: $time ms" }
         }
@@ -98,6 +102,9 @@ class ItemCheckerV2(
         withContext(Dispatchers.IO) {
             logger.debug { "[Item Request] Fetching bids for Item:${item.id} on thread: ${Thread.currentThread().name}" }
             try {
+                metricsService.incrementMalanggApiCall()
+                val startTime = System.currentTimeMillis()
+
                 val detectedBids: List<ItemBidInfo> =
                     malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
                         .filter { bids -> bids.tradeType == item.tradeType && bids.tradeStatus }
@@ -109,6 +116,9 @@ class ItemCheckerV2(
                             }
                         )
                         .take(100)
+
+                metricsService.recordMalanggApiTime(System.currentTimeMillis() - startTime)
+
                 // 기존 Bid info 새로운 bidInfo Sync
                 alertRepository.syncBids(item.id, detectedBids, existBidList)
                 // 모든 비드에서 보내야할 알람 반환
@@ -117,6 +127,7 @@ class ItemCheckerV2(
                     .take(5)
                     .filter { notSentAlarm(existBidList, it.url) }
             } catch (e: Exception) {
+                metricsService.incrementMalanggApiFailure()
                 logger.error { "Error in Request to Malangg ${e.message}" }
                 return@withContext emptyList()
             }

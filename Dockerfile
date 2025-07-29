@@ -11,4 +11,5 @@ COPY build/libs/*.jar app.jar
 EXPOSE 8080
 
 # Run the application
-ENTRYPOINT ["java","-Dspring.profiles.active=dev", "-jar", "app.jar" ]
+# Otel java agent와 Properties 파일이 같은 디렉토리에 있어야 합니다.
+ENTRYPOINT ["java","-Dspring.profiles.active=dev", "-javaagent:./opentelemetry-javaagent.jar", "-Dotel.javaagent.configuration-file=otel-dev.properties", "-jar", "app.jar" ]

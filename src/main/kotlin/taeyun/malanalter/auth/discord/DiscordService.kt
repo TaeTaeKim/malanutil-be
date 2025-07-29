@@ -10,6 +10,7 @@ import taeyun.malanalter.alertitem.domain.AlertItemEntity
 import taeyun.malanalter.alertitem.domain.AlertItemTable
 import taeyun.malanalter.alertitem.domain.ItemBidEntity
 import taeyun.malanalter.alertitem.domain.ItemBidTable
+import taeyun.malanalter.config.MetricsService
 import taeyun.malanalter.config.exception.AlerterServerError
 import taeyun.malanalter.user.domain.UserEntity
 import java.util.*
@@ -19,7 +20,8 @@ private val logger = KotlinLogging.logger { }
 
 @Service
 class DiscordService(
-    val discordProperties: DiscordProperties
+    val discordProperties: DiscordProperties,
+    val metricsService: MetricsService
 ) {
     private val discord = JDABuilder.createDefault(discordProperties.botToken).build().awaitReady()
     private val userFailureCount = ConcurrentHashMap<Long, Int>()
@@ -55,6 +57,7 @@ class DiscordService(
                 user.openPrivateChannel().queue(
                     { channel -> // onSuccess for channel opening
                         if (message.isNotBlank()) {
+                            metricsService.incrementDiscordApiCall()
 
                             channel.sendMessage(message).queue(
                                 { // onSuccess for message sending
@@ -64,10 +67,10 @@ class DiscordService(
                                     makeBidSent(userId, extractBidUrlFromMessage)
                                 },
                                 { error -> // onFailure for message sending
+                                    metricsService.incrementDiscordApiFailure()
                                     logger.error {
                                         "Failed to send message to user $userId: ${error.message}\n message : ${message.substring(0,15)}..."
                                     }
-
                                     if (error.toString().contains("50007") || error.toString().contains("CANNOT_SEND_TO_USER")) {
                                         handleCannotSendToUserError(userId)
                                     }

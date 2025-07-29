@@ -7,7 +7,7 @@ build/
 GEMINI.md
 CLAUDE.md
 # spring yaml files
-
+opentelemetry-javaagent.jar
 **/src/main/resources/application-local.yml
 **/src/main/resources/application-dev.yml
 

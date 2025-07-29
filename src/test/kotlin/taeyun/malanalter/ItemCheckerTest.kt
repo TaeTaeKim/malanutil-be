@@ -8,14 +8,16 @@ import io.mockk.mockk
 import taeyun.malanalter.alertitem.domain.ItemBidEntity
 import taeyun.malanalter.alertitem.dto.*
 import taeyun.malanalter.alertitem.repository.AlertRepository
+import taeyun.malanalter.config.MetricsService
 import taeyun.malanalter.feignclient.MalanClient
 
 class ItemCheckerTest : StringSpec({
 
     val repo = mockk<AlertRepository>()
     val client = mockk<MalanClient>()
+    val metricService = mockk<MetricsService>(relaxed = true)
 
-    val checker = ItemCheckerV2(repo, client, mockk(), mockk())
+    val checker = ItemCheckerV2(repo, client, mockk(), mockk(), metricService)
 
     val sellBids = listOf(
         ItemBidInfo(true, 600L, "comment6", "testItemName", TradeType.SELL, "bid-6"),

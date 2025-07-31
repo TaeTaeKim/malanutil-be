@@ -28,7 +28,9 @@ data class ItemCondition(
     val speed: Int? = null, // 이동속도
     val highSPEED: Int? = null, // 최고 이동속도
     val jump: Int? = null, // 점프력
-    val highJUMP: Int? = null // 최고 점프력
+    val highJUMP: Int? = null, // 최고 점프력
+    val upgrade: Int? = null, // 강화
+    val highUPGRADE: Int? = null, // 최고 강화
 ){
     fun makeRegisterOptionMsg():List<String>{
         return buildList {
@@ -42,6 +44,7 @@ data class ItemCondition(
             accuracy?.let { add("명중률: $it, ") }
             speed?.let { add("이속: $it, ") }
             jump?.let { add("점프력: $it, ") }
+            upgrade?.let { add("업횟: $it, ") }
         }
     }
 

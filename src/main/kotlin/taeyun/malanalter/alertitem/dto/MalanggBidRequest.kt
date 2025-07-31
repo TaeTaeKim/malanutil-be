@@ -22,7 +22,9 @@ data class MalanggBidRequest (
     val lowincACC: Int? = null,
     val highincACC: Int? = null,
     val lowincJump: Int? = null,
-    val highincJump: Int? = null
+    val highincJump: Int? = null,
+    val lowUpgrade: Int? = null,
+    val highUpgrade: Int? = null
 ){
     // 유저가 등록한 itemCondition을 메랜지지 trade request param 으로 변환
     constructor(itemCondition: ItemCondition) : this(
@@ -47,6 +49,8 @@ data class MalanggBidRequest (
         lowincACC = itemCondition.accuracy,
         highincACC = itemCondition.highACCURACY ?: itemCondition.accuracy,
         lowincJump = itemCondition.jump,
-        highincJump = itemCondition.highJUMP ?: itemCondition.jump
+        highincJump = itemCondition.highJUMP ?: itemCondition.jump,
+        lowUpgrade = itemCondition.upgrade,
+        highUpgrade = itemCondition.highUPGRADE ?: itemCondition.upgrade
     )
 }

@@ -31,20 +31,42 @@ data class ItemCondition(
     val highJUMP: Int? = null, // 최고 점프력
     val upgrade: Int? = null, // 강화
     val highUPGRADE: Int? = null, // 최고 강화
-){
-    fun makeRegisterOptionMsg():List<String>{
+) {
+    fun makeRegisterOptionMsg(): List<String> {
         return buildList {
-            str?.let { add("힘: $it, ") }
-            dex?.let { add("덱스: $it, ") }
-            int?.let { add("인트: $it, ") }
-            luk?.let { add("럭: $it, ") }
-            pad?.let { add("공격력: $it, ") }
-            mad?.let { add("마력: $it, ") }
-            hapma?.let { add("합마: $it, ") }
-            accuracy?.let { add("명중률: $it, ") }
-            speed?.let { add("이속: $it, ") }
-            jump?.let { add("점프력: $it, ") }
-            upgrade?.let { add("업횟: $it, ") }
+            if (str != null || highSTR != null) {
+                add("힘: ${str ?: 0}~${highSTR ?: str ?: 0}, ")
+            }
+            if (dex != null || highDEX != null) {
+                add("덱스: ${dex ?: 0}~${highDEX ?: dex ?: 0}, ")
+            }
+            if (int != null || highINT != null) {
+                add("인트: ${int ?: 0}~${highINT ?: int ?: 0}, ")
+            }
+            if (luk != null || highLUK != null) {
+                add("럭: ${luk ?: 0}~${highLUK ?: luk ?: 0}, ")
+            }
+            if (pad != null || highPAD != null) {
+                add("공격력: ${pad ?: 0}~${highPAD ?: pad ?: 0}, ")
+            }
+            if (mad != null || highMAD != null) {
+                add("마력: ${mad ?: 0}~${highMAD ?: mad ?: 0}, ")
+            }
+            if (hapma != null || highHAPMA != null) {
+                add("합마: ${hapma ?: 0}~${highHAPMA ?: hapma ?: 0}, ")
+            }
+            if (accuracy != null || highACCURACY != null) {
+                add("명중률: ${accuracy ?: 0}~${highACCURACY ?: accuracy ?: 0}, ")
+            }
+            if (speed != null || highSPEED != null) {
+                add("이속: ${speed ?: 0}~${highSPEED ?: speed ?: 0}, ")
+            }
+            if (jump != null || highJUMP != null) {
+                add("점프력: ${jump ?: 0}~${highJUMP ?: jump ?: 0}, ")
+            }
+            if (upgrade != null || highUPGRADE != null) {
+                add("업횟: ${upgrade ?: 0}~${highUPGRADE ?: upgrade ?: 0}, ")
+            }
         }
     }
 
@@ -56,12 +78,12 @@ data class ItemCondition(
         }
     }
 
-    companion object{
+    companion object {
         fun changePriceToString(price: Long?): String {
             return when {
                 price == null -> "0"
-                price >=100000000 -> String.format("%.2f", price.toDouble() / 100000000) + "억"
-                price >= 1000000 -> "${price/10000}만"
+                price >= 100000000 -> String.format("%.2f", price.toDouble() / 100000000) + "억"
+                price >= 1000000 -> "${price / 10000}만"
                 else -> price.toString()
             }
         }

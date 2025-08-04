@@ -56,4 +56,17 @@ class FeignClientTest(private val malanClient: MalanClient) : StringSpec({
         }
 
     }
+
+    "high옵션 설정시 해당 설정을 반영한 매물 검색확인"{
+        val itemCondition = ItemCondition(
+            luk = 4,
+            int = 7,
+            upgrade = 10
+        )
+        val itemCode = 1051096
+        val malanggBidRequest = MalanggBidRequest(itemCondition)
+        shouldNotThrow<Exception> {
+            malanClient.getItemBidList(itemCode, malanggBidRequest)
+        }
+    }
 })

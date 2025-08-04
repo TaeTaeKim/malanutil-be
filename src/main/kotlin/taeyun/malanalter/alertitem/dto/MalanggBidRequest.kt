@@ -29,7 +29,7 @@ data class MalanggBidRequest (
     // 유저가 등록한 itemCondition을 메랜지지 trade request param 으로 변환
     constructor(itemCondition: ItemCondition) : this(
         lowPrice = itemCondition.lowPrice,
-        highPrice = itemCondition.highPrice,
+        highPrice = itemCondition.highPrice?: 9999999999L, // highPrice가 null이면 최대값으로 설정,
         lowincINT = itemCondition.int,
         highincINT = itemCondition.highINT?: itemCondition.int,
         lowincSTR = itemCondition.str,

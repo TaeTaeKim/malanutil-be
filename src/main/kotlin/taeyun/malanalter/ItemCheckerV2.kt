@@ -128,7 +128,7 @@ class ItemCheckerV2(
                     .filter { notSentAlarm(existBidList, it.url) }
             } catch (e: Exception) {
                 metricsService.incrementMalanggApiFailure()
-                logger.error { "Error in Request to Malangg ${e.message}" }
+                logger.error { "Error in Request to Malangg : ItemId : [${item.itemId}] ErrorMsg : ${e.message} ${e.stackTraceToString()}" }
                 return@withContext emptyList()
             }
         }

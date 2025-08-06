@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 data class ItemBidInfo (
     val tradeStatus: Boolean,
     val itemPrice: Long,
-    val comment: String,
+    val comment: String?="",
     val itemName: String,
     val tradeType: TradeType,
     @JsonProperty("url")

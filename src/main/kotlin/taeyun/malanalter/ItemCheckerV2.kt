@@ -53,7 +53,7 @@ class ItemCheckerV2(
             val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()
             val itemsByUser = alertRepository.getRegisteredItem().groupBy { it.userId }
             val savedBidsByItemId: Map<Int, List<ItemBidEntity>> =
-                alertRepository.getAllItemComments().groupBy { it.alertItemId }
+                alertRepository.getAllItemComments().groupBy { it.alertItemId.value }
 
             itemsByUser.forEach { (userId, registeredItems) ->
                 launch {

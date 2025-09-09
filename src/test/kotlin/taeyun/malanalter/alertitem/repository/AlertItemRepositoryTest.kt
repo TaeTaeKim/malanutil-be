@@ -64,7 +64,7 @@ class AlertItemRepositoryTest(
             val savedBids = ItemBidEntity.all().toList()
             savedBids.size shouldBe 2
             savedBids.map { it.url }.toSet() shouldBe setOf("testUrl1", "testUrl2")
-            savedBids.all { it.alertItemId == alertId } shouldBe true
+            savedBids.all { it.alertItemId.value == alertId } shouldBe true
         }
 
 

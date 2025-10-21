@@ -31,7 +31,24 @@ data class ItemCondition(
     val highJUMP: Int? = null, // 최고 점프력
     val upgrade: Int? = null, // 강화
     val highUPGRADE: Int? = null, // 최고 강화
-) {
+    // 추가 옵션
+    val pdd: Int? = null, // 물리방어력
+    val highPDD: Int? = null,
+    val mdd: Int? = null, // 마법 방어력
+    val highMDD: Int? = null,
+    val eva: Int? = null,
+    val highEVA: Int? = null,
+    val mhp: Int? = null,
+    val highMHP: Int? = null,
+    val mmp: Int? = null,
+    val highMMP: Int? = null,
+    // 합스탯
+    val hapStats: List<String> = emptyList(),
+    val combinedStat: Int? = null,
+    val highCOMBINEDSTAT: Int? = null,
+
+    ) {
+    // 아이템 등록시 메세지에 추가되는 옵션 메세지 생성함수
     fun makeRegisterOptionMsg(): List<String> {
         return buildList {
             if (str != null || highSTR != null) {
@@ -65,9 +82,40 @@ data class ItemCondition(
                 add("점프력: ${jump ?: 0}~${highJUMP ?: jump ?: 0}, ")
             }
             if (upgrade != null || highUPGRADE != null) {
-                add("업횟: ${upgrade ?: 0}~${highUPGRADE ?: upgrade ?: 0}, ")
+                add("작횟: ${upgrade ?: 0}~${highUPGRADE ?: upgrade ?: 0}, ")
+            }
+            if (pad != null || highPAD != null) {
+                add("물방 : ${pdd ?: 0}~${highPDD ?: pdd ?: 0}, ")
+            }
+            if (mad != null || highMAD != null) {
+                add("마방 : ${mdd ?: 0}~${highMDD ?: mdd ?: 0}, ")
+            }
+            if (eva != null || highEVA != null) {
+                add("회피 : ${eva ?: 0}~${highEVA ?: eva ?: 0}, ")
+            }
+            if (mhp != null || highMHP != null) {
+                add("HP : ${mhp ?: 0}~${highMHP ?: mhp ?: 0}, ")
+            }
+            if (mmp != null || highMMP != null) {
+                add("MP : ${mmp ?: 0}~${highMMP ?: mmp ?: 0}, ")
+            }
+            // 합스탯 메세지
+            if (hapStats.isNotEmpty() && combinedStat != null) {
+                add("합스탯(${hapStats.joinToString(", ")}): ${combinedStat}~${highCOMBINEDSTAT ?: combinedStat}, ")
             }
         }
+    }
+
+    
+    fun makeHapStatName(): String? {
+        // Define the canonical order for stats
+        val statOrder = listOf("STR", "DEX", "INT", "LUK", "ACC")
+
+        return hapStats
+            .takeIf { it.isNotEmpty() }
+            ?.map { it.uppercase() }  // Convert to uppercase
+            ?.sortedBy { statOrder.indexOf(it) }  // Sort by predefined order
+            ?.joinToString("")  // Join without separator
     }
 
     fun getStringPrice(priceType: String): String {

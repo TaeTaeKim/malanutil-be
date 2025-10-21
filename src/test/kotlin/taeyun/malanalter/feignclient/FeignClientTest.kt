@@ -69,4 +69,20 @@ class FeignClientTest(private val malanClient: MalanClient) : StringSpec({
             malanClient.getItemBidList(itemCode, malanggBidRequest)
         }
     }
+
+    "합스탯 설정시 해당 설정 반영 매물 확인"{
+        val itemCondition = ItemCondition(
+            hapStats = listOf("dex","str","acc"),
+            combinedStat = 16,
+            highCOMBINEDSTAT = 17
+        )
+
+        val itemCode = 1072220
+        val malanggBidRequest = MalanggBidRequest(itemCondition)
+        shouldNotThrow<Exception> {
+            val itemBidList = malanClient.getItemBidList(itemCode, malanggBidRequest)
+            println(itemBidList.size)
+        }
+
+    }
 })

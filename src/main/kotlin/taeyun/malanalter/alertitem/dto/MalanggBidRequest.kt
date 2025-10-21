@@ -24,7 +24,20 @@ data class MalanggBidRequest (
     val lowincJump: Int? = null,
     val highincJump: Int? = null,
     val lowUpgrade: Int? = null,
-    val highUpgrade: Int? = null
+    val highUpgrade: Int? = null,
+    val hapStatsName: String? = null,
+    val lowHapStatsValue: Int? = null,
+    val highHapStatsValue: Int? = null,
+    val lowincPDD: Int? = null,
+    val highincPDD: Int? = null,
+    val lowincMDD: Int? = null,
+    val highincMDD: Int? = null,
+    val lowincEVA: Int? = null,
+    val highincEVA: Int? = null,
+    val lowincMHP: Int? = null,
+    val highincMHP: Int? = null,
+    val lowincMMP: Int? = null,
+    val highincMMP: Int? = null
 ){
     // 유저가 등록한 itemCondition을 메랜지지 trade request param 으로 변환
     constructor(itemCondition: ItemCondition) : this(
@@ -51,6 +64,21 @@ data class MalanggBidRequest (
         lowincJump = itemCondition.jump,
         highincJump = itemCondition.highJUMP ?: itemCondition.jump,
         lowUpgrade = itemCondition.upgrade,
-        highUpgrade = itemCondition.highUPGRADE ?: itemCondition.upgrade
+        highUpgrade = itemCondition.highUPGRADE ?: itemCondition.upgrade,
+        // 합스탯 관련
+        hapStatsName = itemCondition.makeHapStatName(),
+        lowHapStatsValue = itemCondition.combinedStat,
+        highHapStatsValue = itemCondition.highCOMBINEDSTAT ?: itemCondition.combinedStat,
+        // 10월 21일 추가된 옵션들
+        lowincPDD = itemCondition.pdd,
+        highincPDD = itemCondition.highPDD ?: itemCondition.pdd,
+        lowincMDD = itemCondition.mdd,
+        highincMDD = itemCondition.highMDD ?: itemCondition.mdd,
+        lowincEVA = itemCondition.eva,
+        highincEVA = itemCondition.highEVA ?: itemCondition.eva,
+        lowincMHP = itemCondition.mhp,
+        highincMHP = itemCondition.highMHP ?: itemCondition.mhp,
+        lowincMMP = itemCondition.mmp,
+        highincMMP = itemCondition.highMMP ?: itemCondition.mmp
     )
 }

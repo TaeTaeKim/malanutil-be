@@ -64,6 +64,7 @@ class OAuth2SuccessHandler(
         val callbackUri = when (source) {
             "timer" -> frontEndProperties.timerCallbackUrl
             "alerter" -> frontEndProperties.alerterCallbackUrl
+            "pat" -> frontEndProperties.patCallbackUrl
             else -> frontEndProperties.alerterCallbackUrl
         }
         return UriComponentsBuilder.fromUriString(frontEndProperties.redirectionUrl).path(callbackUri).build().toUriString()

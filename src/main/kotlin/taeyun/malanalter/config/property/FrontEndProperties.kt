@@ -7,5 +7,6 @@ import org.springframework.boot.context.properties.bind.ConstructorBinding
 data class FrontEndProperties @ConstructorBinding constructor(
     val redirectionUrl: String,
     val alerterCallbackUrl: String,
-    val timerCallbackUrl: String
+    val timerCallbackUrl: String,
+    val patCallbackUrl: String,
 )

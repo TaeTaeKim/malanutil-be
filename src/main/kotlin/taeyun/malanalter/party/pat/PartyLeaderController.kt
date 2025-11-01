@@ -7,29 +7,43 @@ import taeyun.malanalter.party.pat.dto.PartyResponse
 @RestController
 @RequestMapping("/party/leader")
 class PartyLeaderController(
-    val partyService: PartyService
+    val partyLeaderService: PartyLeaderService
 ) {
 
     // 파티생성 컨트롤러
     @PostMapping("/{mapId}")
     fun createParty(@PathVariable mapId: Long, @RequestBody party: PartyCreate) : PartyResponse {
-        return partyService.createParty(mapId, party)
+        return partyLeaderService.createParty(mapId, party)
     }
 
     @GetMapping
     fun getLeaderParty(): PartyResponse? {
-        return partyService.getLeaderParty()
+        return partyLeaderService.getLeaderParty()
     }
 
     @GetMapping("/history/{mapId}")
     fun getPartyCreationHistory(@PathVariable mapId: Long): PartyCreate? {
-        return partyService.getPartyCreationHistory(mapId)
+        return partyLeaderService.getPartyCreationHistory(mapId)
     }
 
 
     @DeleteMapping("/{partyId}")
     fun deleteParty(@PathVariable partyId: String) {
-        partyService.deleteParty(partyId)
+        partyLeaderService.deleteParty(partyId)
+    }
+
+    @PostMapping("/invite/{userId}")
+    fun inviteUserToParty(@PathVariable userId: Long) {
+
+    }
+    @PostMapping("/apply/{applyId}")
+    fun handlePartyApplication(@PathVariable applyId: Long) {
+
+    }
+
+    @GetMapping("/talent/{mapId}")
+    fun getTalentPool(@PathVariable mapId: Long) {
+
     }
 
 }

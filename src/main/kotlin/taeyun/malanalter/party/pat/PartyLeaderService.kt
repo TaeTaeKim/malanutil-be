@@ -22,17 +22,11 @@ import taeyun.malanalter.user.UserService
 import java.util.*
 
 @Service
-class PartyService {
+class PartyLeaderService {
 
     /**
-     * Get the party created by the logged-in user
-     *
-     * @return PartyResponse if user created a party, null otherwise
-     *
-     * Business rules:
-     * 1. User can only be a leader of one party at a time
-     * 2. Returns the most recent party if multiple exist (ordered by createdAt DESC)
-     * 3. Returns null if user has not created any party
+     * 로그인 유저가 리더인 파티 조회
+     * @return 리더인 파티 정보, 없으면 null
      */
     fun getLeaderParty(): PartyResponse? = transaction {
         val userId = UserService.getLoginUserId()
@@ -54,17 +48,12 @@ class PartyService {
     }
 
     /**
-     * Create a new party with positions
+     * 파티 생성 서비스
+     * @param mapId 생성할 파티의 맵 ID
+     * @param partyCreate 파티 생성 요청 DTO
+     * @return 생성된 파티 응답 DTO
+     * Party, Position Id 는 UUID로 생성
      *
-     * @param mapId The map ID where party will hunt
-     * @param partyCreate Party creation request with positions
-     * @return Created party with positions
-     *
-     * Business rules:
-     * 1. Leader must have a default character
-     * 2. If hasPosition=true, positions list cannot be empty
-     * 3. One position must be marked as isLeader=true
-     * 4. Leader position is automatically COMPLETED and assigned to creator
      */
     fun createParty(mapId: Long, partyCreate: PartyCreate): PartyResponse {
         val userId = UserService.getLoginUserId()
@@ -138,13 +127,7 @@ class PartyService {
     }
 
     /**
-     * Save party positions to database
-     *
-     * @param positions List of positions to save
-     * @param partyId Party ID to associate positions with
-     * @param userId Leader's user ID (for auto-assigning leader position)
-     * @param characterId Leader's character ID (for auto-assigning leader position)
-     * @return List of created PositionDto
+     * 파티 생성 과정에서 포지션을 저장하는 헬퍼함수
      */
     private fun savePartyPositions(
         positions: List<Position>,

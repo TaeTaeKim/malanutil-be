@@ -20,4 +20,9 @@ class PartyLeaderController(
     fun getLeaderParty(): PartyResponse? {
         return partyService.getLeaderParty()
     }
+
+    @DeleteMapping("/{partyId}")
+    fun deleteParty(@PathVariable partyId: String) {
+        partyService.deleteParty(partyId)
+    }
 }

@@ -13,6 +13,7 @@ data class PositionDto(
     val isLeader: Boolean,
     val status: PositionStatus, // RECRUITING, COMPLETED
     val isPriestSlot: Boolean,
+    val preferJob : List<String> = emptyList(),
 
     // Assigned user info (null if position is empty)
     val assignedUserId: Long?,
@@ -29,6 +30,7 @@ data class PositionDto(
                 isLeader = row[PositionTable.isLeader],
                 status = row[PositionTable.status],
                 isPriestSlot = row[PositionTable.isPriestSlot],
+                preferJob = row[PositionTable.preferJob]?.split(",") ?: emptyList(),
                 assignedUserId = row[PositionTable.assignedUserId]?.value,
                 assignedCharacterId = row[PositionTable.assignedCharacterId]?.value
             )
@@ -51,6 +53,7 @@ data class PositionDto(
                 isLeader = position.isLeader,
                 status = position.status,
                 isPriestSlot = position.isPriestSlot,
+                preferJob = position.preferJob,
                 assignedUserId = assignedUserId,
                 assignedCharacterId = assignedCharacterId
             )

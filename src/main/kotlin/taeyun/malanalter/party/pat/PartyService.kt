@@ -1,6 +1,8 @@
 package taeyun.malanalter.party.pat
 
+import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -153,6 +155,7 @@ class PartyService {
                 it[isLeader] = position.isLeader
                 it[status] = position.status
                 it[isPriestSlot] = position.isPriestSlot
+                it[preferJob] = position.preferJob.joinToString(",")
 
                 // If this is the leader position, auto-assign to creator
                 if (position.isLeader) {
@@ -169,6 +172,23 @@ class PartyService {
                 assignedUserId = if (position.isLeader) userId else null,
                 assignedCharacterId = if (position.isLeader) characterId else null
             )
+        }
+    }
+
+    fun deleteParty(partyId: String) {
+        val userId = UserService.getLoginUserId()
+
+        transaction {
+            // Verify that the party exists and the user is the leader
+            PartyTable.selectAll()
+                .where { PartyTable.id eq partyId and (PartyTable.leaderId eq userId) }
+                .singleOrNull() ?: throw AlerterBadRequest(
+                ErrorCode.BAD_REQUEST,
+                "삭제할 파티를 찾지 못했습니다."
+            )
+
+            // Delete the party (positions will be cascade deleted)
+            PartyTable.deleteWhere { PartyTable.id eq partyId }
         }
     }
 }

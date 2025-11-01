@@ -15,6 +15,7 @@ object PositionTable: IdTable<String>("position") {
     val isLeader = bool("is_leader").default(false)
     val status = enumerationByName<PositionStatus>("status", 50).default(PositionStatus.RECRUITING)
     val isPriestSlot = bool("is_priest_slot").default(false)
+    val preferJob = varchar("prefer_job", 255).nullable()
 
     // Who filled this position
     val assignedUserId = reference("assigned_user_id", Users.id, onDelete = ReferenceOption.SET_NULL).nullable()

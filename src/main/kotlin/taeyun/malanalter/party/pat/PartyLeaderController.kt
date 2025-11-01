@@ -21,8 +21,15 @@ class PartyLeaderController(
         return partyService.getLeaderParty()
     }
 
+    @GetMapping("/history/{mapId}")
+    fun getPartyCreationHistory(@PathVariable mapId: Long): PartyCreate? {
+        return partyService.getPartyCreationHistory(mapId)
+    }
+
+
     @DeleteMapping("/{partyId}")
     fun deleteParty(@PathVariable partyId: String) {
         partyService.deleteParty(partyId)
     }
+
 }

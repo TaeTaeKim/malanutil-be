@@ -1,5 +1,6 @@
 package taeyun.malanalter.party.pat
 
+import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service
 import taeyun.malanalter.config.exception.AlerterBadRequest
 import taeyun.malanalter.config.exception.ErrorCode
 import taeyun.malanalter.party.character.CharacterTable
+import taeyun.malanalter.party.pat.dao.PartyHistory
 import taeyun.malanalter.party.pat.dao.PartyTable
 import taeyun.malanalter.party.pat.dao.PositionTable
 import taeyun.malanalter.party.pat.dto.PartyCreate
@@ -118,6 +120,13 @@ class PartyService {
                 emptyList()
             }
 
+            // Save party creation history
+            PartyHistory.insert {
+                it[PartyHistory.userId] = userId
+                it[PartyHistory.partyData] = partyCreate
+                it[PartyHistory.mapId] = mapId
+            }
+
             // Fetch created party to return
             val createdParty = PartyTable.selectAll()
                 .where { PartyTable.id eq partyId }
@@ -189,6 +198,18 @@ class PartyService {
 
             // Delete the party (positions will be cascade deleted)
             PartyTable.deleteWhere { PartyTable.id eq partyId }
+        }
+    }
+
+    fun getPartyCreationHistory(mapId: Long): PartyCreate? {
+        val userId = UserService.getLoginUserId()
+        return transaction {
+            PartyHistory.selectAll()
+                .where { PartyHistory.userId eq userId and (PartyHistory.mapId eq mapId) }
+                .orderBy(PartyHistory.createdAt to SortOrder.DESC)
+                .limit(1)
+                .map { it[PartyHistory.partyData] }
+                .firstOrNull()
         }
     }
 }

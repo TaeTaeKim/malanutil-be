@@ -31,3 +31,8 @@ class AlerterBadRequest(
     message: String?,
     isAlarm: Boolean=false
 ) : BaseException(errorCode, message, isAlarm)
+
+class PartyBadRequest(
+    errorCode: ErrorCode,
+    message: String?
+) : BaseException(errorCode, message)

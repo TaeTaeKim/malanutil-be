@@ -9,11 +9,10 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.stereotype.Service
 import taeyun.malanalter.config.exception.AlerterBadRequest
-import taeyun.malanalter.config.exception.ErrorCode
+import taeyun.malanalter.config.exception.ErrorCode.*
+import taeyun.malanalter.config.exception.PartyBadRequest
 import taeyun.malanalter.party.character.CharacterTable
-import taeyun.malanalter.party.pat.dao.PartyHistory
-import taeyun.malanalter.party.pat.dao.PartyTable
-import taeyun.malanalter.party.pat.dao.PositionTable
+import taeyun.malanalter.party.pat.dao.*
 import taeyun.malanalter.party.pat.dto.PartyCreate
 import taeyun.malanalter.party.pat.dto.PartyResponse
 import taeyun.malanalter.party.pat.dto.Position
@@ -62,19 +61,19 @@ class PartyLeaderService {
             // Validate: Leader's character exists
             CharacterTable.selectAll().where{ CharacterTable.userId eq userId and (CharacterTable.id eq partyCreate.characterId) }
                 .singleOrNull() ?: throw AlerterBadRequest(
-                ErrorCode.BAD_REQUEST,
+                BAD_REQUEST,
                 "파티장의 캐릭터를 찾지 못했습니다."
             )
             if(partyCreate.hasPositions){
                 if(partyCreate.positions.isEmpty()){
                     throw AlerterBadRequest(
-                        ErrorCode.BAD_REQUEST,
+                        BAD_REQUEST,
                         "포지션 파티는 최소 1개 이상의 포지션이 필요합니다."
                     )
                 }
                 if(partyCreate.positions.none { it.isLeader }){
                     throw AlerterBadRequest(
-                        ErrorCode.BAD_REQUEST,
+                        BAD_REQUEST,
                         "파티장 포지션이 필요합니다."
                     )
                 }
@@ -167,6 +166,7 @@ class PartyLeaderService {
         }
     }
 
+    // todo: 파티 없애기 시 들어와 있던 지원자들을 free 시켜줘야 함
     fun deleteParty(partyId: String) {
         val userId = UserService.getLoginUserId()
 
@@ -175,7 +175,7 @@ class PartyLeaderService {
             PartyTable.selectAll()
                 .where { PartyTable.id eq partyId and (PartyTable.leaderId eq userId) }
                 .singleOrNull() ?: throw AlerterBadRequest(
-                ErrorCode.BAD_REQUEST,
+                BAD_REQUEST,
                 "삭제할 파티를 찾지 못했습니다."
             )
 
@@ -195,4 +195,36 @@ class PartyLeaderService {
                 .firstOrNull()
         }
     }
+
+    /**
+     * 유저에게 파티 초대 메세지 발송
+     * 5분 이내에 동일 유저에게 초대 메세지 발송 불가
+     */
+    // todo : redis 로 해당 유저 에게 초대 메세지 publish
+    fun inviteUserToParty(userId: Long) {
+        val leaderId = UserService.getLoginUserId()
+
+        transaction {
+            // 리더의 파티 존재 확인
+            val party = PartyEntity.findByLeaderId(leaderId) ?: throw PartyBadRequest(PARTY_NOT_FOUND, "현재 리더인 파티가 존재하지 않습니다.")
+            when(party.status) {
+                PartyStatus.FULLED -> throw PartyBadRequest(PARTY_FULL, "파티가 가득 찼습니다.")
+                PartyStatus.INACTIVE -> throw PartyBadRequest(PARTY_INACTIVE, "비활성화된 파티입니다.")
+                else -> {}
+            }
+            //todo: 유저가 인재풀에 있는지 확인
+
+            // 중복 초대 확인
+            if(InvitationEntity.alreadyInvited(party.id.value, userId)){
+                throw PartyBadRequest(PARTY_ALREADY_INVITED, "해당 유저에게 이미 초대 메세지를 보낸 상태입니다.")
+            }
+
+            // 초대발송 db저장 및 redis publish
+            InvitationEntity.new {
+                this.partyId = party.id
+                this.invitedUserId = userId
+            }
+        }
+    }
+
 }

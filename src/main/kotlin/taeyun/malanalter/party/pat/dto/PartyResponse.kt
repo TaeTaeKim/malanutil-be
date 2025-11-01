@@ -1,0 +1,56 @@
+package taeyun.malanalter.party.pat.dto
+
+import kotlinx.datetime.toJavaLocalDateTime
+import org.jetbrains.exposed.v1.core.ResultRow
+import taeyun.malanalter.party.pat.dao.PartyStatus
+import taeyun.malanalter.party.pat.dao.PartyTable
+import java.time.LocalDateTime
+
+// Response DTO for Party information
+data class PartyResponse(
+    val id: String,
+    val mapCode: Long,
+    val hasPosition: Boolean, // Whether party uses position system (e.g., 커파, 개미굴)
+    val description: String,
+    val numPeople: Int, // Total recruitment slots
+    val channel: String,
+
+    // Leader information
+    val leaderId: Long,
+    val leaderCharacterId: String,
+
+    // Party status
+    val status: PartyStatus, // RECRUITING, FULLED, INACTIVE
+
+    // Positions (empty list if hasPosition = false)
+    val positions: List<PositionDto>,
+
+    // Metadata
+    val createdAt: LocalDateTime,
+    val updatedAt: LocalDateTime
+) {
+    companion object {
+        // Convert database ResultRow to PartyResponse (without positions)
+        fun from(row: ResultRow): PartyResponse {
+            return PartyResponse(
+                id = row[PartyTable.id].value,
+                mapCode = row[PartyTable.mapId],
+                hasPosition = row[PartyTable.hasPosition],
+                description = row[PartyTable.description],
+                numPeople = row[PartyTable.numPeople],
+                channel = row[PartyTable.channel],
+                leaderId = row[PartyTable.leaderId].value,
+                leaderCharacterId = row[PartyTable.leaderCharacter].value,
+                status = row[PartyTable.status],
+                positions = emptyList(), // Positions should be loaded separately
+                createdAt = row[PartyTable.createdAt].toJavaLocalDateTime(),
+                updatedAt = row[PartyTable.updatedAt].toJavaLocalDateTime()
+            )
+        }
+
+        // Create PartyResponse with positions
+        fun withPositions(row: ResultRow, positions: List<PositionDto>): PartyResponse {
+            return from(row).copy(positions = positions)
+        }
+    }
+}

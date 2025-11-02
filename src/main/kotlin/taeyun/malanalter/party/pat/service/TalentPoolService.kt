@@ -1,4 +1,4 @@
-package taeyun.malanalter.party.pat
+package taeyun.malanalter.party.pat.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -58,7 +58,7 @@ class TalentPoolService(
      * 3. user:{userId}:talent:maps 에 유저가 등록한 맵들을 저장 : 언제 없애나? 없애지 않는다 2번 ttl 만료시 없어지는 것
      */
     fun registerToTalentPool(mapId: Long, characterId: String): TalentDto {
-        val userId = UserService.getLoginUserId()
+        val userId = UserService.Companion.getLoginUserId()
         val talentRequest = getTalentDtoFrom(userId, characterId)
         // Store in Redis with TTL - manual JSON serialization
         val characterKey = getTalentUserKey(userId)
@@ -90,7 +90,7 @@ class TalentPoolService(
      * 특정 맵의 인재풀에서 해제
      */
     fun removeFromTalentPool(mapId: Long) {
-        val userId = UserService.getLoginUserId()
+        val userId = UserService.Companion.getLoginUserId()
         // Remove from map set
         val mapKey = getTalentMapKey(mapId)
         redisTemplate.opsForSet().remove(mapKey, userId.toString())
@@ -107,7 +107,7 @@ class TalentPoolService(
      * 비활성화 상태여도 누르면 다시 등록한다.
      */
     fun renewHeartbeat(characterId: String): Boolean {
-        val userId = UserService.getLoginUserId()
+        val userId = UserService.Companion.getLoginUserId()
         val key = getTalentUserKey(userId)
 
         // Check if key exists
@@ -131,8 +131,8 @@ class TalentPoolService(
     // ============================================================================
     private fun getTalentDtoFrom(userId: Long, characterId: String): TalentDto {
         return transaction { // if not exist make new request
-            CharacterEntity.findByUserAndCharacterId(userId, characterId)
-                ?.let(TalentDto::fromEntity)
+            CharacterEntity.Companion.findByUserAndCharacterId(userId, characterId)
+                ?.let(TalentDto.Companion::fromEntity)
                 ?: throw PartyBadRequest(ErrorCode.CHARACTER_NOT_FOUND, "Character Not Found")
         }
     }

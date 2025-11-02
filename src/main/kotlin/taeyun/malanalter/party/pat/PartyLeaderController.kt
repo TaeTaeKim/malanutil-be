@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.*
 import taeyun.malanalter.party.pat.dto.PartyCreate
 import taeyun.malanalter.party.pat.dto.PartyResponse
 import taeyun.malanalter.party.pat.dto.TalentResponse
+import taeyun.malanalter.party.pat.service.PartyLeaderService
 
 @RestController
 @RequestMapping("/party/leader")

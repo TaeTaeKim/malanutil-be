@@ -1,4 +1,4 @@
-package taeyun.malanalter.party.pat
+package taeyun.malanalter.party.pat.service
 
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq

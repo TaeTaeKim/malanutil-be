@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.*
 import taeyun.malanalter.party.pat.dto.PartyResponse
 import taeyun.malanalter.party.pat.dto.RegisteringPoolResponse
 import taeyun.malanalter.party.pat.dto.TalentRegisterRequest
+import taeyun.malanalter.party.pat.service.PartyFinderService
 
 /* 구직 유저 관련 컨트롤러 */
 @RestController

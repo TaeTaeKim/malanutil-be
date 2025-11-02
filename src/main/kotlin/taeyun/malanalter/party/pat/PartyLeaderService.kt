@@ -13,15 +13,12 @@ import taeyun.malanalter.config.exception.ErrorCode.*
 import taeyun.malanalter.config.exception.PartyBadRequest
 import taeyun.malanalter.party.character.CharacterTable
 import taeyun.malanalter.party.pat.dao.*
-import taeyun.malanalter.party.pat.dto.PartyCreate
-import taeyun.malanalter.party.pat.dto.PartyResponse
-import taeyun.malanalter.party.pat.dto.Position
-import taeyun.malanalter.party.pat.dto.PositionDto
+import taeyun.malanalter.party.pat.dto.*
 import taeyun.malanalter.user.UserService
 import java.util.*
 
 @Service
-class PartyLeaderService {
+class PartyLeaderService(val talentPoolService: TalentPoolService) {
 
     /**
      * 로그인 유저가 리더인 파티 조회
@@ -227,4 +224,16 @@ class PartyLeaderService {
         }
     }
 
+    fun getTalentPool(mapId: Long) : List<TalentResponse> {
+        val talentUserList = talentPoolService.getTalentPool(mapId)
+//        return transaction (readOnly = true){
+//            CharacterTable.selectAll().where { CharacterTable.id inList talentUserList }.map{
+//
+//            }
+//        }
+        return emptyList()
+
+
+
+    }
 }

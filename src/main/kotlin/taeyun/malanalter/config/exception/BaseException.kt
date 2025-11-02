@@ -36,3 +36,10 @@ class PartyBadRequest(
     errorCode: ErrorCode,
     message: String?
 ) : BaseException(errorCode, message)
+
+class PartyServerError(
+    errorCode: ErrorCode = ErrorCode.INTERNAL_SERVER_ERROR,
+    val uuid: String,
+    message: String,
+    val rootCause: Exception?,
+) : BaseException(errorCode, rootCause?.message ?: "[$uuid] $message", isAlarm = true)

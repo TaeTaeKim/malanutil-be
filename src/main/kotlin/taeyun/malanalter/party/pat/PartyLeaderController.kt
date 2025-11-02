@@ -3,6 +3,7 @@ package taeyun.malanalter.party.pat
 import org.springframework.web.bind.annotation.*
 import taeyun.malanalter.party.pat.dto.PartyCreate
 import taeyun.malanalter.party.pat.dto.PartyResponse
+import taeyun.malanalter.party.pat.dto.TalentResponse
 
 @RestController
 @RequestMapping("/party/leader")
@@ -10,6 +11,9 @@ class PartyLeaderController(
     val partyLeaderService: PartyLeaderService
 ) {
 
+    /**
+     * 파티 관련 API
+     */
     // 파티 생성
     @PostMapping("/{mapId}")
     fun createParty(@PathVariable mapId: Long, @RequestBody party: PartyCreate) : PartyResponse {
@@ -35,21 +39,21 @@ class PartyLeaderController(
         partyLeaderService.deleteParty(partyId)
     }
 
+    /**
+     * 유저 초대 및 인재풀 조회 API
+     */
+    // 유저를 파티에 초대하는 API
     @PostMapping("/invite/{userId}")
     fun inviteUserToParty(@PathVariable userId: Long) {
         partyLeaderService.inviteUserToParty(userId)
     }
 
-    // todo : 이미 받은 포지션의 중복 신청 방지 필요
-    @PostMapping("/apply/{applyId}")
-    fun handlePartyApplication(@PathVariable applyId: Long) {
-
-    }
-
-    // 특정 맵의 인재풀을 조회하는 API
     @GetMapping("/talent/{mapId}")
-    fun getTalentPool(@PathVariable mapId: Long)  {
+    fun getTalentPool(@PathVariable mapId: Long): List<TalentResponse> {
+        partyLeaderService.getTalentPool(mapId)
+        return emptyList()
 
     }
+
 
 }

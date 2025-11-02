@@ -34,4 +34,6 @@ enum class ErrorCode(
     PARTY_FULL(HttpStatus.BAD_REQUEST, "PARTY_002", "Party is Full"),
     PARTY_INACTIVE(HttpStatus.BAD_REQUEST, "PARTY_003", "Party is Inactive"),
     PARTY_ALREADY_INVITED(HttpStatus.BAD_REQUEST, "PARTY_004", "Party Already Invited"),
+
+    CHARACTER_NOT_FOUND(HttpStatus.NOT_FOUND, "CHARACTER_001", "Character Not Found"),
 }

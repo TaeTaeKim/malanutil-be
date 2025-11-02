@@ -34,8 +34,9 @@ class TalentPoolService(
 
     fun getRegisteringMaps(userId: Long): RegisteringPoolResponse {
         val ttlOfUser = getTTLOfUser(userId)
+        val registeringMapKey = getRegisteringMapKey(userId)
         val mapList = redisTemplate.opsForSet()
-            .members(getRegisteringMapKey(userId))
+            .members(registeringMapKey)
             ?.map { it.toLong() }
             ?.toList()
             ?: emptyList()

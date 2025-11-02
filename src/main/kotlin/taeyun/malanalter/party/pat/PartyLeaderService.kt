@@ -199,7 +199,7 @@ class PartyLeaderService(val talentPoolService: TalentPoolService) {
      * 5분 이내에 동일 유저에게 초대 메세지 발송 불가
      */
     // todo : redis 로 해당 유저 에게 초대 메세지 publish
-    fun inviteUserToParty(userId: Long) {
+    fun inviteUserToParty(inviteUserId: Long) {
         val leaderId = UserService.getLoginUserId()
 
         transaction {
@@ -211,17 +211,20 @@ class PartyLeaderService(val talentPoolService: TalentPoolService) {
                 PartyStatus.INACTIVE -> throw PartyBadRequest(PARTY_INACTIVE, "비활성화된 파티입니다.")
                 else -> {}
             }
-            //todo: 유저가 인재풀에 있는지 확인
+            val userTalentPool = talentPoolService.getRegisteringMaps(inviteUserId)
+            if(party.mapId !in userTalentPool.mapIds ) {
+                throw PartyBadRequest(CHARACTER_NOT_IN_TALENT, "유저가 해당 맵의 탤런트에 없습니다")
+            }
 
             // 중복 초대 확인
-            if (InvitationEntity.alreadyInvited(party.id.value, userId)) {
+            if (InvitationEntity.alreadyInvited(party.id.value, inviteUserId)) {
                 throw PartyBadRequest(PARTY_ALREADY_INVITED, "해당 유저에게 이미 초대 메세지를 보낸 상태입니다.")
             }
 
             // 초대발송 db저장 및 redis publish
             InvitationEntity.new {
                 this.partyId = party.id
-                this.invitedUserId = userId
+                this.invitedUserId = inviteUserId
             }
         }
     }

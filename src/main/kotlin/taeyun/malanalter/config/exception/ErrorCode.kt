@@ -36,4 +36,5 @@ enum class ErrorCode(
     PARTY_ALREADY_INVITED(HttpStatus.BAD_REQUEST, "PARTY_004", "Party Already Invited"),
 
     CHARACTER_NOT_FOUND(HttpStatus.NOT_FOUND, "CHARACTER_001", "Character Not Found"),
+    CHARACTER_NOT_IN_TALENT(HttpStatus.NOT_FOUND, "CHARACTER_002", "Character Not Registered in Map Talent"),
 }

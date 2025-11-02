@@ -15,6 +15,9 @@ class InvitationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             return find { Invitation.partyId eq partyId and (Invitation.invitedUserId eq invitedUserId) }
                 .count { it.isPending() } > 0
         }
+        fun getInvitedTimeByPartyId(partyId:String) :Map<Long, LocalDateTime>{
+            return find{ Invitation.partyId eq partyId }.filter{it.isPending()}.associate { it.invitedUserId to it.invitedAt.toJavaLocalDateTime() }
+        }
     }
 
     var partyId by Invitation.partyId

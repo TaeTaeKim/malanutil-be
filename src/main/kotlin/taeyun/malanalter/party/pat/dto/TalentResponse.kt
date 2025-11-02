@@ -1,6 +1,8 @@
 package taeyun.malanalter.party.pat.dto
 
-import java.time.Instant
+
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 /**
  * 파티장을 위한 인재풀 DTO
@@ -9,8 +11,23 @@ import java.time.Instant
 data class TalentResponse(
     val userId: Long,
     val characterId: String,
-    val lastSent: Instant,
+    val lastSent: Long?,
+    val name: String,
     val level: Int,
     val job: String,
-    val comment: String
-)
+    val comment: String?
+){
+    companion object{
+        fun from(dto: TalentDto, inviteTime: LocalDateTime?): TalentResponse {
+            return TalentResponse(
+                userId = dto.userId,
+                characterId = dto.characterId,
+                name = dto.name,
+                lastSent = inviteTime?.atZone(ZoneOffset.UTC)?.toEpochSecond(),
+                level = dto.level,
+                job = dto.job,
+                comment = dto.comment
+            )
+        }
+    }
+}

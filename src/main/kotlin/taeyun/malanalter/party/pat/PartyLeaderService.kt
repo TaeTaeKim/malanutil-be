@@ -56,19 +56,20 @@ class PartyLeaderService(val talentPoolService: TalentPoolService) {
 
         return transaction {
             // Validate: Leader's character exists
-            CharacterTable.selectAll().where{ CharacterTable.userId eq userId and (CharacterTable.id eq partyCreate.characterId) }
+            CharacterTable.selectAll()
+                .where { CharacterTable.userId eq userId and (CharacterTable.id eq partyCreate.characterId) }
                 .singleOrNull() ?: throw AlerterBadRequest(
                 BAD_REQUEST,
                 "파티장의 캐릭터를 찾지 못했습니다."
             )
-            if(partyCreate.hasPositions){
-                if(partyCreate.positions.isEmpty()){
+            if (partyCreate.hasPositions) {
+                if (partyCreate.positions.isEmpty()) {
                     throw AlerterBadRequest(
                         BAD_REQUEST,
                         "포지션 파티는 최소 1개 이상의 포지션이 필요합니다."
                     )
                 }
-                if(partyCreate.positions.none { it.isLeader }){
+                if (partyCreate.positions.none { it.isLeader }) {
                     throw AlerterBadRequest(
                         BAD_REQUEST,
                         "파티장 포지션이 필요합니다."
@@ -203,8 +204,9 @@ class PartyLeaderService(val talentPoolService: TalentPoolService) {
 
         transaction {
             // 리더의 파티 존재 확인
-            val party = PartyEntity.findByLeaderId(leaderId) ?: throw PartyBadRequest(PARTY_NOT_FOUND, "현재 리더인 파티가 존재하지 않습니다.")
-            when(party.status) {
+            val party =
+                PartyEntity.findByLeaderId(leaderId) ?: throw PartyBadRequest(PARTY_NOT_FOUND, "현재 리더인 파티가 존재하지 않습니다.")
+            when (party.status) {
                 PartyStatus.FULLED -> throw PartyBadRequest(PARTY_FULL, "파티가 가득 찼습니다.")
                 PartyStatus.INACTIVE -> throw PartyBadRequest(PARTY_INACTIVE, "비활성화된 파티입니다.")
                 else -> {}
@@ -212,7 +214,7 @@ class PartyLeaderService(val talentPoolService: TalentPoolService) {
             //todo: 유저가 인재풀에 있는지 확인
 
             // 중복 초대 확인
-            if(InvitationEntity.alreadyInvited(party.id.value, userId)){
+            if (InvitationEntity.alreadyInvited(party.id.value, userId)) {
                 throw PartyBadRequest(PARTY_ALREADY_INVITED, "해당 유저에게 이미 초대 메세지를 보낸 상태입니다.")
             }
 
@@ -224,16 +226,11 @@ class PartyLeaderService(val talentPoolService: TalentPoolService) {
         }
     }
 
-    fun getTalentPool(mapId: Long) : List<TalentResponse> {
+    fun getTalentPool(mapId: Long, partyId: String): List<TalentResponse> {
         val talentUserList = talentPoolService.getTalentPool(mapId)
-//        return transaction (readOnly = true){
-//            CharacterTable.selectAll().where { CharacterTable.id inList talentUserList }.map{
-//
-//            }
-//        }
-        return emptyList()
-
-
-
+        val invitedTimeByPartyId = transaction {
+            InvitationEntity.getInvitedTimeByPartyId(partyId)
+        }
+        return talentUserList.map { TalentResponse.from(it, invitedTimeByPartyId[it.userId]) }
     }
 }

@@ -144,10 +144,24 @@ class TalentPoolService(
      */
     fun getTalentPool(mapId: Long): List<TalentDto> {
         val mapKey = getTalentMapKey(mapId)
-//        return redisTemplate.opsForSet().members(mapKey)
-//            ?.toList()
-//            ?: return emptyList()
-        return emptyList()
+        // Get all user IDs registered for this map
+        val userIds = redisTemplate.opsForSet().members(mapKey) ?: emptySet()
+
+        // For each user ID, check if they have an active talent key and fetch their TalentDto
+        return userIds.mapNotNull { userIdStr ->
+            val userId = userIdStr.toLongOrNull() ?: return@mapNotNull null
+            val userKey = getTalentUserKey(userId)
+
+            // Get the JSON value from Redis - if key doesn't exist or is expired, this returns null
+            val json = redisTemplate.opsForValue().get(userKey) ?: return@mapNotNull null
+
+            // Deserialize JSON to TalentDto
+            try {
+                objectMapper.readValue(json, TalentDto::class.java)
+            } catch (e: Exception) {
+                null // Skip invalid JSON
+            }
+        }
     }
 
     // ============================================================================

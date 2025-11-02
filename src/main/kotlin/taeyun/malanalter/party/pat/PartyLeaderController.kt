@@ -48,10 +48,9 @@ class PartyLeaderController(
         partyLeaderService.inviteUserToParty(userId)
     }
 
-    @GetMapping("/talent/{mapId}")
-    fun getTalentPool(@PathVariable mapId: Long): List<TalentResponse> {
-        partyLeaderService.getTalentPool(mapId)
-        return emptyList()
+    @GetMapping("/talent")
+    fun getTalentPool(@RequestParam mapId: Long, @RequestParam partyId: String): List<TalentResponse> {
+        return partyLeaderService.getTalentPool(mapId, partyId)
 
     }
 

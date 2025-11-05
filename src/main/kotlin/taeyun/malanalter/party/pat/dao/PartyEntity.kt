@@ -16,7 +16,10 @@ class PartyEntity(id: EntityID<String>): Entity<String>(id) {
         }
     }
 
+
     var status by PartyTable.status
     val mapId by PartyTable.mapId
+    val description by PartyTable.description
+    val createdAt by PartyTable.createdAt
 
 }

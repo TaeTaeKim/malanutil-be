@@ -18,8 +18,10 @@ import taeyun.malanalter.user.UserService
 import java.util.*
 
 @Service
-class PartyLeaderService(val talentPoolService: TalentPoolService) {
-
+class PartyLeaderService(
+    val talentPoolService: TalentPoolService,
+    val partyRedisService: PartyRedisService
+) {
     /**
      * 로그인 유저가 리더인 파티 조회
      * @return 리더인 파티 정보, 없으면 null
@@ -113,6 +115,9 @@ class PartyLeaderService(val talentPoolService: TalentPoolService) {
                 it[PartyHistory.mapId] = mapId
             }
 
+
+            partyRedisService.registerPartyHeartbeat(partyId)
+
             // Fetch created party to return
             val createdParty = PartyTable.selectAll()
                 .where { PartyTable.id eq partyId }
@@ -177,8 +182,11 @@ class PartyLeaderService(val talentPoolService: TalentPoolService) {
                 "삭제할 파티를 찾지 못했습니다."
             )
 
+            partyRedisService.removePartyHeartbeat(partyId)
+
             // Delete the party (positions will be cascade deleted)
             PartyTable.deleteWhere { PartyTable.id eq partyId }
+
         }
     }
 
@@ -212,7 +220,7 @@ class PartyLeaderService(val talentPoolService: TalentPoolService) {
                 else -> {}
             }
             val userTalentPool = talentPoolService.getRegisteringMaps(inviteUserId)
-            if(party.mapId !in userTalentPool.mapIds ) {
+            if (party.mapId !in userTalentPool.mapIds) {
                 throw PartyBadRequest(CHARACTER_NOT_IN_TALENT, "유저가 해당 맵의 탤런트에 없습니다")
             }
 
@@ -235,5 +243,12 @@ class PartyLeaderService(val talentPoolService: TalentPoolService) {
             InvitationEntity.getInvitedTimeByPartyId(partyId)
         }
         return talentUserList.map { TalentResponse.from(it, invitedTimeByPartyId[it.userId]) }
+    }
+
+    fun getPartyHeartbeat(partyId: String): Long {
+        return partyRedisService.getPartyTTL(partyId)
+    }
+    fun renewPartyHeartbeat(partyId: String) {
+        partyRedisService.registerPartyHeartbeat(partyId)
     }
 }

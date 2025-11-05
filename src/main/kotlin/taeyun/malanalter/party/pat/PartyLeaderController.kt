@@ -39,10 +39,28 @@ class PartyLeaderController(
     fun deleteParty(@PathVariable partyId: String) {
         partyLeaderService.deleteParty(partyId)
     }
+    /**************
+     * 파티 활성화 관련 API
+     ************/
 
-    /**
+    // @return : 음수(만료) 혹은 남은 시간 Sec
+    @GetMapping("/heartbeat")
+    fun getPartyHeartbeat(@RequestParam partyId: String) : Long{
+        return partyLeaderService.getPartyHeartbeat(partyId)
+    }
+
+    @PostMapping("/renew/heartbeat/{partyId}")
+    fun renewHeartbeat(@PathVariable partyId: String) {
+        partyLeaderService.renewPartyHeartbeat(partyId)
+    }
+
+
+
+    /**************
      * 유저 초대 및 인재풀 조회 API
-     */
+     ************/
+
+
     // 유저를 파티에 초대하는 API
     @PostMapping("/invite/{userId}")
     fun inviteUserToParty(@PathVariable userId: Long) {

@@ -15,8 +15,8 @@ class PartyFinderController(
 
     // 구직 유저가 선택한 맵의 파티를 반환하는 컨트롤러
     @GetMapping
-    fun getParties(mapIds: List<Long>): List<PartyResponse>{
-        return emptyList()
+    fun getParties(@RequestParam mapIds: List<Long>): List<PartyResponse>{
+        return partyFinderService.getPartiesByMaps(mapIds)
     }
 
     // 구직 유저가 요청한 맵 디스코드를 반환하는 컨트롤러

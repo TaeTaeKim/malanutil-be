@@ -146,6 +146,7 @@ class PartyLeaderService(
                 it[PositionTable.partyId] = partyId
                 it[name] = position.name
                 it[description] = position.description
+                it[price] = position.price
                 it[isLeader] = position.isLeader
                 it[status] = position.status
                 it[isPriestSlot] = position.isPriestSlot

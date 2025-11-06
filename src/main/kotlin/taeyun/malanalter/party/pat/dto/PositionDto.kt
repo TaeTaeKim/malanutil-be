@@ -9,7 +9,8 @@ data class PositionDto(
     val id: String,
     val partyId: String,
     val name: String, // "1층", "좌우깐"
-    val description: String, // "심비 1억", "지참금 없음"
+    val description: String?, // "심비 1억", "지참금 없음"
+    val price: String?,
     val isLeader: Boolean,
     val status: PositionStatus, // RECRUITING, COMPLETED
     val isPriestSlot: Boolean,
@@ -27,6 +28,7 @@ data class PositionDto(
                 partyId = row[PositionTable.partyId].value,
                 name = row[PositionTable.name],
                 description = row[PositionTable.description],
+                price = row[PositionTable.price],
                 isLeader = row[PositionTable.isLeader],
                 status = row[PositionTable.status],
                 isPriestSlot = row[PositionTable.isPriestSlot],
@@ -50,6 +52,7 @@ data class PositionDto(
                 partyId = partyId,
                 name = position.name,
                 description = position.description,
+                price = position.price,
                 isLeader = position.isLeader,
                 status = position.status,
                 isPriestSlot = position.isPriestSlot,

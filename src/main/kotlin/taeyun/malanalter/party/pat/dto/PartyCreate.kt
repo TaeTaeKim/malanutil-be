@@ -17,7 +17,8 @@ data class PartyCreate(
 
 data class Position(
     val name: String, // 포지션 이름 (1층, 좌우깐)
-    val description: String, // 심비, 지참금 등 설명
+    val description: String,
+    val price: String,
     val isLeader: Boolean,
     val preferJob: List<String>,
     val status: PositionStatus,

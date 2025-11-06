@@ -11,7 +11,8 @@ object PositionTable: IdTable<String>("position") {
     override val id = varchar("id", 255).entityId()
     val partyId = reference("party_id", PartyTable.id, onDelete = ReferenceOption.CASCADE).index()
     val name = varchar("name", 100) // "1층", "좌우깐", etc.
-    val description = varchar("description", 500) // "심비 1억", "지참금 없음", etc.
+    val description = varchar("description", 500).nullable() // 120히어로 (구인 완료 된 경우).
+    val price = varchar("price", 30).nullable()
     val isLeader = bool("is_leader").default(false)
     val status = enumerationByName<PositionStatus>("status", 50).default(PositionStatus.RECRUITING)
     val isPriestSlot = bool("is_priest_slot").default(false)

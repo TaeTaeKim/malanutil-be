@@ -1,6 +1,7 @@
 package taeyun.malanalter.party.pat
 
 import org.springframework.web.bind.annotation.*
+import taeyun.malanalter.party.pat.dto.PartyApplyRequest
 import taeyun.malanalter.party.pat.dto.PartyResponse
 import taeyun.malanalter.party.pat.dto.RegisteringPoolResponse
 import taeyun.malanalter.party.pat.dto.TalentRegisterRequest
@@ -27,8 +28,8 @@ class PartyFinderController(
 
     // 구직 유저가 파티에 지원하는 기능
     @PostMapping("/apply")
-    fun applyToParty(@RequestBody partyApplyRequest: Any) {
-
+    fun applyToParty(@RequestBody partyApplyRequest: PartyApplyRequest) {
+        partyFinderService.applyParty(partyApplyRequest)
     }
 
     @GetMapping("/talentPool")

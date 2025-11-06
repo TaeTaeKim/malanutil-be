@@ -37,4 +37,7 @@ enum class ErrorCode(
 
     CHARACTER_NOT_FOUND(HttpStatus.NOT_FOUND, "CHARACTER_001", "Character Not Found"),
     CHARACTER_NOT_IN_TALENT(HttpStatus.NOT_FOUND, "CHARACTER_002", "Character Not Registered in Map Talent"),
+
+    ALREADY_APPLIED(HttpStatus.BAD_REQUEST, "APPLY_001", "Already Applied"),
+    INVALID_PARTY_APPLIED(HttpStatus.NOT_FOUND, "APPLY_002", "Illegal Application Not Found"),
 }

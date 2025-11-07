@@ -11,16 +11,20 @@ import org.springframework.stereotype.Service
 import taeyun.malanalter.config.exception.AlerterBadRequest
 import taeyun.malanalter.config.exception.ErrorCode.*
 import taeyun.malanalter.config.exception.PartyBadRequest
+import taeyun.malanalter.party.character.CharacterEntity
 import taeyun.malanalter.party.character.CharacterTable
 import taeyun.malanalter.party.pat.dao.*
-import taeyun.malanalter.party.pat.dto.*
+import taeyun.malanalter.party.pat.dto.PartyCreate
+import taeyun.malanalter.party.pat.dto.PartyResponse
+import taeyun.malanalter.party.pat.dto.PositionDto
+import taeyun.malanalter.party.pat.dto.TalentResponse
 import taeyun.malanalter.user.UserService
 import java.util.*
 
 @Service
 class PartyLeaderService(
     val talentPoolService: TalentPoolService,
-    val partyRedisService: PartyRedisService
+    val partyRedisService: PartyRedisService,
 ) {
     /**
      * 로그인 유저가 리더인 파티 조회
@@ -53,6 +57,7 @@ class PartyLeaderService(
      * Party, Position Id 는 UUID로 생성
      *
      */
+    // todo: redis publish
     fun createParty(mapId: Long, partyCreate: PartyCreate): PartyResponse {
         val userId = UserService.getLoginUserId()
 
@@ -96,17 +101,7 @@ class PartyLeaderService(
                 // status, lastHeartbeatAt, createdAt, updatedAt have default values
             }
 
-            // Insert positions if hasPosition=true
-            val positionDtos = if (partyCreate.hasPositions) {
-                savePartyPositions(
-                    positions = partyCreate.positions,
-                    partyId = partyId,
-                    userId = userId,
-                    characterId = partyCreate.characterId
-                )
-            } else {
-                emptyList()
-            }
+            savePartyPositions(partyCreate, partyId)
 
             // Save party creation history
             PartyHistory.insert {
@@ -115,7 +110,7 @@ class PartyLeaderService(
                 it[PartyHistory.mapId] = mapId
             }
 
-
+            // 파티 heartbeat 시작
             partyRedisService.registerPartyHeartbeat(partyId)
 
             // Fetch created party to return
@@ -123,54 +118,62 @@ class PartyLeaderService(
                 .where { PartyTable.id eq partyId }
                 .single()
 
+            val positionDtos = PositionTable.selectAll()
+                .where { PositionTable.partyId eq partyId }
+                .map (PositionDto::from)
+
             // Return party response with positions
             PartyResponse.withPositions(createdParty, positionDtos)
         }
     }
 
-    /**
-     * 파티 생성 과정에서 포지션을 저장하는 헬퍼함수
-     */
-    private fun savePartyPositions(
-        positions: List<Position>,
-        partyId: String,
-        userId: Long,
-        characterId: String
-    ): List<PositionDto> {
-        return positions.map { position ->
+    private fun savePartyPositions(partyRequest: PartyCreate, partyId: String) {
+        val userId = UserService.getLoginUserId()
+        val findById = CharacterEntity.findById(partyRequest.characterId)
+        for (i in 0 until partyRequest.numPeople) {
             val positionId = UUID.randomUUID().toString()
+            if (partyRequest.hasPositions) {
+                val position = partyRequest.positions[i]
+                PositionTable.insert {
+                    it[id] = positionId
+                    it[PositionTable.partyId] = partyId
+                    it[name] = position.name
+                    it[description] = position.description
+                    it[price] = position.price
+                    it[isLeader] = position.isLeader
+                    it[status] = position.status
+                    it[isPriestSlot] = position.isPriestSlot
+                    it[preferJob] = position.preferJob.joinToString(",")
 
-            // Insert position into database
-            PositionTable.insert {
-                it[id] = positionId
-                it[PositionTable.partyId] = partyId
-                it[name] = position.name
-                it[description] = position.description
-                it[price] = position.price
-                it[isLeader] = position.isLeader
-                it[status] = position.status
-                it[isPriestSlot] = position.isPriestSlot
-                it[preferJob] = position.preferJob.joinToString(",")
-
-                // If this is the leader position, auto-assign to creator
-                if (position.isLeader) {
-                    it[assignedUserId] = userId
-                    it[assignedCharacterId] = characterId
+                    // If this is the leader position, auto-assign to creator
+                    if (position.isLeader) {
+                        it[assignedUserId] = userId
+                        it[assignedCharacterId] = partyRequest.characterId
+                    }
+                }
+            } else {
+                val leaderPosition = i==0
+                PositionTable.insert {
+                    it[id] = positionId
+                    it[PositionTable.partyId] = partyId
+                    it[name] = if(leaderPosition) "파장" else "${i+1}"
+                    it[description] = if(leaderPosition && findById != null) "${findById.level}${findById.job}" else null
+                    it[isLeader] = leaderPosition // 첫번쨰 포지션을 강제로 리더로 지정
+                    it[status] = if (leaderPosition) PositionStatus.COMPLETED else PositionStatus.RECRUITING
+                    it[isPriestSlot] = false
+                    // If this is the leader position, auto-assign to creator
+                    if (leaderPosition) {
+                        it[assignedUserId] = userId
+                        it[assignedCharacterId] = partyRequest.characterId
+                    }
                 }
             }
 
-            // Convert to PositionDto using static constructor
-            PositionDto.from(
-                position = position,
-                positionId = positionId,
-                partyId = partyId,
-                assignedUserId = if (position.isLeader) userId else null,
-                assignedCharacterId = if (position.isLeader) characterId else null
-            )
         }
     }
 
     // todo: 파티 없애기 시 들어와 있던 지원자들을 free 시켜줘야 함
+    // todo : redis publish
     fun deleteParty(partyId: String) {
         val userId = UserService.getLoginUserId()
 
@@ -249,6 +252,7 @@ class PartyLeaderService(
     fun getPartyHeartbeat(partyId: String): Long {
         return partyRedisService.getPartyTTL(partyId)
     }
+
     fun renewPartyHeartbeat(partyId: String) {
         partyRedisService.registerPartyHeartbeat(partyId)
     }

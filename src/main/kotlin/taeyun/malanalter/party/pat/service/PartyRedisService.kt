@@ -3,6 +3,7 @@ package taeyun.malanalter.party.pat.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Service
+import taeyun.malanalter.party.pat.dto.DiscordMessageDto
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -17,6 +18,9 @@ class PartyRedisService(
 
         fun getPartyHeartbeatKey(partyId: String): String {
             return "$PARTY_KEY_PREFIX:$partyId:heartbeat"
+        }
+        fun getMapDiscordKey(mapId: Long): String {
+            return "discord:messages:$mapId"
         }
     }
 
@@ -40,5 +44,23 @@ class PartyRedisService(
     fun removePartyHeartbeat(partyId: String) {
         val partyHeartbeatKey = getPartyHeartbeatKey(partyId)
         redisTemplate.delete(partyHeartbeatKey)
+    }
+    fun getDiscordOfMaps(mapIds: List<Long>): Map<Long, List<DiscordMessageDto>> {
+        val result = mutableMapOf<Long, List<DiscordMessageDto>>()
+        mapIds.forEach { mapId ->
+            val key = getMapDiscordKey(mapId)
+            val jsonStrings = redisTemplate.opsForZSet().range(key, 0, -1)
+            val messages = jsonStrings?.mapNotNull { jsonString ->
+                try {
+                    objectMapper.readValue(jsonString, DiscordMessageDto::class.java)
+                } catch (e: Exception) {
+                    // Log error and skip invalid entries
+                    logger.error{ "Json Deserialization error of $jsonString" }
+                    null
+                }
+            }?.sortedByDescending { it.timestamp }
+            result.put(mapId, messages?: emptyList())
+        }
+        return result
     }
 }

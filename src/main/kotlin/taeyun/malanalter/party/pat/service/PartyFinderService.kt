@@ -14,10 +14,7 @@ import taeyun.malanalter.party.pat.dao.ApplicantTable
 import taeyun.malanalter.party.pat.dao.PartyStatus
 import taeyun.malanalter.party.pat.dao.PartyTable
 import taeyun.malanalter.party.pat.dao.PositionTable
-import taeyun.malanalter.party.pat.dto.PartyApplyRequest
-import taeyun.malanalter.party.pat.dto.PartyResponse
-import taeyun.malanalter.party.pat.dto.PositionDto
-import taeyun.malanalter.party.pat.dto.RegisteringPoolResponse
+import taeyun.malanalter.party.pat.dto.*
 import taeyun.malanalter.user.UserService
 import java.util.UUID.randomUUID
 
@@ -73,6 +70,10 @@ class PartyFinderService(val talentPoolService: TalentPoolService, private val p
 
     }
 
+    fun getMapDiscordMessages(mapIds: List<Long>): Map<Long, List<DiscordMessageDto>> {
+        return partyRedisService.getDiscordOfMaps(mapIds)
+    }
+
     // todo : publish 로 받는 사람에게 메세지 전송
     fun applyParty(partyApplyRequest: PartyApplyRequest) {
         transaction {
@@ -91,6 +92,8 @@ class PartyFinderService(val talentPoolService: TalentPoolService, private val p
             }
         }
     }
+
+
 
 
 }

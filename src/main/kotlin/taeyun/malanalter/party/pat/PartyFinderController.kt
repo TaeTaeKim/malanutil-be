@@ -1,10 +1,7 @@
 package taeyun.malanalter.party.pat
 
 import org.springframework.web.bind.annotation.*
-import taeyun.malanalter.party.pat.dto.PartyApplyRequest
-import taeyun.malanalter.party.pat.dto.PartyResponse
-import taeyun.malanalter.party.pat.dto.RegisteringPoolResponse
-import taeyun.malanalter.party.pat.dto.TalentRegisterRequest
+import taeyun.malanalter.party.pat.dto.*
 import taeyun.malanalter.party.pat.service.PartyFinderService
 
 /* 구직 유저 관련 컨트롤러 */
@@ -18,6 +15,11 @@ class PartyFinderController(
     @GetMapping
     fun getParties(@RequestParam mapIds: List<Long>): List<PartyResponse>{
         return partyFinderService.getPartiesByMaps(mapIds)
+    }
+
+    @GetMapping("/discord")
+    fun getMapDiscord(@RequestParam mapIds: List<Long>): Map<Long, List<DiscordMessageDto>> {
+        return partyFinderService.getMapDiscordMessages(mapIds)
     }
 
     // 구직 유저가 요청한 맵 디스코드를 반환하는 컨트롤러

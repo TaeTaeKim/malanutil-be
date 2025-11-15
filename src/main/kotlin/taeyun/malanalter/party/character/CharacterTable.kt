@@ -20,4 +20,8 @@ object CharacterTable : IdTable<String>(name = "character") {
     val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
 
     override val primaryKey = PrimaryKey(id)
+
+    init {
+        index(isUnique = false, userId, id)
+    }
 }

@@ -42,6 +42,7 @@ class PartyLeaderService(
                 val partyId = partyRow[PartyTable.id].value
                 val positions = PositionTable.selectAll()
                     .where { PositionTable.partyId eq partyId }
+                    .orderBy(PositionTable.orderNumber)
                     .map { PositionDto.from(it) }
 
                 // Return party with positions
@@ -134,10 +135,10 @@ class PartyLeaderService(
     private fun savePartyPositions(partyRequest: PartyCreate, partyId: String) {
         val userId = UserService.getLoginUserId()
         val findById = CharacterEntity.findById(partyRequest.characterId)
-        for (i in 0 until partyRequest.numPeople) {
+        for (idx in 0 until partyRequest.numPeople) {
             val positionId = UUID.randomUUID().toString()
             if (partyRequest.hasPositions) {
-                val position = partyRequest.positions[i]
+                val position = partyRequest.positions[idx]
                 PositionTable.insert {
                     it[id] = positionId
                     it[PositionTable.partyId] = partyId
@@ -148,6 +149,7 @@ class PartyLeaderService(
                     it[status] = position.status
                     it[isPriestSlot] = position.isPriestSlot
                     it[preferJob] = position.preferJob.joinToString(",")
+                    it[orderNumber] = idx
 
                     // If this is the leader position, auto-assign to creator
                     if (position.isLeader) {
@@ -156,11 +158,11 @@ class PartyLeaderService(
                     }
                 }
             } else {
-                val leaderPosition = i == 0
+                val leaderPosition = idx == 0
                 PositionTable.insert {
                     it[id] = positionId
                     it[PositionTable.partyId] = partyId
-                    it[name] = if (leaderPosition) "파장" else "${i + 1}"
+                    it[name] = if (leaderPosition) "파장" else "${idx + 1}"
                     it[description] =
                         if (leaderPosition && findById != null) "${findById.level}${findById.job}" else null
                     it[isLeader] = leaderPosition // 첫번쨰 포지션을 강제로 리더로 지정

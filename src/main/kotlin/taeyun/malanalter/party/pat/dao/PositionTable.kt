@@ -7,7 +7,7 @@ import org.jetbrains.exposed.v1.datetime.datetime
 import taeyun.malanalter.party.character.CharacterTable
 import taeyun.malanalter.user.domain.Users
 
-object PositionTable: IdTable<String>("position") {
+object PositionTable: IdTable<String>("party_position") {
     override val id = varchar("id", 255).entityId()
     val partyId = reference("party_id", PartyTable.id, onDelete = ReferenceOption.CASCADE).index()
     val name = varchar("name", 100) // "1층", "좌우깐", etc.
@@ -17,6 +17,7 @@ object PositionTable: IdTable<String>("position") {
     val status = enumerationByName<PositionStatus>("status", 50).default(PositionStatus.RECRUITING)
     val isPriestSlot = bool("is_priest_slot").default(false)
     val preferJob = varchar("prefer_job", 255).nullable()
+    val orderNumber = integer(name = "order_number")
 
     // Who filled this position
     val assignedUserId = reference("assigned_user_id", Users.id, onDelete = ReferenceOption.SET_NULL).nullable()

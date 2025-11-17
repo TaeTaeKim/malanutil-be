@@ -57,7 +57,6 @@ class PartyLeaderService(
      * Party, Position Id 는 UUID로 생성
      *
      */
-    // todo: redis publish
     fun createParty(mapId: Long, partyCreate: PartyCreate): PartyResponse {
         val userId = UserService.getLoginUserId()
 
@@ -123,7 +122,12 @@ class PartyLeaderService(
                 .map (PositionDto::from)
 
             // Return party response with positions
-            PartyResponse.withPositions(createdParty, positionDtos)
+            val result = PartyResponse.withPositions(createdParty, positionDtos)
+
+            // publish to redis
+            partyRedisService.publishMessage(PartyRedisService.partyCreateTopic(mapId), result)
+            result
+
         }
     }
 

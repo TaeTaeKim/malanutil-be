@@ -22,6 +22,9 @@ class PartyRedisService(
         fun getMapDiscordKey(mapId: Long): String {
             return "discord:messages:$mapId"
         }
+        fun partyCreateTopic(mapId:Long) : String{
+            return "party:$mapId:create"
+        }
     }
 
 
@@ -62,5 +65,10 @@ class PartyRedisService(
             result.put(mapId, messages?: emptyList())
         }
         return result
+    }
+
+    fun publishMessage(topic: String, message: Any){
+        val data = objectMapper.writeValueAsString(message)
+        redisTemplate.convertAndSend(topic, data)
     }
 }

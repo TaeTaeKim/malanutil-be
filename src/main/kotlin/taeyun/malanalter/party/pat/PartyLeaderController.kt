@@ -3,6 +3,7 @@ package taeyun.malanalter.party.pat
 import org.springframework.web.bind.annotation.*
 import taeyun.malanalter.party.pat.dto.PartyCreate
 import taeyun.malanalter.party.pat.dto.PartyResponse
+import taeyun.malanalter.party.pat.dto.PositionUpdateReq
 import taeyun.malanalter.party.pat.dto.TalentResponse
 import taeyun.malanalter.party.pat.service.PartyLeaderService
 
@@ -38,6 +39,11 @@ class PartyLeaderController(
     @DeleteMapping("/{partyId}")
     fun deleteParty(@PathVariable partyId: String) {
         partyLeaderService.deleteParty(partyId)
+    }
+
+    @PatchMapping("/{partyId}/position/{positionId}")
+    fun updatePartyPosition(@RequestBody update: PositionUpdateReq, @PathVariable partyId: String, @PathVariable positionId: String) {
+        partyLeaderService.updatePartyPosition(update, partyId, positionId)
     }
     /**************
      * 파티 활성화 관련 API

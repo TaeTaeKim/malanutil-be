@@ -7,6 +7,7 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.stereotype.Service
 import taeyun.malanalter.config.exception.AlerterBadRequest
 import taeyun.malanalter.config.exception.ErrorCode.*
@@ -14,10 +15,9 @@ import taeyun.malanalter.config.exception.PartyBadRequest
 import taeyun.malanalter.party.character.CharacterEntity
 import taeyun.malanalter.party.character.CharacterTable
 import taeyun.malanalter.party.pat.dao.*
-import taeyun.malanalter.party.pat.dto.PartyCreate
-import taeyun.malanalter.party.pat.dto.PartyResponse
-import taeyun.malanalter.party.pat.dto.PositionDto
-import taeyun.malanalter.party.pat.dto.TalentResponse
+import taeyun.malanalter.party.pat.dto.*
+import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyCreateTopic
+import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyUpdateTopic
 import taeyun.malanalter.user.UserService
 import java.util.*
 
@@ -119,13 +119,13 @@ class PartyLeaderService(
 
             val positionDtos = PositionTable.selectAll()
                 .where { PositionTable.partyId eq partyId }
-                .map (PositionDto::from)
+                .map(PositionDto::from)
 
             // Return party response with positions
             val result = PartyResponse.withPositions(createdParty, positionDtos)
 
             // publish to redis
-            partyRedisService.publishMessage(PartyRedisService.partyCreateTopic(mapId), result)
+            partyRedisService.publishMessage(partyCreateTopic(mapId), result)
             result
 
         }
@@ -156,12 +156,13 @@ class PartyLeaderService(
                     }
                 }
             } else {
-                val leaderPosition = i==0
+                val leaderPosition = i == 0
                 PositionTable.insert {
                     it[id] = positionId
                     it[PositionTable.partyId] = partyId
-                    it[name] = if(leaderPosition) "파장" else "${i+1}"
-                    it[description] = if(leaderPosition && findById != null) "${findById.level}${findById.job}" else null
+                    it[name] = if (leaderPosition) "파장" else "${i + 1}"
+                    it[description] =
+                        if (leaderPosition && findById != null) "${findById.level}${findById.job}" else null
                     it[isLeader] = leaderPosition // 첫번쨰 포지션을 강제로 리더로 지정
                     it[status] = if (leaderPosition) PositionStatus.COMPLETED else PositionStatus.RECRUITING
                     it[isPriestSlot] = false
@@ -196,6 +197,57 @@ class PartyLeaderService(
             PartyTable.deleteWhere { PartyTable.id eq partyId }
 
         }
+    }
+
+    /**
+     * 파티 자리를 파티장이 직접 수정할 경우 != 초대요청 수락 혹은 참가요청 수락
+     * 파티 포지션 자리는 무조건 비관적 락으로 실행한다. -> 경쟁적으로 자리 요청이 생길 수 있다. Conflict 상황이 많다.
+     * 트랜잭션 락 시간이 길지 않다.
+     * 리 트라이가 필요없다.
+     *
+     * party:{mapId}:update 를 줘야한다.
+     */
+    fun updatePartyPosition(update: PositionUpdateReq, partyId: String, positionId: String) {
+        // 요청 검증
+        if (update.status == PositionStatus.COMPLETED && (update.recruitedJob == null || update.recruitedLevel == null)) {
+            throw PartyBadRequest(POSITION_INPUT_INVALID, POSITION_INPUT_INVALID.defaultMessage)
+        }
+        // Transaction 은 업데이트 후 바로 release 하여 다른 락킹 트랜잭션을 풀어준다.
+        transaction {
+            val row = PositionTable.selectAll()
+                .where { PositionTable.partyId eq partyId and (PositionTable.id eq positionId) }
+                .forUpdate()
+                .singleOrNull() ?: throw PartyBadRequest(POSITION_NOT_FOUND, "포지션을 찾을 수 없습니다.")
+
+            // 사용자가 변경하려 했지만 중간에 초대 요청을 수락한 사람이 있을 경우 막아야한다.
+            if(row[PositionTable.status]== PositionStatus.COMPLETED && update.status == PositionStatus.COMPLETED) {
+                throw PartyBadRequest(POSITION_ALREADY_OCCUPIED, POSITION_ALREADY_OCCUPIED.defaultMessage)
+            }
+
+            PositionTable.update(where = { PositionTable.id eq positionId }) {
+                it[name] = update.name
+                it[price] = update.price
+                it[preferJob] = update.preferJob?.joinToString(",")
+                it[status] = update.status
+                if (update.status == PositionStatus.COMPLETED) {
+                    it[description] = "${update.recruitedLevel} ${update.recruitedJob}"
+                } else {
+                    it[description] = null
+                }
+            }
+        }
+
+        val response  = PositionUpdateRes(
+            partyId = partyId,
+            positionId = positionId,
+            name = update.name,
+            price = update.price,
+            preferJobs = update.preferJob?:emptyList(),
+            status = update.status,
+            description = if(update.status== PositionStatus.COMPLETED) "${update.recruitedLevel} ${update.recruitedJob}" else null
+        )
+
+        partyRedisService.publishMessage(partyUpdateTopic(update.mapCode), response)
     }
 
     fun getPartyCreationHistory(mapId: Long): PartyCreate? {
@@ -260,4 +312,6 @@ class PartyLeaderService(
     fun renewPartyHeartbeat(partyId: String) {
         partyRedisService.registerPartyHeartbeat(partyId)
     }
+
+
 }

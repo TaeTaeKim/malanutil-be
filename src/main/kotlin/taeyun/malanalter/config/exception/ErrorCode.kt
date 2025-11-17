@@ -40,4 +40,8 @@ enum class ErrorCode(
 
     ALREADY_APPLIED(HttpStatus.BAD_REQUEST, "APPLY_001", "Already Applied"),
     INVALID_PARTY_APPLIED(HttpStatus.NOT_FOUND, "APPLY_002", "Illegal Application Not Found"),
+
+    POSITION_NOT_FOUND(HttpStatus.NOT_FOUND, "POSITION_001", "Position not found"),
+    POSITION_ALREADY_OCCUPIED(HttpStatus.BAD_REQUEST, "POSITION_002", "Position already occupied"),
+    POSITION_INPUT_INVALID(HttpStatus.BAD_REQUEST, "POSITION_003", "Position Input Invalid"),
 }

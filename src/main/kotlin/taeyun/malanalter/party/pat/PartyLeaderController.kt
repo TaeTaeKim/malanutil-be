@@ -78,9 +78,7 @@ class PartyLeaderController(
 
     @GetMapping("/applicant")
     fun getApplicant(): List<ApplicantRes> {
-        partyLeaderService.getApplicant()
-        return emptyList()
-
+        return partyLeaderService.getApplicant()
     }
 
 

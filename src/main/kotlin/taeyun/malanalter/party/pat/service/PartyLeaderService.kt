@@ -2,12 +2,10 @@ package taeyun.malanalter.party.pat.service
 
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.v1.core.StdOutSqlLogger
 import org.jetbrains.exposed.v1.core.and
-import org.jetbrains.exposed.v1.jdbc.deleteWhere
-import org.jetbrains.exposed.v1.jdbc.insert
-import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.stereotype.Service
 import taeyun.malanalter.config.exception.AlerterBadRequest
 import taeyun.malanalter.config.exception.ErrorCode.*
@@ -222,7 +220,7 @@ class PartyLeaderService(
                 .singleOrNull() ?: throw PartyBadRequest(POSITION_NOT_FOUND, "포지션을 찾을 수 없습니다.")
 
             // 사용자가 변경하려 했지만 중간에 초대 요청을 수락한 사람이 있을 경우 막아야한다.
-            if(row[PositionTable.status]== PositionStatus.COMPLETED && update.status == PositionStatus.COMPLETED) {
+            if (row[PositionTable.status] == PositionStatus.COMPLETED && update.status == PositionStatus.COMPLETED) {
                 throw PartyBadRequest(POSITION_ALREADY_OCCUPIED, POSITION_ALREADY_OCCUPIED.defaultMessage)
             }
 
@@ -239,14 +237,14 @@ class PartyLeaderService(
             }
         }
 
-        val response  = PositionUpdateRes(
+        val response = PositionUpdateRes(
             partyId = partyId,
             positionId = positionId,
             name = update.name,
             price = update.price,
-            preferJobs = update.preferJob?:emptyList(),
+            preferJobs = update.preferJob ?: emptyList(),
             status = update.status,
-            description = if(update.status== PositionStatus.COMPLETED) "${update.recruitedLevel} ${update.recruitedJob}" else null
+            description = if (update.status == PositionStatus.COMPLETED) "${update.recruitedLevel} ${update.recruitedJob}" else null
         )
 
         partyRedisService.publishMessage(partyUpdateTopic(update.mapCode), response)
@@ -315,9 +313,30 @@ class PartyLeaderService(
         partyRedisService.registerPartyHeartbeat(partyId)
     }
 
-    fun getApplicant() : List<ApplicantRes> {
-        TODO("Not yet implemented")
+    fun getApplicant(): List<ApplicantRes> {
+        val leaderUserId = UserService.getLoginUserId()
+        // 파티가 있는지 확인
+        return transaction {
+            addLogger(StdOutSqlLogger)
+            val row = (PartyTable.select(PartyTable.id)
+                .where { PartyTable.leaderId eq leaderUserId }
+                .singleOrNull()
+                ?: throw PartyBadRequest(PARTY_NOT_FOUND, PARTY_NOT_FOUND.defaultMessage))
+            (ApplicantTable leftJoin CharacterTable).selectAll()
+                .where { ApplicantTable.partyId eq row[PartyTable.id] }
+                .map {
+                    ApplicantRes(
+                        applyId = it[ApplicantTable.id].toString(),
+                        applyUserId = it[ApplicantTable.applyUserId].value.toString(),
+                        characterId = it[ApplicantTable.characterId].value,
+                        name = it[CharacterTable.name],
+                        level = it[CharacterTable.level],
+                        job = it[CharacterTable.job],
+                        comment = it[CharacterTable.comment],
+                        positionId = it[ApplicantTable.positionId].value
+                    )
+
+                }
+        }
     }
-
-
 }

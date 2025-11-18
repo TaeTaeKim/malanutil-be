@@ -100,11 +100,14 @@ class PartyFinderService(val talentPoolService: TalentPoolService, private val p
 
     fun applyParty(partyApplyRequest: PartyApplyRequest) {
         transaction {
+            val applyUserId = UserService.getLoginUserId()
+
             try {
                 val newApplyId = ApplicantTable.insertAndGetId {
                     it[ApplicantTable.partyId] = partyApplyRequest.partyId
                     it[ApplicantTable.positionId] = partyApplyRequest.positionId
                     it[ApplicantTable.characterId] = partyApplyRequest.characterId
+                    it[ApplicantTable.applyUserId] = applyUserId
                 }
                 val characterRow = (CharacterTable.selectAll()
                     .where { CharacterTable.id eq partyApplyRequest.characterId }.singleOrNull()
@@ -114,7 +117,7 @@ class PartyFinderService(val talentPoolService: TalentPoolService, private val p
                     ))
                 val redisMessage = ApplicantRes(
                     applyId = newApplyId.value.toString(),
-                    applyUserId = UserService.getLoginUserId().toString(),
+                    applyUserId = applyUserId.toString(),
                     characterId = partyApplyRequest.characterId,
                     name= characterRow[CharacterTable.name],
                     level = characterRow[CharacterTable.level],

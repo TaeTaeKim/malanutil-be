@@ -6,7 +6,5 @@ data class ApplyAcceptReq(
     val applyId: String,
     val applicantUserId: String,
     val applicantCharacterId: String,
-    val applicantLevel: Int,
-    val applicantJob: String,
     val mapId: Long
 )

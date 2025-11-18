@@ -87,6 +87,7 @@ class PartyFinderService(val talentPoolService: TalentPoolService, private val p
                 .map {
                     val positions = PositionTable.selectAll()
                         .where { PositionTable.partyId eq it[PartyTable.id].value }
+                        .orderBy(PositionTable.orderNumber)
                         .map(PositionDto::from)
                     PartyResponse.withPositions(it, positions)
                 }

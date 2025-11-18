@@ -23,6 +23,7 @@ object PositionTable: IdTable<String>("party_position") {
     // Who filled this position
     val assignedUserId = reference("assigned_user_id", Users.id, onDelete = ReferenceOption.SET_NULL).nullable()
     val assignedCharacterId = reference("assigned_character_id", CharacterTable.id, onDelete = ReferenceOption.SET_NULL).nullable()
+    val assignedCharacterName = varchar("assigned_character_name", 255).nullable()
 
     val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
 

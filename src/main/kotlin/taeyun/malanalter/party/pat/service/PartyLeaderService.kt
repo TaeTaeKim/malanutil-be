@@ -2,7 +2,6 @@ package taeyun.malanalter.party.pat.service
 
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.v1.core.StdOutSqlLogger
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.*
@@ -61,7 +60,7 @@ class PartyLeaderService(
     fun createParty(mapId: Long, partyCreate: PartyCreate): PartyResponse {
         val userId = UserService.getLoginUserId()
 
-        val createdParty =  transaction {
+        val createdParty = transaction {
             // Validate: Leader's character exists
             CharacterTable.selectAll()
                 .where { CharacterTable.userId eq userId and (CharacterTable.id eq partyCreate.characterId) }
@@ -132,7 +131,8 @@ class PartyLeaderService(
 
     private fun savePartyPositions(partyRequest: PartyCreate, partyId: String) {
         val userId = UserService.getLoginUserId()
-        val findById = CharacterEntity.findById(partyRequest.characterId)
+        val leaderCharacter = CharacterEntity.findById(partyRequest.characterId)
+            ?: throw PartyBadRequest(CHARACTER_NOT_FOUND)
         for (idx in 0 until partyRequest.numPeople) {
             val positionId = UUID.randomUUID().toString()
             if (partyRequest.hasPositions) {
@@ -153,6 +153,7 @@ class PartyLeaderService(
                     if (position.isLeader) {
                         it[assignedUserId] = userId
                         it[assignedCharacterId] = partyRequest.characterId
+                        it[assignedCharacterName] = leaderCharacter.name
                     }
                 }
             } else {
@@ -162,7 +163,7 @@ class PartyLeaderService(
                     it[PositionTable.partyId] = partyId
                     it[name] = if (leaderPosition) "파장" else "${idx + 1}"
                     it[description] =
-                        if (leaderPosition && findById != null) "${findById.level}${findById.job}" else null
+                        if (leaderPosition) "${leaderCharacter.level}${leaderCharacter.job}" else null
                     it[isLeader] = leaderPosition // 첫번쨰 포지션을 강제로 리더로 지정
                     it[status] = if (leaderPosition) PositionStatus.COMPLETED else PositionStatus.RECRUITING
                     it[isPriestSlot] = false
@@ -170,6 +171,7 @@ class PartyLeaderService(
                     if (leaderPosition) {
                         it[assignedUserId] = userId
                         it[assignedCharacterId] = partyRequest.characterId
+                        it[assignedCharacterName] = leaderCharacter.name
                     }
                 }
             }
@@ -231,6 +233,9 @@ class PartyLeaderService(
                     it[description] = "${update.recruitedLevel} ${update.recruitedJob}"
                 } else {
                     it[description] = null
+                    it[assignedUserId] = null
+                    it[assignedCharacterId] = null
+                    it[assignedCharacterName] = null
                 }
             }.single().let { PositionDto.from(it) }
             // redis publish
@@ -334,10 +339,12 @@ class PartyLeaderService(
     fun acceptApplicant(acceptReq: ApplyAcceptReq): PositionDto {
         try {
             val result = transaction {
-                addLogger(StdOutSqlLogger)
                 // Applicant 가 있는지 검사
-                val applicantEntity = ApplicantEntity.findById(UUID.fromString(acceptReq.applyId))
-                    ?: throw PartyBadRequest(APPLICANT_NOT_FOUND)
+                ApplicantEntity.findById(UUID.fromString(acceptReq.applyId))
+                    ?: throw PartyBadRequest(USER_ALREADY_IN_PARTY)
+                // 신청자의 캐릭터 조회
+                val characterEntity = (CharacterEntity.findById(acceptReq.applicantCharacterId)
+                    ?: throw PartyBadRequest(CHARACTER_NOT_FOUND, "신청자의 캐릭터를 찾을 수 없습니다."))
                 // 1. Lock Position for update
                 val positionRow = PositionTable.selectAll()
                     .where { PositionTable.partyId eq acceptReq.partyId and (PositionTable.id eq acceptReq.positionId) }
@@ -355,16 +362,17 @@ class PartyLeaderService(
                     PositionTable.updateReturning(where = { PositionTable.id eq acceptReq.positionId }) {
                         it[status] = PositionStatus.COMPLETED
                         it[assignedUserId] = acceptReq.applicantUserId.toLong()
-                        it[assignedCharacterId] = acceptReq.applicantCharacterId
-                        it[description] = "${acceptReq.applicantLevel} ${acceptReq.applicantJob}"
+                        it[assignedCharacterId] = characterEntity.id.value
+                        it[assignedCharacterName] = characterEntity.name
+                        it[description] = "${characterEntity.level} ${characterEntity.job}"
                     }.single().let { PositionDto.from(it) }
 
-                // 4. applicant 제거
-                applicantEntity.delete()
+                // 4. 참가 수락되면 지원 유저의 모든 지원 정보 삭제
+                ApplicantTable.deleteWhere { ApplicantTable.applyUserId eq acceptReq.applicantUserId.toLong() }
                 // 5. redis publish
                 updatedPosition
             }
-            partyRedisService.publishMessage(PartyRedisService.partyUpdateTopic(acceptReq.mapId), result)
+            partyRedisService.publishMessage(partyUpdateTopic(acceptReq.mapId), result)
             return result
         } catch (e: ExposedSQLException) {
             val cause = e.cause

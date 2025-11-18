@@ -18,7 +18,8 @@ data class PositionDto(
 
     // Assigned user info (null if position is empty)
     val assignedUserId: Long?,
-    val assignedCharacterId: String?
+    val assignedCharacterId: String?,
+    val assignedCharacterName: String?,
 ) {
     companion object {
         // Convert database ResultRow to PositionDto
@@ -34,7 +35,8 @@ data class PositionDto(
                 isPriestSlot = row[PositionTable.isPriestSlot],
                 preferJob = row[PositionTable.preferJob]?.split(",") ?: emptyList(),
                 assignedUserId = row[PositionTable.assignedUserId]?.value,
-                assignedCharacterId = row[PositionTable.assignedCharacterId]?.value
+                assignedCharacterId = row[PositionTable.assignedCharacterId]?.value,
+                assignedCharacterName = row[PositionTable.assignedCharacterName]
             )
         }
     }

@@ -61,7 +61,7 @@ class PartyLeaderService(
     fun createParty(mapId: Long, partyCreate: PartyCreate): PartyResponse {
         val userId = UserService.getLoginUserId()
 
-        return transaction {
+        val createdParty =  transaction {
             // Validate: Leader's character exists
             CharacterTable.selectAll()
                 .where { CharacterTable.userId eq userId and (CharacterTable.id eq partyCreate.characterId) }
@@ -123,13 +123,11 @@ class PartyLeaderService(
                 .map(PositionDto::from)
 
             // Return party response with positions
-            val result = PartyResponse.withPositions(createdParty, positionDtos)
-
-            // publish to redis
-            partyRedisService.publishMessage(partyCreateTopic(mapId), result)
-            result
+            PartyResponse.withPositions(createdParty, positionDtos)
 
         }
+        partyRedisService.publishMessage(partyCreateTopic(mapId), createdParty)
+        return createdParty
     }
 
     private fun savePartyPositions(partyRequest: PartyCreate, partyId: String) {
@@ -180,7 +178,7 @@ class PartyLeaderService(
     }
 
     // todo: 파티 없애기 시 들어와 있던 지원자들을 free 시켜줘야 함
-    // todo : redis publish
+    // todo: redis publish
     fun deleteParty(partyId: String) {
         val userId = UserService.getLoginUserId()
 
@@ -192,9 +190,7 @@ class PartyLeaderService(
                 BAD_REQUEST,
                 "삭제할 파티를 찾지 못했습니다."
             )
-
             partyRedisService.removePartyHeartbeat(partyId)
-
             // Delete the party (positions will be cascade deleted)
             PartyTable.deleteWhere { PartyTable.id eq partyId }
 
@@ -215,7 +211,7 @@ class PartyLeaderService(
             throw PartyBadRequest(POSITION_INPUT_INVALID, POSITION_INPUT_INVALID.defaultMessage)
         }
         // Transaction 은 업데이트 후 바로 release 하여 다른 락킹 트랜잭션을 풀어준다.
-        transaction {
+        val positionDto = transaction {
             val row = PositionTable.selectAll()
                 .where { PositionTable.partyId eq partyId and (PositionTable.id eq positionId) }
                 .forUpdate()
@@ -226,7 +222,7 @@ class PartyLeaderService(
                 throw PartyBadRequest(POSITION_ALREADY_OCCUPIED, POSITION_ALREADY_OCCUPIED.defaultMessage)
             }
 
-            PositionTable.update(where = { PositionTable.id eq positionId }) {
+            PositionTable.updateReturning(where = { PositionTable.id eq positionId }) {
                 it[name] = update.name
                 it[price] = update.price
                 it[preferJob] = update.preferJob?.joinToString(",")
@@ -236,20 +232,12 @@ class PartyLeaderService(
                 } else {
                     it[description] = null
                 }
-            }
+            }.single().let { PositionDto.from(it) }
+            // redis publish
         }
+        partyRedisService.publishMessage(partyUpdateTopic(update.mapCode), positionDto)
 
-        val response = PositionUpdateRes(
-            partyId = partyId,
-            positionId = positionId,
-            name = update.name,
-            price = update.price,
-            preferJobs = update.preferJob ?: emptyList(),
-            status = update.status,
-            description = if (update.status == PositionStatus.COMPLETED) "${update.recruitedLevel} ${update.recruitedJob}" else null
-        )
 
-        partyRedisService.publishMessage(partyUpdateTopic(update.mapCode), response)
     }
 
     fun getPartyCreationHistory(mapId: Long): PartyCreate? {
@@ -344,8 +332,8 @@ class PartyLeaderService(
     // 요청을 수락하는 API로 Position 에 넣어야한다 -> Position 에 락을 동반해야한다.
     // 이미 유저가 다른 파티에 들어갔는지도 체크해야한다. -> DB level에서 유니크 인덱스 설정으로 동작하게 한다.
     fun acceptApplicant(acceptReq: ApplyAcceptReq): PositionDto {
-        return try {
-            transaction {
+        try {
+            val result = transaction {
                 addLogger(StdOutSqlLogger)
                 // Applicant 가 있는지 검사
                 val applicantEntity = ApplicantEntity.findById(UUID.fromString(acceptReq.applyId))
@@ -363,28 +351,30 @@ class PartyLeaderService(
                 }
 
                 // 3. 업데이트(Unique Key) : 유니크 조건에 의해 이미 들어가 파티간 있는 상황이라면 Unique Violation 발생
-                val updatedPosition = PositionTable.updateReturning(where = { PositionTable.id eq acceptReq.positionId }) {
-                    it[status] = PositionStatus.COMPLETED
-                    it[assignedUserId] = acceptReq.applicantUserId.toLong()
-                    it[assignedCharacterId] = acceptReq.applicantCharacterId
-                    it[description] = "${acceptReq.applicantLevel} ${acceptReq.applicantJob}"
-                }.single().let{ PositionDto.from(it) }
+                val updatedPosition =
+                    PositionTable.updateReturning(where = { PositionTable.id eq acceptReq.positionId }) {
+                        it[status] = PositionStatus.COMPLETED
+                        it[assignedUserId] = acceptReq.applicantUserId.toLong()
+                        it[assignedCharacterId] = acceptReq.applicantCharacterId
+                        it[description] = "${acceptReq.applicantLevel} ${acceptReq.applicantJob}"
+                    }.single().let { PositionDto.from(it) }
 
                 // 4. applicant 제거
                 applicantEntity.delete()
                 // 5. redis publish
-                partyRedisService.publishMessage(PartyRedisService.partyUpdateTopic(acceptReq.mapId), updatedPosition)
                 updatedPosition
             }
+            partyRedisService.publishMessage(PartyRedisService.partyUpdateTopic(acceptReq.mapId), result)
+            return result
         } catch (e: ExposedSQLException) {
             val cause = e.cause
             // https://adjh54.tistory.com/412 : Postgresql 제약조건 위반 코드
             if (cause is PSQLException && cause.sqlState == "23505") {
-                    // Constraint violation - user already in another party
-                    throw PartyBadRequest(
-                        USER_ALREADY_IN_PARTY,
-                        "사용자가 이미 다른 파티에 참여 중입니다."
-                    )
+                // Constraint violation - user already in another party
+                throw PartyBadRequest(
+                    USER_ALREADY_IN_PARTY,
+                    "사용자가 이미 다른 파티에 참여 중입니다."
+                )
             }
             throw e
         }

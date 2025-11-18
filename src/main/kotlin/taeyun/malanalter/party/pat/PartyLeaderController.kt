@@ -81,5 +81,10 @@ class PartyLeaderController(
         return partyLeaderService.getApplicant()
     }
 
+    @PostMapping("/accept/applicant")
+    fun acceptApplicant(@RequestBody applyAcceptReq: ApplyAcceptReq): PositionDto {
+        return partyLeaderService.acceptApplicant(applyAcceptReq)
+    }
+
 
 }

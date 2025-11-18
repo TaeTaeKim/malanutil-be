@@ -1,6 +1,7 @@
 package taeyun.malanalter.party.pat.dao
 
 import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.dao.id.IdTable
 import org.jetbrains.exposed.v1.datetime.CurrentDateTime
 import org.jetbrains.exposed.v1.datetime.datetime
@@ -27,6 +28,16 @@ object PositionTable: IdTable<String>("party_position") {
 
 
     override val primaryKey = PrimaryKey(id)
+
+    init {
+        uniqueIndex(
+            customIndexName = "unique_assigned_user_id",
+            columns = arrayOf(assignedUserId),
+            filterCondition = {
+                status eq PositionStatus.COMPLETED and assignedUserId.isNotNull()
+            }
+        )
+    }
 
 }
 

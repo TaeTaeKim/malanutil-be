@@ -34,7 +34,7 @@ class AlerterBadRequest(
 
 class PartyBadRequest(
     errorCode: ErrorCode,
-    message: String?
+    message: String? = errorCode.defaultMessage,
 ) : BaseException(errorCode, message)
 
 class PartyServerError(

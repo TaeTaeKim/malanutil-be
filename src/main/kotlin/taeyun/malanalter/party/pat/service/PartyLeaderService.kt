@@ -4,8 +4,10 @@ import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.core.StdOutSqlLogger
 import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.postgresql.util.PSQLException
 import org.springframework.stereotype.Service
 import taeyun.malanalter.config.exception.AlerterBadRequest
 import taeyun.malanalter.config.exception.ErrorCode.*
@@ -317,7 +319,6 @@ class PartyLeaderService(
         val leaderUserId = UserService.getLoginUserId()
         // 파티가 있는지 확인
         return transaction {
-            addLogger(StdOutSqlLogger)
             val row = (PartyTable.select(PartyTable.id)
                 .where { PartyTable.leaderId eq leaderUserId }
                 .singleOrNull()
@@ -337,6 +338,55 @@ class PartyLeaderService(
                     )
 
                 }
+        }
+    }
+
+    // 요청을 수락하는 API로 Position 에 넣어야한다 -> Position 에 락을 동반해야한다.
+    // 이미 유저가 다른 파티에 들어갔는지도 체크해야한다. -> DB level에서 유니크 인덱스 설정으로 동작하게 한다.
+    fun acceptApplicant(acceptReq: ApplyAcceptReq): PositionDto {
+        return try {
+            transaction {
+                addLogger(StdOutSqlLogger)
+                // Applicant 가 있는지 검사
+                val applicantEntity = ApplicantEntity.findById(UUID.fromString(acceptReq.applyId))
+                    ?: throw PartyBadRequest(APPLICANT_NOT_FOUND)
+                // 1. Lock Position for update
+                val positionRow = PositionTable.selectAll()
+                    .where { PositionTable.partyId eq acceptReq.partyId and (PositionTable.id eq acceptReq.positionId) }
+                    .forUpdate()
+                    .singleOrNull()
+                    ?: throw PartyBadRequest(POSITION_NOT_FOUND)
+
+                // 2. 포지션의 자리 마감 확인
+                if (positionRow[PositionTable.status] == PositionStatus.COMPLETED) {
+                    throw PartyBadRequest(POSITION_ALREADY_OCCUPIED)
+                }
+
+                // 3. 업데이트(Unique Key) : 유니크 조건에 의해 이미 들어가 파티간 있는 상황이라면 Unique Violation 발생
+                val updatedPosition = PositionTable.updateReturning(where = { PositionTable.id eq acceptReq.positionId }) {
+                    it[status] = PositionStatus.COMPLETED
+                    it[assignedUserId] = acceptReq.applicantUserId.toLong()
+                    it[assignedCharacterId] = acceptReq.applicantCharacterId
+                    it[description] = "${acceptReq.applicantLevel} ${acceptReq.applicantJob}"
+                }.single().let{ PositionDto.from(it) }
+
+                // 4. applicant 제거
+                applicantEntity.delete()
+                // 5. redis publish
+                partyRedisService.publishMessage(PartyRedisService.partyUpdateTopic(acceptReq.mapId), updatedPosition)
+                updatedPosition
+            }
+        } catch (e: ExposedSQLException) {
+            val cause = e.cause
+            // https://adjh54.tistory.com/412 : Postgresql 제약조건 위반 코드
+            if (cause is PSQLException && cause.sqlState == "23505") {
+                    // Constraint violation - user already in another party
+                    throw PartyBadRequest(
+                        USER_ALREADY_IN_PARTY,
+                        "사용자가 이미 다른 파티에 참여 중입니다."
+                    )
+            }
+            throw e
         }
     }
 }

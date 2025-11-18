@@ -22,6 +22,11 @@ class TestDatabaseConfig {
                 AlertItemTable,
                 ItemBidTable,
                 Users,
+                CharacterTable,
+                PartyTable,
+                PositionTable,
+                ApplicantTable,
+                Invitation,
             )
         }
         return db

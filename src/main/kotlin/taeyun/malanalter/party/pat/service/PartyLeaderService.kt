@@ -315,5 +315,9 @@ class PartyLeaderService(
         partyRedisService.registerPartyHeartbeat(partyId)
     }
 
+    fun getApplicant() : List<ApplicantRes> {
+        TODO("Not yet implemented")
+    }
+
 
 }

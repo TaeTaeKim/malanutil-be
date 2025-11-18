@@ -28,6 +28,16 @@ class PartyRedisService(
         fun partyUpdateTopic(mapId:Long) : String{
             return "party:$mapId:update"
         }
+        fun talentRegisterTopic(mapId:Long) : String{
+            return "talent:$mapId:register"
+        }
+        fun talentUnRegisterTopic(mapId:Long) : String{
+            return "talent:$mapId:unregister"
+        }
+        fun partyApplyTopic(partyId: String) : String{
+            return "party:apply:$partyId"
+        }
+
     }
 
 

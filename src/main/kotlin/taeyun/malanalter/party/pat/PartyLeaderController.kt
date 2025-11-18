@@ -1,10 +1,7 @@
 package taeyun.malanalter.party.pat
 
 import org.springframework.web.bind.annotation.*
-import taeyun.malanalter.party.pat.dto.PartyCreate
-import taeyun.malanalter.party.pat.dto.PartyResponse
-import taeyun.malanalter.party.pat.dto.PositionUpdateReq
-import taeyun.malanalter.party.pat.dto.TalentResponse
+import taeyun.malanalter.party.pat.dto.*
 import taeyun.malanalter.party.pat.service.PartyLeaderService
 
 @RestController
@@ -13,9 +10,9 @@ class PartyLeaderController(
     val partyLeaderService: PartyLeaderService
 ) {
 
-    /**
-     * 파티 관련 API
-     */
+    /**************
+     * 파티 관리 API
+     ************/
     // 파티 생성
     @PostMapping("/{mapId}")
     fun createParty(@PathVariable mapId: Long, @RequestBody party: PartyCreate) : PartyResponse {
@@ -41,6 +38,7 @@ class PartyLeaderController(
         partyLeaderService.deleteParty(partyId)
     }
 
+    // 포지션 수정
     @PatchMapping("/{partyId}/position/{positionId}")
     fun updatePartyPosition(@RequestBody update: PositionUpdateReq, @PathVariable partyId: String, @PathVariable positionId: String) {
         partyLeaderService.updatePartyPosition(update, partyId, positionId)
@@ -76,6 +74,12 @@ class PartyLeaderController(
     @GetMapping("/talent")
     fun getTalentPool(@RequestParam mapId: Long, @RequestParam partyId: String): List<TalentResponse> {
         return partyLeaderService.getTalentPool(mapId, partyId)
+    }
+
+    @GetMapping("/applicant")
+    fun getApplicant(): List<ApplicantRes> {
+        partyLeaderService.getApplicant()
+        return emptyList()
 
     }
 

@@ -28,26 +28,37 @@ class PartyFinderController(
 
     }
 
+    /**********
+     * 파티 지원 관련 API
+     *********/
     // 구직 유저가 파티에 지원하는 기능
     @PostMapping("/apply")
     fun applyToParty(@RequestBody partyApplyRequest: PartyApplyRequest) {
         partyFinderService.applyParty(partyApplyRequest)
     }
 
+    @GetMapping("/apply")
+    fun getAppliedPosition(): List<AppliedPositionDto>{
+        return partyFinderService.getAppliedPositions()
+    }
+    @DeleteMapping("/apply")
+    fun cancelApplication(@RequestParam partyId: String, @RequestParam positionId: String) {
+        partyFinderService.cancelApplication(partyId, positionId)
+    }
+
+    /**********
+     * 인재풀 관련 API
+     *********/
     @GetMapping("/talentPool")
     fun getRegisteringTalentPool(): RegisteringPoolResponse {
         return partyFinderService.getRegisteringPool()
     }
 
-    /** 특정 맵의 인재풀 등록 기능
-     * @return 등록한 map code (mapId)
-    */
     @PostMapping("/talentPool")
     fun registerToTalentPool(@RequestBody request: TalentRegisterRequest) : Long {
         return partyFinderService.registerToTalentPool(request.mapId, request.characterId)
     }
 
-    // 인재풀 해제
     @DeleteMapping("/talentPool/{mapId}")
     fun deleteTalentPool(@PathVariable mapId: Long){
         partyFinderService.deleteTalentMap(mapId)
@@ -59,22 +70,24 @@ class PartyFinderController(
         partyFinderService.renewFinderHeartbeat(characterId)
     }
 
+    /**********
+     * 파티 초대 관련 API
+     *********/
     // 구직 유저가 초대를 수락 거절 컨트롤러
     @PostMapping("/invite/respond")
     fun handleInvitation(@RequestParam invitationId: String){
-        // todo: Not imple yet
+        TODO()
 
     }
     // 받은 초대를 반환하는 컨트롤러
     @GetMapping("/invite")
     fun getInvitations(): List<Any>{
-        // todo: Not imple yet
-        return emptyList()
+        TODO()
     }
 
     // 구직 유저가 파티에서 탈퇴하는 기능
     @PostMapping("/leave/{partyId}")
     fun leaveParty(@RequestParam partyId: String){
-
+        TODO()
     }
 }

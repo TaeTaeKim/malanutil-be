@@ -166,8 +166,6 @@ class PartyLeaderServiceConcurrencyTest(
             positionId = position1Id,
             applicantUserId = userId.toString(),
             applicantCharacterId = characterId,
-            applicantLevel = 200,
-            applicantJob = "히어로",
             mapId = 1L
         )
 
@@ -177,8 +175,6 @@ class PartyLeaderServiceConcurrencyTest(
             positionId = position2Id,
             applicantUserId = userId.toString(),
             applicantCharacterId = characterId,
-            applicantLevel = 200,
-            applicantJob = "히어로",
             mapId = 1L
         )
 

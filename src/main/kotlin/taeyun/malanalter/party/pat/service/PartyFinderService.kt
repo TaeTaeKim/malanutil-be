@@ -1,11 +1,15 @@
 package taeyun.malanalter.party.pat.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.postgresql.util.PSQLException
 import org.springframework.stereotype.Service
 import taeyun.malanalter.config.exception.ErrorCode
 import taeyun.malanalter.config.exception.PartyBadRequest
@@ -102,6 +106,16 @@ class PartyFinderService(val talentPoolService: TalentPoolService, private val p
     fun applyParty(partyApplyRequest: PartyApplyRequest) {
         transaction {
             val applyUserId = UserService.getLoginUserId()
+            // 파티에 참여중이면 지원 불가
+            PositionTable.select(PositionTable.id)
+                .where {
+                    PositionTable.assignedUserId eq applyUserId
+                }.singleOrNull()?.let {
+                    throw PartyBadRequest(
+                        ErrorCode.USER_ALREADY_IN_PARTY,
+                        "이미 참여중인 파티가 있어 지원할 수 없습니다."
+                    )
+                }
 
             try {
                 val newApplyId = ApplicantTable.insertAndGetId {
@@ -117,34 +131,81 @@ class PartyFinderService(val talentPoolService: TalentPoolService, private val p
                         ErrorCode.CHARACTER_NOT_FOUND.defaultMessage
                     ))
                 val redisMessage = ApplicantRes(
+                    actionType = ApplicantAction.ADD,
                     applyId = newApplyId.value.toString(),
                     applyUserId = applyUserId.toString(),
                     characterId = partyApplyRequest.characterId,
-                    name= characterRow[CharacterTable.name],
+                    name = characterRow[CharacterTable.name],
                     level = characterRow[CharacterTable.level],
                     job = characterRow[CharacterTable.job],
                     comment = characterRow[CharacterTable.comment],
                     positionId = partyApplyRequest.positionId,
                 )
-                partyRedisService.publishMessage(PartyRedisService.partyApplyTopic(partyApplyRequest.partyId), redisMessage)
+                // todo : 해당 파티의 디스 코드 알람이 켜져있으면 파티장에게 알림 전송
+                // 파티장 에게 실시간으로 지원 알림 전송
+                partyRedisService.publishMessage(
+                    PartyRedisService.partyApplyTopic(partyApplyRequest.partyId),
+                    redisMessage
+                )
 
             } catch (ex: ExposedSQLException) {
-                when {
-                    ex.message?.contains("unique constraint") == true -> throw PartyBadRequest(
-                        ErrorCode.ALREADY_APPLIED,
-                        "이미 지원한 파티입니다."
-                    )
+                val cause = ex.cause
+                if (cause is PSQLException) {
+                    when (cause.sqlState) {
+                        "23503" -> throw PartyBadRequest( // foreign key 위반
+                            ErrorCode.INVALID_PARTY_APPLIED,
+                            "삭제된 파티이거나 이미 구인된 포지션입니다."
+                        )
 
-                    ex.message?.contains("foreign key constraint") == true -> throw PartyBadRequest(
-                        ErrorCode.INVALID_PARTY_APPLIED,
-                        "삭제된 파티이거나 이미 구인된 포지션입니다."
-                    )
+                        "23505" -> throw PartyBadRequest( // unique 제약조건 위반 -> 이미 신청한 파티
+                            ErrorCode.ALREADY_APPLIED,
+                            "이미 지원한 파티입니다."
+                        )
 
-                    else -> throw ex
+                        else -> {
+                            throw ex
+                        }
+                    }
+
                 }
             }
         }
 
+    }
+
+    fun getAppliedPositions(): List<AppliedPositionDto> {
+        val applyUserId = UserService.getLoginUserId()
+        return transaction {
+            ApplicantTable.selectAll()
+                .where { ApplicantTable.applyUserId eq applyUserId }
+                .map {
+                    AppliedPositionDto(
+                        partyId = it[ApplicantTable.partyId].value,
+                        positionId = it[ApplicantTable.positionId].value
+                    )
+                }
+        }
+    }
+
+    fun cancelApplication(partyId: String, positionId: String) {
+        val applyUserId = UserService.getLoginUserId()
+        transaction {
+            val deleteCount = ApplicantTable.deleteWhere {
+                (ApplicantTable.partyId eq partyId) and
+                        (ApplicantTable.positionId eq positionId) and
+                        (ApplicantTable.applyUserId eq applyUserId)
+            }
+
+            if (deleteCount == 0) {
+                throw PartyBadRequest(
+                    ErrorCode.APPLICANT_NOT_FOUND,
+                    "해당 파티 지원 내역을 찾을 수 없습니다."
+                )
+            }
+        }
+
+        val result = ApplicantRes.makeCancelRes(applyUserId.toString(), positionId)
+        partyRedisService.publishMessage(PartyRedisService.partyApplyTopic(partyId), result)
     }
 
 

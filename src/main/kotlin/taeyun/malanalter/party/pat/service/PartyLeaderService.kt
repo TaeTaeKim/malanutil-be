@@ -320,6 +320,7 @@ class PartyLeaderService(
                 .where { ApplicantTable.partyId eq row[PartyTable.id] }
                 .map {
                     ApplicantRes(
+                        actionType = ApplicantAction.NONE,
                         applyId = it[ApplicantTable.id].toString(),
                         applyUserId = it[ApplicantTable.applyUserId].value.toString(),
                         characterId = it[ApplicantTable.characterId].value,

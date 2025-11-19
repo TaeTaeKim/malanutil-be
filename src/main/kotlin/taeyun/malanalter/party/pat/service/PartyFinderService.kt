@@ -11,14 +11,12 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.postgresql.util.PSQLException
 import org.springframework.stereotype.Service
+import taeyun.malanalter.auth.discord.DiscordService
 import taeyun.malanalter.config.exception.ErrorCode
 import taeyun.malanalter.config.exception.PartyBadRequest
 import taeyun.malanalter.config.exception.PartyServerError
 import taeyun.malanalter.party.character.CharacterTable
-import taeyun.malanalter.party.pat.dao.ApplicantTable
-import taeyun.malanalter.party.pat.dao.PartyStatus
-import taeyun.malanalter.party.pat.dao.PartyTable
-import taeyun.malanalter.party.pat.dao.PositionTable
+import taeyun.malanalter.party.pat.dao.*
 import taeyun.malanalter.party.pat.dto.*
 import taeyun.malanalter.user.UserService
 import java.util.UUID.randomUUID
@@ -26,7 +24,11 @@ import java.util.UUID.randomUUID
 val logger = KotlinLogging.logger {}
 
 @Service
-class PartyFinderService(val talentPoolService: TalentPoolService, private val partyRedisService: PartyRedisService) {
+class PartyFinderService(
+    val talentPoolService: TalentPoolService,
+    private val partyRedisService: PartyRedisService,
+    val discordService: DiscordService
+) {
 
     fun registerToTalentPool(mapId: Long, characterId: String): Long {
         try {
@@ -103,21 +105,26 @@ class PartyFinderService(val talentPoolService: TalentPoolService, private val p
         return partyRedisService.getDiscordOfMaps(mapIds)
     }
 
-    fun applyParty(partyApplyRequest: PartyApplyRequest) {
-        transaction {
-            val applyUserId = UserService.getLoginUserId()
-            // 파티에 참여중이면 지원 불가
+    private fun isUserInParty(userId: Long) :Boolean{
+        return transaction {
             PositionTable.select(PositionTable.id)
                 .where {
-                    PositionTable.assignedUserId eq applyUserId
-                }.singleOrNull()?.let {
+                    PositionTable.assignedUserId eq userId
+                }.singleOrNull() != null
+        }
+    }
+
+    fun applyParty(partyApplyRequest: PartyApplyRequest) {
+        val applicantRes = try {
+            transaction {
+                val applyUserId = UserService.getLoginUserId()
+                // 파티에 참여중이면 지원 불가
+                if (isUserInParty(applyUserId)) {
                     throw PartyBadRequest(
                         ErrorCode.USER_ALREADY_IN_PARTY,
-                        "이미 참여중인 파티가 있어 지원할 수 없습니다."
+                        "이미 파티에 참여중인 유저는 지원할 수 없습니다."
                     )
                 }
-
-            try {
                 val newApplyId = ApplicantTable.insertAndGetId {
                     it[ApplicantTable.partyId] = partyApplyRequest.partyId
                     it[ApplicantTable.positionId] = partyApplyRequest.positionId
@@ -130,7 +137,7 @@ class PartyFinderService(val talentPoolService: TalentPoolService, private val p
                         ErrorCode.CHARACTER_NOT_FOUND,
                         ErrorCode.CHARACTER_NOT_FOUND.defaultMessage
                     ))
-                val redisMessage = ApplicantRes(
+                ApplicantRes(
                     actionType = ApplicantAction.ADD,
                     applyId = newApplyId.value.toString(),
                     applyUserId = applyUserId.toString(),
@@ -141,35 +148,58 @@ class PartyFinderService(val talentPoolService: TalentPoolService, private val p
                     comment = characterRow[CharacterTable.comment],
                     positionId = partyApplyRequest.positionId,
                 )
-                // todo : 해당 파티의 디스 코드 알람이 켜져있으면 파티장에게 알림 전송
-                // 파티장 에게 실시간으로 지원 알림 전송
-                partyRedisService.publishMessage(
-                    PartyRedisService.partyApplyTopic(partyApplyRequest.partyId),
-                    redisMessage
-                )
+            }
+        } catch (ex: ExposedSQLException) {
+            val cause = ex.cause
+            if (cause is PSQLException) {
+                when (cause.sqlState) {
+                    "23503" -> throw PartyBadRequest( // foreign key 위반
+                        ErrorCode.INVALID_PARTY_APPLIED,
+                        "삭제된 파티이거나 이미 구인된 포지션입니다."
+                    )
 
-            } catch (ex: ExposedSQLException) {
-                val cause = ex.cause
-                if (cause is PSQLException) {
-                    when (cause.sqlState) {
-                        "23503" -> throw PartyBadRequest( // foreign key 위반
-                            ErrorCode.INVALID_PARTY_APPLIED,
-                            "삭제된 파티이거나 이미 구인된 포지션입니다."
-                        )
+                    "23505" -> throw PartyBadRequest( // unique 제약조건 위반 -> 이미 신청한 파티
+                        ErrorCode.ALREADY_APPLIED,
+                        "이미 지원한 파티입니다."
+                    )
 
-                        "23505" -> throw PartyBadRequest( // unique 제약조건 위반 -> 이미 신청한 파티
-                            ErrorCode.ALREADY_APPLIED,
-                            "이미 지원한 파티입니다."
-                        )
-
-                        else -> {
-                            throw ex
-                        }
+                    else -> {
+                        throw ex
                     }
-
+                }
+            } else throw ex
+        }
+        // 지원 완료 후 처리 (예: 알림 전송 등)는 트랜잭션 외부에서 수행
+        try {
+            transaction {
+                val partyEntity = PartyEntity.findById(partyApplyRequest.partyId)
+                    ?: throw PartyBadRequest(
+                        ErrorCode.PARTY_NOT_FOUND,
+                        "지원한 파티를 찾을 수 없습니다."
+                    )
+                if (partyEntity.discordNotification) {
+                    discordService.sendDirectMessage(
+                        partyEntity.leaderId.value,
+                        partyApplyDiscordMessage(applicantRes, partyApplyRequest.positionName)
+                    )
                 }
             }
+        } catch (ex: Exception) {
+            val uuid = randomUUID().toString()
+            logger.error { "[$uuid] Error sending Apply Discord notification: ${ex.message}" }
         }
+        // 웹소켓으로 실시간 전송
+        partyRedisService.publishMessage(
+            PartyRedisService.partyApplyTopic(partyApplyRequest.partyId),
+            applicantRes
+        )
+
+    }
+
+    private fun partyApplyDiscordMessage(res: ApplicantRes, positionName: String): String {
+        return "새로운 파티 지원이 도착했습니다! \n" +
+                "지원 포지션 : $positionName\n" +
+                "지원 캐릭터 정보: LV:${res.level} ${res.job} 💬${res.comment}\n"
 
     }
 

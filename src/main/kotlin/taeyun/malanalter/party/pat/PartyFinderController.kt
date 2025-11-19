@@ -85,6 +85,15 @@ class PartyFinderController(
         partyFinderService.rejectInvitation(invitationId)
     }
 
+    // 파티초대를 수락하는 기능
+    @PostMapping("/invite/accept/{invitationId}")
+    fun acceptInvitation(@PathVariable invitationId: String, @RequestBody body: Map<String, String>){
+        if(body.containsKey("characterId").not()){
+            throw IllegalArgumentException("characterId is required")
+        }
+        partyFinderService.acceptInvitation(invitationId, body["characterId"]!!)
+    }
+
     // 구직 유저가 파티에서 탈퇴하는 기능
     @PostMapping("/leave/{partyId}")
     fun leaveParty(@RequestParam partyId: String){

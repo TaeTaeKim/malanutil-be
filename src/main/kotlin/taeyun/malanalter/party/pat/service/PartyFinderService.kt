@@ -19,6 +19,8 @@ import taeyun.malanalter.party.character.CharacterEntity
 import taeyun.malanalter.party.character.CharacterTable
 import taeyun.malanalter.party.pat.dao.*
 import taeyun.malanalter.party.pat.dto.*
+import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyApplyTopic
+import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyUpdateTopic
 import taeyun.malanalter.user.UserService
 import java.util.*
 import java.util.UUID.randomUUID
@@ -76,7 +78,7 @@ class PartyFinderService(
         transaction {
             addLogger(StdOutSqlLogger)
             val join = Invitation.join(PartyTable, JoinType.LEFT)
-            join.delete(Invitation){ PartyTable.mapId eq mapId }
+            join.delete(Invitation) { PartyTable.mapId eq mapId }
         }
         talentPoolService.removeFromTalentPool(mapId)
         val redisMessage = hashMapOf<String, String>()
@@ -297,6 +299,56 @@ class PartyFinderService(
                 throw PartyBadRequest(ErrorCode.INVITATION_NOT_FOUND, "초대장을 찾을 수 없습니다.")
             }
         }
+    }
+
+    // 파티 초대 수락
+    // 포지션을 락과 함께 조회 후 유저 할당
+    // Postiion 상태변경 메세지 전달.
+    fun acceptInvitation(invitationId: String, characterId: String) {
+        val userId = UserService.getLoginUserId()
+        transaction {
+            addLogger(StdOutSqlLogger)
+            val (invitedPositionId, mapId) = (Invitation leftJoin PartyTable).select(
+                Invitation.positionId,
+                PartyTable.mapId
+            ).where { Invitation.invitedUserId eq userId and (Invitation.id eq UUID.fromString(invitationId)) }
+                .singleOrNull()
+                ?.let { Pair(it[Invitation.positionId], it[PartyTable.mapId]) }
+                ?: throw PartyBadRequest(ErrorCode.INVITATION_NOT_FOUND, "초대장을 찾을 수 없습니다.")
+            val characterEntity = CharacterEntity.findByUserAndCharacterId(userId, characterId)
+                ?: throw PartyBadRequest(ErrorCode.CHARACTER_NOT_FOUND,"할당할 캐릭터를 찾을 수 없습니다.")
+
+            val positionRow = (PositionTable.selectAll()
+                .where { PositionTable.id eq invitedPositionId }
+                .forUpdate()
+                .singleOrNull()
+                ?: throw PartyBadRequest(ErrorCode.POSITION_NOT_FOUND, "초대된 포지션을 찾을 수 없습니다."))
+
+            if (positionRow[PositionTable.status] == PositionStatus.COMPLETED) {
+                throw PartyBadRequest(ErrorCode.POSITION_ALREADY_OCCUPIED, "이미 할당된 포지션입니다.")
+            }
+
+            // 포지션에 유저 할당
+            val updatedPositionDto = PositionTable.updateReturning(where = { PositionTable.id eq invitedPositionId }) {
+                it[assignedUserId] = userId
+                it[assignedCharacterId] = characterEntity.id
+                it[assignedCharacterName] = characterEntity.name
+                it[status] = PositionStatus.COMPLETED
+                it[description] = "${characterEntity.level} ${characterEntity.job}"
+            }
+                .single()
+                .let { PositionDto.from(it) }
+            // redis 로 포지션 업데이트 메세지 전송
+            partyRedisService.publishMessage(partyUpdateTopic(mapId), updatedPositionDto)
+            // 파티장에게도 파티 업데이트 메세지 전송 party:apply:{partyId} actionType : ACCEPT
+            partyRedisService.publishMessage(
+                partyApplyTopic(positionRow[PositionTable.partyId].value),
+                ApplicantRes.makeAcceptRes(userId, invitedPositionId.value, characterEntity)
+            )
+            Invitation.deleteWhere { Invitation.id eq UUID.fromString(invitationId) }
+        }
+        // 모든 구인 중 및 인재풀에서 제거 - 등록중 맵에서는 제거하지 않는다 -> 추방 시 다시 구인 중 등록하도록
+        talentPoolService.removeFromAllTalentPool()
     }
 
 

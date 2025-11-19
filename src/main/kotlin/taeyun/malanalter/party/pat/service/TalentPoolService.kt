@@ -97,6 +97,15 @@ class TalentPoolService(
         removeRegisterMap(userId, mapId)
     }
 
+    fun removeFromAllTalentPool() {
+        val userId = UserService.Companion.getLoginUserId()
+        getRegisteringMaps(userId).mapIds.forEach { mapId ->
+            // Remove from map set
+            val mapKey = getTalentMapKey(mapId)
+            redisTemplate.opsForSet().remove(mapKey, userId.toString())
+        }
+    }
+
     private fun removeRegisterMap(userId: Long, mapId: Long) {
         val key = getRegisteringMapKey(userId)
         redisTemplate.opsForSet().remove(key, mapId.toString())

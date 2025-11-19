@@ -5,6 +5,8 @@ import org.springframework.data.redis.connection.Message
 import org.springframework.data.redis.listener.KeyExpirationEventMessageListener
 import org.springframework.data.redis.listener.RedisMessageListenerContainer
 import org.springframework.stereotype.Component
+import taeyun.malanalter.party.pat.service.PartyRedisService
+import taeyun.malanalter.party.pat.service.TalentPoolService
 
 private val logger = KotlinLogging.logger {}
 
@@ -16,7 +18,9 @@ private val logger = KotlinLogging.logger {}
  */
 @Component
 class TalentUserExpirationListener(
-    redisMessageListenerContainer: RedisMessageListenerContainer
+    redisMessageListenerContainer: RedisMessageListenerContainer,
+    val partyRedisService: PartyRedisService,
+    val talentPoolService: TalentPoolService,
 ) : KeyExpirationEventMessageListener(redisMessageListenerContainer) {
 
     companion object {
@@ -53,15 +57,12 @@ class TalentUserExpirationListener(
         // Extract userId from key (format: talent:user:{userId})
         val userId = extractUserId(expiredKey)
 
-        logger.info { "Talent user registration expired for userId: $userId (key: $expiredKey)" }
-
-        // TODO: Implement your business logic here
-        // Examples:
-        // 1. Remove user from talent pool in cache
-        // 2. Clean up related talent pool entries (talent:{talentId}:users set)
-        // 3. Send notification to user about expiration
-        // 4. Update user status in database if needed
-        // 5. Log analytics about user activity duration
+        // user 를 탤런트 풀에서 제거
+        val registeringMaps = talentPoolService.getRegisteringMaps(userId.toLong())
+        registeringMaps.mapIds.forEach { mapId ->
+            talentPoolService.expireTalentUser(userId.toLong(), mapId)
+            partyRedisService.publishMessage(PartyRedisService.talentUnRegisterTopic(mapId), hashMapOf("userId" to userId) )
+        }
     }
 
     /**

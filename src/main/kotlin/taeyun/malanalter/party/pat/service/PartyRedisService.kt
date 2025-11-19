@@ -40,6 +40,9 @@ class PartyRedisService(
         fun partyApplyTopic(partyId: String) : String{
             return "party:apply:$partyId"
         }
+        fun partyInviteTopic(inviteUserId: String) : String{
+            return "finder:invite:$inviteUserId"
+        }
 
     }
 

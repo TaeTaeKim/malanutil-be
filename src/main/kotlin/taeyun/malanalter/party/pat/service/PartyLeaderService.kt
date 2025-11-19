@@ -1,5 +1,6 @@
 package taeyun.malanalter.party.pat.service
 
+import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.core.and
@@ -18,6 +19,7 @@ import taeyun.malanalter.party.pat.dao.*
 import taeyun.malanalter.party.pat.dto.*
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyCreateTopic
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyDeleteTopic
+import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyInviteTopic
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyUpdateTopic
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.Users
@@ -264,17 +266,15 @@ class PartyLeaderService(
      * 유저에게 파티 초대 메세지 발송
      * 5분 이내에 동일 유저에게 초대 메세지 발송 불가
      */
-    // todo : redis 로 해당 유저 에게 초대 메세지 publish
     fun inviteUserToParty(invitationReq: InvitationReq) {
         val leaderId = UserService.getLoginUserId()
 
-        transaction {
+        val invitationId = transaction {
             // 리더의 파티 존재 확인
             val party =
                 PartyEntity.findByLeaderId(leaderId) ?: throw PartyBadRequest(PARTY_NOT_FOUND, "현재 리더인 파티가 존재하지 않습니다.")
             when (party.status) {
                 PartyStatus.FULLED -> throw PartyBadRequest(PARTY_FULL, "파티가 가득 찼습니다.")
-                PartyStatus.INACTIVE -> throw PartyBadRequest(PARTY_INACTIVE, "비활성화된 파티입니다.")
                 else -> {}
             }
             val userTalentPool = talentPoolService.getRegisteringMaps(invitationReq.userToInvite)
@@ -287,13 +287,26 @@ class PartyLeaderService(
                 throw PartyBadRequest(PARTY_ALREADY_INVITED, "해당 유저에게 이미 초대 메세지를 보낸 상태입니다.")
             }
 
-            // 초대발송 db저장 및 redis publish
+            // 초대발송 db저장
             InvitationEntity.new {
                 this.partyId = party.id
                 this.positionId = EntityID(invitationReq.positionId, PositionTable)
                 this.invitedUserId = EntityID(invitationReq.userToInvite, Users)
-            }
+            }.id
+
         }
+        val redisMsg = transaction {
+                // 유저의 모든 초대 조회 Map<positionId, invitationId>
+                (Invitation leftJoin PositionTable)
+                    .join(PartyTable, JoinType.LEFT ,onColumn = Invitation.partyId, otherColumn = PartyTable.id)
+                    .selectAll()
+                    .where { Invitation.id eq invitationId }
+                    .singleOrNull()
+                    ?.let{ InvitationDto.from(it)}
+                    ?: throw PartyBadRequest(INVITATION_NOT_FOUND)
+        }
+        // websocket 으로 초대 메세지 발송
+        partyRedisService.publishMessage(partyInviteTopic(invitationReq.userToInvite.toString()), redisMsg)
     }
 
     fun getTalentPool(mapId: Long, partyId: String): List<TalentResponse> {

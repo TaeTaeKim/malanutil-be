@@ -3,6 +3,7 @@ package taeyun.malanalter.party.pat.service
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -19,6 +20,7 @@ import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyCrea
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyDeleteTopic
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyUpdateTopic
 import taeyun.malanalter.user.UserService
+import taeyun.malanalter.user.domain.Users
 import java.util.*
 
 @Service
@@ -263,7 +265,7 @@ class PartyLeaderService(
      * 5분 이내에 동일 유저에게 초대 메세지 발송 불가
      */
     // todo : redis 로 해당 유저 에게 초대 메세지 publish
-    fun inviteUserToParty(inviteUserId: Long) {
+    fun inviteUserToParty(invitationReq: InvitationReq) {
         val leaderId = UserService.getLoginUserId()
 
         transaction {
@@ -275,20 +277,21 @@ class PartyLeaderService(
                 PartyStatus.INACTIVE -> throw PartyBadRequest(PARTY_INACTIVE, "비활성화된 파티입니다.")
                 else -> {}
             }
-            val userTalentPool = talentPoolService.getRegisteringMaps(inviteUserId)
+            val userTalentPool = talentPoolService.getRegisteringMaps(invitationReq.userToInvite)
             if (party.mapId !in userTalentPool.mapIds) {
                 throw PartyBadRequest(CHARACTER_NOT_IN_TALENT, "유저가 해당 맵의 탤런트에 없습니다")
             }
 
             // 중복 초대 확인
-            if (InvitationEntity.alreadyInvited(party.id.value, inviteUserId)) {
+            if (InvitationEntity.alreadyInvited(party.id.value, invitationReq.userToInvite)) {
                 throw PartyBadRequest(PARTY_ALREADY_INVITED, "해당 유저에게 이미 초대 메세지를 보낸 상태입니다.")
             }
 
             // 초대발송 db저장 및 redis publish
             InvitationEntity.new {
                 this.partyId = party.id
-                this.invitedUserId = inviteUserId
+                this.positionId = EntityID(invitationReq.positionId, PositionTable)
+                this.invitedUserId = EntityID(invitationReq.userToInvite, Users)
             }
         }
     }

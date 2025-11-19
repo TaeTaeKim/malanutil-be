@@ -81,8 +81,8 @@ class PartyFinderController(
     }
     // 받은 초대를 반환하는 컨트롤러
     @GetMapping("/invite")
-    fun getInvitations(): List<Any>{
-        TODO()
+    fun getInvitations(): List<InvitationDto>{
+        return partyFinderService.getInvitations()
     }
 
     // 구직 유저가 파티에서 탈퇴하는 기능

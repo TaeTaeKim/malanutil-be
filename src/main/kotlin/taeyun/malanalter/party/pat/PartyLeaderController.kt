@@ -66,9 +66,9 @@ class PartyLeaderController(
 
 
     // 유저를 파티에 초대하는 API
-    @PostMapping("/invite/{userId}")
-    fun inviteUserToParty(@PathVariable userId: Long) {
-        partyLeaderService.inviteUserToParty(userId)
+    @PostMapping("/invite")
+    fun inviteUserToParty(@RequestBody invitationReq: InvitationReq) {
+        partyLeaderService.inviteUserToParty(invitationReq)
     }
 
     @GetMapping("/talent")

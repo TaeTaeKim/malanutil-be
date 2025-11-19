@@ -22,6 +22,25 @@ class PartyRedisService(
         fun getMapDiscordKey(mapId: Long): String {
             return "discord:messages:$mapId"
         }
+        fun partyCreateTopic(mapId:Long) : String{
+            return "party:$mapId:create"
+        }
+        fun partyUpdateTopic(mapId:Long) : String{
+            return "party:$mapId:update"
+        }
+        fun partyDeleteTopic(mapId:Long) : String{
+            return "party:$mapId:delete"
+        }
+        fun talentRegisterTopic(mapId:Long) : String{
+            return "talent:$mapId:register"
+        }
+        fun talentUnRegisterTopic(mapId:Long) : String{
+            return "talent:$mapId:unregister"
+        }
+        fun partyApplyTopic(partyId: String) : String{
+            return "party:apply:$partyId"
+        }
+
     }
 
 
@@ -62,5 +81,10 @@ class PartyRedisService(
             result.put(mapId, messages?: emptyList())
         }
         return result
+    }
+
+    fun publishMessage(topic: String, message: Any){
+        val data = objectMapper.writeValueAsString(message)
+        redisTemplate.convertAndSend(topic, data)
     }
 }

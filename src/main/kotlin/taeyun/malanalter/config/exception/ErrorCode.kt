@@ -34,10 +34,17 @@ enum class ErrorCode(
     PARTY_FULL(HttpStatus.BAD_REQUEST, "PARTY_002", "Party is Full"),
     PARTY_INACTIVE(HttpStatus.BAD_REQUEST, "PARTY_003", "Party is Inactive"),
     PARTY_ALREADY_INVITED(HttpStatus.BAD_REQUEST, "PARTY_004", "Party Already Invited"),
+    UNAUTHORIZED_PARTY_ACCESS(HttpStatus.BAD_REQUEST, "PARTY_005", "Unauthorized Party Access"),
 
     CHARACTER_NOT_FOUND(HttpStatus.NOT_FOUND, "CHARACTER_001", "Character Not Found"),
     CHARACTER_NOT_IN_TALENT(HttpStatus.NOT_FOUND, "CHARACTER_002", "Character Not Registered in Map Talent"),
 
     ALREADY_APPLIED(HttpStatus.BAD_REQUEST, "APPLY_001", "Already Applied"),
     INVALID_PARTY_APPLIED(HttpStatus.NOT_FOUND, "APPLY_002", "Illegal Application Not Found"),
+    APPLICANT_NOT_FOUND(HttpStatus.NOT_FOUND, "APPLY_003", "Apply Not Found"),
+    USER_ALREADY_IN_PARTY(HttpStatus.BAD_REQUEST, "APPLY_004", "User Already In Party"),
+
+    POSITION_NOT_FOUND(HttpStatus.NOT_FOUND, "POSITION_001", "Position not found"),
+    POSITION_ALREADY_OCCUPIED(HttpStatus.BAD_REQUEST, "POSITION_002", "Position already occupied"),
+    POSITION_INPUT_INVALID(HttpStatus.BAD_REQUEST, "POSITION_003", "Position Input Invalid"),
 }

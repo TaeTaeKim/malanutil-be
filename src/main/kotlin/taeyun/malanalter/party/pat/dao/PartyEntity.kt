@@ -20,6 +20,8 @@ class PartyEntity(id: EntityID<String>): Entity<String>(id) {
     var status by PartyTable.status
     val mapId by PartyTable.mapId
     val description by PartyTable.description
+    val leaderId by PartyTable.leaderId
+    var discordNotification by PartyTable.discordNotification
     val createdAt by PartyTable.createdAt
 
 }

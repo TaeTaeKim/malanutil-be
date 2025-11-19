@@ -49,6 +49,13 @@ class AlertItemRepositoryTest(
         }
     }
 
+    afterTest {
+        transaction {
+            ItemBidTable.deleteAll()
+            Users.deleteAll()
+        }
+    }
+
     "아이템에 대한 bid list 가 없으면 bulk insert" {
 
         val detectedBids = listOf(

@@ -21,10 +21,9 @@ import taeyun.malanalter.config.TestDatabaseConfig
 )
 @TestPropertySource(
     properties = [
-        "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "spring.datasource.driver-class-name=org.h2.Driver"
+        "spring.datasource.url=jdbc:postgresql://localhost:5433/postgres?rewriteBatchedInserts=true",
+        "spring.datasource.username=postgres",
+        "spring.datasource.password=test"
     ]
 )
 annotation class ExposedTest()

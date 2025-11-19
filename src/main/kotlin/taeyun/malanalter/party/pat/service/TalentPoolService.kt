@@ -44,7 +44,7 @@ class TalentPoolService(
         return RegisteringPoolResponse(mapList, ttlOfUser)
     }
 
-    private fun getTTLOfUser(userId: Long): Long {
+    fun getTTLOfUser(userId: Long): Long {
         val key = getTalentUserKey(userId)
         return redisTemplate.getExpire(key)
     }
@@ -100,6 +100,16 @@ class TalentPoolService(
     private fun removeRegisterMap(userId: Long, mapId: Long) {
         val key = getRegisteringMapKey(userId)
         redisTemplate.opsForSet().remove(key, mapId.toString())
+    }
+
+    /**
+     * 인재풀 활성 시간이 만료된 유저를 맵의 인재풀에서 제거 -> Listener에서 호출
+     * Registering Map에서는 제거하지 않는다. -> 재활성화가 가능하도록
+     */
+    fun expireTalentUser(userId: Long, mapId: Long) {
+        // Remove from map set
+        val mapKey = getTalentMapKey(mapId)
+        redisTemplate.opsForSet().remove(mapKey, userId.toString())
     }
 
     /**

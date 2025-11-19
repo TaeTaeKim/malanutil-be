@@ -1,8 +1,6 @@
 package taeyun.malanalter.party.pat.dto
 
-data class PartyApplyRequest(
+data class AppliedPositionDto(
     val partyId: String,
     val positionId: String,
-    val positionName: String,
-    val characterId: String,
 )

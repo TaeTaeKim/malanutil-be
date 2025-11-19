@@ -3,6 +3,7 @@ package taeyun.malanalter.party.pat.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.v1.core.StdOutSqlLogger
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.not
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
@@ -48,7 +49,7 @@ class PartyFinderService(
                 TalentResponse(
                     userId = userId.toString(),
                     characterId = characterId,
-                    lastSent = null,
+                    isSent = false,
                     name = characterRow[CharacterTable.name],
                     level = characterRow[CharacterTable.level],
                     job = characterRow[CharacterTable.job],
@@ -71,6 +72,12 @@ class PartyFinderService(
 
     fun deleteTalentMap(mapId: Long) {
         val userId = UserService.getLoginUserId()
+        // 제거하려는 맵의 초대장을 모두 제거
+        transaction {
+            addLogger(StdOutSqlLogger)
+            val join = Invitation.join(PartyTable, JoinType.LEFT)
+            join.delete(Invitation){ PartyTable.mapId eq mapId }
+        }
         talentPoolService.removeFromTalentPool(mapId)
         val redisMessage = hashMapOf<String, String>()
         redisMessage.put("userId", userId.toString())
@@ -95,7 +102,7 @@ class PartyFinderService(
             val publishData = TalentResponse(
                 userId = userId.toString(),
                 characterId = characterId,
-                lastSent = null,
+                isSent = false,
                 name = characterEntity.name,
                 level = characterEntity.level,
                 job = characterEntity.job,
@@ -274,7 +281,7 @@ class PartyFinderService(
             (Invitation leftJoin PositionTable)
                 .join(PartyTable, JoinType.LEFT, onColumn = Invitation.partyId, otherColumn = PartyTable.id)
                 .selectAll()
-                .where { Invitation.invitedUserId eq userId and(not(Invitation.rejected) ) }
+                .where { Invitation.invitedUserId eq userId and (not(Invitation.rejected)) }
                 .map { InvitationDto.from(it) }
         }
     }

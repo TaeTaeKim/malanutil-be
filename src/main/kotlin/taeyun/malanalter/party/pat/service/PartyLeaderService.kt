@@ -310,11 +310,16 @@ class PartyLeaderService(
     }
 
     fun getTalentPool(mapId: Long, partyId: String): List<TalentResponse> {
+        // 파티 맵의 인재풀 목록을 조회
         val talentUserList = talentPoolService.getTalentPool(mapId)
-        val invitedTimeByPartyId = transaction {
-            InvitationEntity.getInvitedTimeByPartyId(partyId)
+        // invitation table 에서 해당 파티로 초대된 유저 목록 조회
+        val invitedUserIds = transaction {
+            InvitationEntity.invitedUserIdByParty(partyId)
         }
-        return talentUserList.map { TalentResponse.from(it, invitedTimeByPartyId[it.userId]) }
+
+        return talentUserList.map{
+            TalentResponse.from(it, invitedUserIds)
+        }
     }
 
     fun getPartyHeartbeat(partyId: String): Long {

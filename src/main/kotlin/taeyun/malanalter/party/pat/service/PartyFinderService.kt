@@ -4,11 +4,9 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.not
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
-import org.jetbrains.exposed.v1.jdbc.deleteWhere
-import org.jetbrains.exposed.v1.jdbc.insertAndGetId
-import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.postgresql.util.PSQLException
 import org.springframework.stereotype.Service
@@ -21,6 +19,7 @@ import taeyun.malanalter.party.character.CharacterTable
 import taeyun.malanalter.party.pat.dao.*
 import taeyun.malanalter.party.pat.dto.*
 import taeyun.malanalter.user.UserService
+import java.util.*
 import java.util.UUID.randomUUID
 
 val logger = KotlinLogging.logger {}
@@ -273,10 +272,23 @@ class PartyFinderService(
         return transaction {
             // 유저의 모든 초대 조회 Map<positionId, invitationId>
             (Invitation leftJoin PositionTable)
-                .join(PartyTable, JoinType.LEFT ,onColumn = Invitation.partyId, otherColumn = PartyTable.id)
+                .join(PartyTable, JoinType.LEFT, onColumn = Invitation.partyId, otherColumn = PartyTable.id)
                 .selectAll()
-                .where { Invitation.invitedUserId eq userId }
-                .map{ InvitationDto.from(it)}
+                .where { Invitation.invitedUserId eq userId and(not(Invitation.rejected) ) }
+                .map { InvitationDto.from(it) }
+        }
+    }
+
+    fun rejectInvitation(invitationId: String) {
+        val userId = UserService.getLoginUserId()
+        transaction {
+            val deleteCount = Invitation
+                .update(where = { Invitation.id eq UUID.fromString(invitationId) and (Invitation.invitedUserId eq userId) }) {
+                    it[Invitation.rejected] = true
+                }
+            if (deleteCount == 0) {
+                throw PartyBadRequest(ErrorCode.INVITATION_NOT_FOUND, "초대장을 찾을 수 없습니다.")
+            }
         }
     }
 

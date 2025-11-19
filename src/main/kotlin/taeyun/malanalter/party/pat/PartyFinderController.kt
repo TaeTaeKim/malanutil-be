@@ -73,16 +73,16 @@ class PartyFinderController(
     /**********
      * 파티 초대 관련 API
      *********/
-    // 구직 유저가 초대를 수락 거절 컨트롤러
-    @PostMapping("/invite/respond")
-    fun handleInvitation(@RequestParam invitationId: String){
-        TODO()
-
-    }
     // 받은 초대를 반환하는 컨트롤러
     @GetMapping("/invite")
     fun getInvitations(): List<InvitationDto>{
         return partyFinderService.getInvitations()
+    }
+
+    // 구직 유저가 초대를 수락 거절 컨트롤러
+    @DeleteMapping("/invite/{invitationId}")
+    fun handleInvitation(@PathVariable invitationId: String){
+        partyFinderService.rejectInvitation(invitationId)
     }
 
     // 구직 유저가 파티에서 탈퇴하는 기능

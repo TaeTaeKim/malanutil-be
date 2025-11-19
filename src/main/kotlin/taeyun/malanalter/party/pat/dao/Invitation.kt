@@ -11,6 +11,7 @@ object Invitation : UUIDTable(name = "party_invitations") {
     val positionId = reference("position_id", PositionTable.id, onDelete = ReferenceOption.CASCADE)
     val invitedUserId = reference("invited_user_id", Users, onDelete = ReferenceOption.CASCADE).index()
     val invitedAt = datetime("invited_at").defaultExpression(CurrentDateTime)
+    val rejected = bool("rejected").default(false)
 
 
     init {

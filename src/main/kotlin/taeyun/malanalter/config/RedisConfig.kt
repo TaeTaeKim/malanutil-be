@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.listener.RedisMessageListenerContainer
 import org.springframework.data.redis.serializer.StringRedisSerializer
 import taeyun.malanalter.config.property.RedisProperties
 
@@ -38,5 +39,16 @@ class RedisConfig(private val redisProperties: RedisProperties) {
         template.hashValueSerializer = StringRedisSerializer()
 
         return template
+    }
+
+    /**
+     * Redis message listener container
+     * Manages Redis pub/sub subscriptions for keyspace events
+     */
+    @Bean
+    fun redisMessageListenerContainer(): RedisMessageListenerContainer {
+        return RedisMessageListenerContainer().apply {
+            setConnectionFactory(redisConnectionFactory())
+        }
     }
 }

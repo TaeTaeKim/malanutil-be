@@ -15,6 +15,7 @@ data class PositionDto(
     val status: PositionStatus, // RECRUITING, COMPLETED
     val isPriestSlot: Boolean,
     val preferJob : List<String> = emptyList(),
+    val orderNum: Int,
 
     // Assigned user info (null if position is empty)
     val assignedUserId: Long?,
@@ -36,7 +37,8 @@ data class PositionDto(
                 preferJob = row[PositionTable.preferJob]?.split(",") ?: emptyList(),
                 assignedUserId = row[PositionTable.assignedUserId]?.value,
                 assignedCharacterId = row[PositionTable.assignedCharacterId]?.value,
-                assignedCharacterName = row[PositionTable.assignedCharacterName]
+                assignedCharacterName = row[PositionTable.assignedCharacterName],
+                orderNum = row[PositionTable.orderNumber]
             )
         }
     }

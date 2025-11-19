@@ -1,10 +1,15 @@
 package taeyun.malanalter.config.listener
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.jetbrains.exposed.v1.datetime.CurrentDateTime
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.updateReturning
 import org.springframework.data.redis.connection.Message
 import org.springframework.data.redis.listener.KeyExpirationEventMessageListener
 import org.springframework.data.redis.listener.RedisMessageListenerContainer
 import org.springframework.stereotype.Component
+import taeyun.malanalter.party.pat.dao.PartyTable
+import taeyun.malanalter.party.pat.service.PartyRedisService
 
 private val logger = KotlinLogging.logger {}
 
@@ -16,7 +21,8 @@ private val logger = KotlinLogging.logger {}
  */
 @Component
 class PartyHeartbeatExpirationListener(
-    redisMessageListenerContainer: RedisMessageListenerContainer
+    redisMessageListenerContainer: RedisMessageListenerContainer,
+    private val partyRedisService: PartyRedisService,
 ) : KeyExpirationEventMessageListener(redisMessageListenerContainer) {
 
     companion object {
@@ -54,15 +60,18 @@ class PartyHeartbeatExpirationListener(
         // Extract partyId from key (format: party:{partyId}:heartbeat)
         val partyId = extractPartyId(expiredKey)
 
-        logger.info { "Party heartbeat expired for partyId: $partyId (key: $expiredKey)" }
+        val partyRow = transaction {
+            PartyTable.updateReturning(where = { PartyTable.id eq partyId }) {
+                it[PartyTable.inactiveSince] = CurrentDateTime
+            }.singleOrNull() ?: throw IllegalStateException("Party id $partyId not found")
+        }
+        // 파티 비활성화 웹소켓 알림 전송
+        partyRedisService.publishMessage(
+            PartyRedisService.partyDeleteTopic(partyRow[PartyTable.mapId]),
+            hashMapOf("partyId" to partyId)
+        )
 
-        // TODO: Implement your business logic here
-        // Examples:
-        // 1. Mark party as inactive in database
-        // 2. Send notification to party members
-        // 3. Clean up related Redis keys
-        // 4. Update party status
-        // 5. Trigger Discord notifications
+        logger.info { "Party heartbeat expired for partyId: $partyId (key: $expiredKey)" }
     }
 
     /**

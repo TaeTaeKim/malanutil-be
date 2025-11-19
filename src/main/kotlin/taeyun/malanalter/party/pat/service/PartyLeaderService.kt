@@ -306,8 +306,29 @@ class PartyLeaderService(
     }
 
     fun renewPartyHeartbeat(partyId: String) {
-        partyRedisService.registerPartyHeartbeat(partyId)
+        val partyResponse = transaction {
+            val party = PartyTable.updateReturning(where = { PartyTable.id eq partyId }) {
+                it[PartyTable.inactiveSince] = null
+            }.singleOrNull()
+                ?: throw PartyBadRequest(PARTY_NOT_FOUND, PARTY_NOT_FOUND.defaultMessage)
+
+            val positionDtos = PositionTable.selectAll()
+                .where { PositionTable.partyId eq partyId }
+                .map(PositionDto::from)
+
+            PartyResponse.withPositions(party, positionDtos)
+
+        }
+        try {
+            // 아직 남은 상태에서 재 갱신이면 보이지 않는다.
+            if (partyRedisService.getPartyTTL(partyId) <= 0L) {
+                partyRedisService.publishMessage(partyCreateTopic(partyResponse.mapCode), partyResponse)
+            }
+        } finally {
+            partyRedisService.registerPartyHeartbeat(partyId)
+        }
     }
+
 
     fun getApplicant(): List<ApplicantRes> {
         val leaderUserId = UserService.getLoginUserId()

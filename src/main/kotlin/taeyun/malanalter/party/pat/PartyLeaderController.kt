@@ -85,6 +85,10 @@ class PartyLeaderController(
     fun acceptApplicant(@RequestBody applyAcceptReq: ApplyAcceptReq): PositionDto {
         return partyLeaderService.acceptApplicant(applyAcceptReq)
     }
+    @DeleteMapping("/kickout/{positionId}")
+    fun kickOutPartyMember(@PathVariable positionId: String) : PositionDto{
+        return partyLeaderService.kickOutPartyMember(positionId)
+    }
 
 
 }

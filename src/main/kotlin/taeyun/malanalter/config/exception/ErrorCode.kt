@@ -34,6 +34,7 @@ enum class ErrorCode(
     PARTY_FULL(HttpStatus.BAD_REQUEST, "PARTY_002", "Party is Full"),
     PARTY_INACTIVE(HttpStatus.BAD_REQUEST, "PARTY_003", "Party is Inactive"),
     PARTY_ALREADY_INVITED(HttpStatus.BAD_REQUEST, "PARTY_004", "Party Already Invited"),
+    UNAUTHORIZED_PARTY_ACCESS(HttpStatus.BAD_REQUEST, "PARTY_005", "Unauthorized Party Access"),
 
     CHARACTER_NOT_FOUND(HttpStatus.NOT_FOUND, "CHARACTER_001", "Character Not Found"),
     CHARACTER_NOT_IN_TALENT(HttpStatus.NOT_FOUND, "CHARACTER_002", "Character Not Registered in Map Talent"),

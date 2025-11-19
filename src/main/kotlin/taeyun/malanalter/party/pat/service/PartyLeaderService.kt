@@ -206,6 +206,7 @@ class PartyLeaderService(
      * 리 트라이가 필요없다.
      *
      * party:{mapId}:update 를 줘야한다.
+     * COMPLETED -> RECRUITING 요청은 없다.
      */
     fun updatePartyPosition(update: PositionUpdateReq, partyId: String, positionId: String) {
         // 요청 검증
@@ -368,7 +369,9 @@ class PartyLeaderService(
                         it[description] = "${characterEntity.level} ${characterEntity.job}"
                     }.single().let { PositionDto.from(it) }
 
-                // 4. 참가 수락되면 지원 유저의 모든 지원 정보 삭제
+                // 4. 참가 수락시 지원자는 인재풀, 모든 지원에서 삭제되어야한다.
+                // todo: 인재풀에서 제거
+
                 ApplicantTable.deleteWhere { ApplicantTable.applyUserId eq acceptReq.applicantUserId.toLong() }
                 // 5. redis publish
                 updatedPosition
@@ -387,5 +390,34 @@ class PartyLeaderService(
             }
             throw e
         }
+    }
+
+    // 파티에서 유저를 추방하는 기능
+    fun kickOutPartyMember(positionId: String) : PositionDto{
+        val leaderUserId = UserService.getLoginUserId()
+        var mapCode: Long = -1
+        val updatedRow = transaction {
+            val partyEntity = (PartyEntity.findByLeaderId(leaderUserId)
+                ?: throw PartyBadRequest(PARTY_NOT_FOUND, PARTY_NOT_FOUND.defaultMessage))
+            // 리더의 파티를 확인
+
+            mapCode = partyEntity.mapId
+            PositionTable.updateReturning(where = {PositionTable.partyId eq partyEntity.id and (PositionTable.id eq positionId)}) {
+                it[status] = PositionStatus.RECRUITING
+                it[assignedUserId] = null
+                it[assignedCharacterId] = null
+                it[assignedCharacterName] = null
+                it[description] = null
+            }.singleOrNull()?:throw PartyBadRequest(POSITION_NOT_FOUND, "해당 포지션을 찾을 수 없습니다.")
+        }
+        // 추방 정상 처리 후 redis publish
+        if (mapCode != -1L){
+            val updatePositionDto = PositionDto.from(updatedRow)
+            partyRedisService.publishMessage(partyUpdateTopic(mapCode), updatePositionDto)
+            return updatePositionDto
+        }else{
+            throw PartyBadRequest(BAD_REQUEST, "파티 정보 조회에 실패했습니다.")
+        }
+
     }
 }

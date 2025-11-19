@@ -16,6 +16,7 @@ import taeyun.malanalter.party.character.CharacterTable
 import taeyun.malanalter.party.pat.dao.*
 import taeyun.malanalter.party.pat.dto.*
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyCreateTopic
+import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyDeleteTopic
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyUpdateTopic
 import taeyun.malanalter.user.UserService
 import java.util.*
@@ -180,13 +181,11 @@ class PartyLeaderService(
     }
 
     // todo: 파티 없애기 시 들어와 있던 지원자들을 free 시켜줘야 함
-    // todo: redis publish
     fun deleteParty(partyId: String) {
         val userId = UserService.getLoginUserId()
-
-        transaction {
+        val mapCode = transaction {
             // Verify that the party exists and the user is the leader
-            PartyTable.selectAll()
+            val resultRow = PartyTable.select(PartyTable.mapId)
                 .where { PartyTable.id eq partyId and (PartyTable.leaderId eq userId) }
                 .singleOrNull() ?: throw AlerterBadRequest(
                 BAD_REQUEST,
@@ -195,8 +194,9 @@ class PartyLeaderService(
             partyRedisService.removePartyHeartbeat(partyId)
             // Delete the party (positions will be cascade deleted)
             PartyTable.deleteWhere { PartyTable.id eq partyId }
-
+            resultRow[PartyTable.mapId]
         }
+        partyRedisService.publishMessage(partyDeleteTopic(mapCode), hashMapOf("partyId" to partyId))
     }
 
     /**
@@ -393,7 +393,7 @@ class PartyLeaderService(
     }
 
     // 파티에서 유저를 추방하는 기능
-    fun kickOutPartyMember(positionId: String) : PositionDto{
+    fun kickOutPartyMember(positionId: String): PositionDto {
         val leaderUserId = UserService.getLoginUserId()
         var mapCode: Long = -1
         val updatedRow = transaction {
@@ -402,20 +402,20 @@ class PartyLeaderService(
             // 리더의 파티를 확인
 
             mapCode = partyEntity.mapId
-            PositionTable.updateReturning(where = {PositionTable.partyId eq partyEntity.id and (PositionTable.id eq positionId)}) {
+            PositionTable.updateReturning(where = { PositionTable.partyId eq partyEntity.id and (PositionTable.id eq positionId) }) {
                 it[status] = PositionStatus.RECRUITING
                 it[assignedUserId] = null
                 it[assignedCharacterId] = null
                 it[assignedCharacterName] = null
                 it[description] = null
-            }.singleOrNull()?:throw PartyBadRequest(POSITION_NOT_FOUND, "해당 포지션을 찾을 수 없습니다.")
+            }.singleOrNull() ?: throw PartyBadRequest(POSITION_NOT_FOUND, "해당 포지션을 찾을 수 없습니다.")
         }
         // 추방 정상 처리 후 redis publish
-        if (mapCode != -1L){
+        if (mapCode != -1L) {
             val updatePositionDto = PositionDto.from(updatedRow)
             partyRedisService.publishMessage(partyUpdateTopic(mapCode), updatePositionDto)
             return updatePositionDto
-        }else{
+        } else {
             throw PartyBadRequest(BAD_REQUEST, "파티 정보 조회에 실패했습니다.")
         }
 

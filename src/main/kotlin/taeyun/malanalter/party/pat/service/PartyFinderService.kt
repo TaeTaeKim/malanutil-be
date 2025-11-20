@@ -19,6 +19,7 @@ import taeyun.malanalter.party.character.CharacterEntity
 import taeyun.malanalter.party.character.CharacterTable
 import taeyun.malanalter.party.pat.dao.*
 import taeyun.malanalter.party.pat.dto.*
+import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyAcceptedTopic
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyApplyTopic
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyUpdateTopic
 import taeyun.malanalter.user.UserService
@@ -33,6 +34,25 @@ class PartyFinderService(
     private val partyRedisService: PartyRedisService,
     val discordService: DiscordService
 ) {
+
+    fun getParticipatingParties(): PartyResponse? {
+        val userId = UserService.getLoginUserId()
+        return transaction {
+            addLogger(StdOutSqlLogger)
+            val positionRow = PositionTable.selectAll()
+                .where { PositionTable.assignedUserId eq userId }
+                .singleOrNull() ?: return@transaction null
+
+            val partyRowWithPosition = (PartyTable leftJoin PositionTable).selectAll()
+                .where { PartyTable.id eq positionRow[PositionTable.partyId] }
+                .toList()
+
+            if(partyRowWithPosition.isEmpty()) {
+                return@transaction null
+            }
+            PartyResponse.fromJoinedRow(partyRowWithPosition)
+        }
+    }
 
     fun registerToTalentPool(mapId: Long, characterId: String): Long {
         try {
@@ -255,6 +275,7 @@ class PartyFinderService(
         }
     }
 
+    // 파티 지원을 취소하는 API
     fun cancelApplication(partyId: String, positionId: String) {
         val applyUserId = UserService.getLoginUserId()
         transaction {
@@ -283,7 +304,7 @@ class PartyFinderService(
             (Invitation leftJoin PositionTable)
                 .join(PartyTable, JoinType.LEFT, onColumn = Invitation.partyId, otherColumn = PartyTable.id)
                 .selectAll()
-                .where { Invitation.invitedUserId eq userId and (Invitation.status eq InvitationStatus.PENDING)  }
+                .where { Invitation.invitedUserId eq userId and (Invitation.status eq InvitationStatus.PENDING) }
                 .map { InvitationDto.from(it) }
         }
     }
@@ -318,28 +339,29 @@ class PartyFinderService(
                     ?.let { Pair(it[Invitation.positionId], it[PartyTable.mapId]) }
                     ?: throw PartyBadRequest(ErrorCode.INVITATION_NOT_FOUND, "초대장을 찾을 수 없습니다.")
                 val characterEntity = CharacterEntity.findByUserAndCharacterId(userId, characterId)
-                    ?: throw PartyBadRequest(ErrorCode.CHARACTER_NOT_FOUND,"할당할 캐릭터를 찾을 수 없습니다.")
+                    ?: throw PartyBadRequest(ErrorCode.CHARACTER_NOT_FOUND, "할당할 캐릭터를 찾을 수 없습니다.")
 
-                val positionRow = (PositionTable.selectAll()
+                val positionRow = PositionTable.selectAll()
                     .where { PositionTable.id eq invitedPositionId }
                     .forUpdate()
                     .singleOrNull()
-                    ?: throw PartyBadRequest(ErrorCode.POSITION_NOT_FOUND, "초대된 포지션을 찾을 수 없습니다."))
+                    ?: throw PartyBadRequest(ErrorCode.POSITION_NOT_FOUND, "초대된 포지션을 찾을 수 없습니다.")
 
                 if (positionRow[PositionTable.status] == PositionStatus.COMPLETED) {
                     throw PartyBadRequest(ErrorCode.POSITION_ALREADY_OCCUPIED, "이미 할당된 포지션입니다.")
                 }
 
                 // 포지션에 유저 할당
-                val updatedPositionDto = PositionTable.updateReturning(where = { PositionTable.id eq invitedPositionId }) {
-                    it[assignedUserId] = userId
-                    it[assignedCharacterId] = characterEntity.id
-                    it[assignedCharacterName] = characterEntity.name
-                    it[status] = PositionStatus.COMPLETED
-                    it[description] = "${characterEntity.level} ${characterEntity.job}"
-                }
-                    .single()
-                    .let { PositionDto.from(it) }
+                val updatedPositionDto =
+                    PositionTable.updateReturning(where = { PositionTable.id eq invitedPositionId }) {
+                        it[assignedUserId] = userId
+                        it[assignedCharacterId] = characterEntity.id
+                        it[assignedCharacterName] = characterEntity.name
+                        it[status] = PositionStatus.COMPLETED
+                        it[description] = "${characterEntity.level} ${characterEntity.job}"
+                    }
+                        .single()
+                        .let { PositionDto.from(it) }
                 // redis 로 포지션 업데이트 메세지 전송
                 partyRedisService.publishMessage(partyUpdateTopic(mapId), updatedPositionDto)
                 // 파티장에게도 파티 업데이트 메세지 전송 party:apply:{partyId} actionType : ACCEPT
@@ -347,20 +369,47 @@ class PartyFinderService(
                     partyApplyTopic(positionRow[PositionTable.partyId].value),
                     ApplicantRes.makeAcceptRes(userId, invitedPositionId.value, characterEntity)
                 )
-                Invitation.deleteWhere { Invitation.id eq UUID.fromString(invitationId) }
+                // 모든 구인 중 및 인재풀에서 제거 - 등록중 맵에서는 제거하지 않는다 -> 추방 시 다시 구인 중 등록하도록
+                participateParty(userId, positionRow[PositionTable.partyId].value)
             }
-            // 모든 구인 중 및 인재풀에서 제거 - 등록중 맵에서는 제거하지 않는다 -> 추방 시 다시 구인 중 등록하도록
-            talentPoolService.removeFromAllTalentPool()
-        }catch (ex: BaseException){
+        } catch (ex: BaseException) {
             // 이미 구인 포지션에 대한 초대일 경우 Invitation을 invalid 로 변경
-            when(ex.errorCode){
+            when (ex.errorCode) {
                 ErrorCode.POSITION_ALREADY_OCCUPIED, ErrorCode.INVITATION_NOT_FOUND -> {
                     transaction { InvitationEntity.changeStatus(invitationId, InvitationStatus.INVALID) }
                     throw ex
                 }
+
                 else -> throw ex
             }
         }
+    }
+
+    // 파티에 참여하게 됐을 때 수행되는 동작
+    fun participateParty(finderId: Long, partyId: String) {
+        // 1. 인재풀 제거 (redis), + 웹 소켓 메세지 발송
+        talentPoolService.removeFromAllTalentPool(finderId)
+        transaction {
+            // 2. 모든 파티 지원 제거 (PG) + 지원 철회 메세지 발송
+            ApplicantTable.deleteReturning(
+                listOf(ApplicantTable.partyId, ApplicantTable.positionId),
+                where = { ApplicantTable.applyUserId eq finderId })
+                .associate { it[ApplicantTable.partyId].value to it[ApplicantTable.positionId].value }
+                .forEach { (partyId, positionId) ->
+                    partyRedisService.publishMessage(
+                        PartyRedisService.partyApplyTopic(partyId),
+                        ApplicantRes.makeCancelRes(finderId.toString(), positionId)
+                    )
+                }
+            // 3. 모든 파티 초대장 거절 처리 (PG)
+            Invitation.update(where = { Invitation.invitedUserId eq finderId }) {
+                it[Invitation.status] = InvitationStatus.REJECTED
+            }
+        }
+        // 4. 참여자에게 참여성공 메세지 발송
+        partyRedisService.publishMessage(partyAcceptedTopic(finderId), hashMapOf("partyId" to partyId))
 
     }
+
+
 }

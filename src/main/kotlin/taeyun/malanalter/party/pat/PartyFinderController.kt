@@ -22,10 +22,9 @@ class PartyFinderController(
         return partyFinderService.getMapDiscordMessages(mapIds)
     }
 
-    // 구직 유저가 요청한 맵 디스코드를 반환하는 컨트롤러
-    @GetMapping("/mapDiscord")
-    fun getPartyDiscord(mapIds: List<Long>){
-
+    @GetMapping("/participating")
+    fun  getParticipatingParty(): PartyResponse?{
+        return partyFinderService.getParticipatingParties()
     }
 
     /**********

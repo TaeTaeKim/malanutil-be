@@ -43,6 +43,9 @@ class PartyRedisService(
         fun partyInviteTopic(inviteUserId: String) : String{
             return "finder:invite:$inviteUserId"
         }
+        fun partyAcceptedTopic(acceptedUserId: Long) : String{
+            return "finder:accept:$acceptedUserId"
+        }
 
     }
 

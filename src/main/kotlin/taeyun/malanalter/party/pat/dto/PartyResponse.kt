@@ -52,5 +52,11 @@ data class PartyResponse(
         fun withPositions(row: ResultRow, positions: List<PositionDto>): PartyResponse {
             return from(row).copy(positions = positions)
         }
+
+        fun fromJoinedRow(row: List<ResultRow>): PartyResponse {
+            val positionDtoList = row.map { PositionDto.from(it) }
+            val partyRow = row.first()
+            return PartyResponse.withPositions(partyRow, positionDtoList)
+        }
     }
 }

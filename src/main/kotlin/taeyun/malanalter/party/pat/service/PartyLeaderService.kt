@@ -29,6 +29,7 @@ import java.util.*
 class PartyLeaderService(
     val talentPoolService: TalentPoolService,
     val partyRedisService: PartyRedisService,
+    val partyFinderService: PartyFinderService
 ) {
     /**
      * 로그인 유저가 리더인 파티 조회
@@ -391,6 +392,7 @@ class PartyLeaderService(
                 // 신청자의 캐릭터 조회
                 val characterEntity = (CharacterEntity.findById(acceptReq.applicantCharacterId)
                     ?: throw PartyBadRequest(CHARACTER_NOT_FOUND, "신청자의 캐릭터를 찾을 수 없습니다."))
+
                 // 1. Lock Position for update
                 val positionRow = PositionTable.selectAll()
                     .where { PositionTable.partyId eq acceptReq.partyId and (PositionTable.id eq acceptReq.positionId) }
@@ -403,7 +405,7 @@ class PartyLeaderService(
                     throw PartyBadRequest(POSITION_ALREADY_OCCUPIED)
                 }
 
-                // 3. 업데이트(Unique Key) : 유니크 조건에 의해 이미 들어가 파티간 있는 상황이라면 Unique Violation 발생
+                // 3. 업데이트(Unique Key) : 유니크 조건에 의해 참여중인 파티가 있는 상황이라면 Unique Violation 발생
                 val updatedPosition =
                     PositionTable.updateReturning(where = { PositionTable.id eq acceptReq.positionId }) {
                         it[status] = PositionStatus.COMPLETED
@@ -414,10 +416,7 @@ class PartyLeaderService(
                     }.single().let { PositionDto.from(it) }
 
                 // 4. 참가 수락시 지원자는 인재풀, 모든 지원에서 삭제되어야한다.
-                // todo: 인재풀에서 제거
-
-                ApplicantTable.deleteWhere { ApplicantTable.applyUserId eq acceptReq.applicantUserId.toLong() }
-                // 5. redis publish
+                partyFinderService.participateParty(acceptReq.applicantUserId.toLong(), acceptReq.partyId)
                 updatedPosition
             }
             partyRedisService.publishMessage(partyUpdateTopic(acceptReq.mapId), result)

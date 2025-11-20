@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit
 @Service
 class TalentPoolService(
     private val redisTemplate: RedisTemplate<String, String>,
+    private val partyRedisService: PartyRedisService,
     private val objectMapper: ObjectMapper
 ) {
 
@@ -97,12 +98,15 @@ class TalentPoolService(
         removeRegisterMap(userId, mapId)
     }
 
-    fun removeFromAllTalentPool() {
-        val userId = UserService.Companion.getLoginUserId()
-        getRegisteringMaps(userId).mapIds.forEach { mapId ->
+    fun removeFromAllTalentPool(finderId: Long) {
+        getRegisteringMaps(finderId).mapIds.forEach { mapId ->
             // Remove from map set
             val mapKey = getTalentMapKey(mapId)
-            redisTemplate.opsForSet().remove(mapKey, userId.toString())
+            redisTemplate.opsForSet().remove(mapKey, finderId.toString())
+            partyRedisService.publishMessage(
+                PartyRedisService.talentUnRegisterTopic(mapId),
+                hashMapOf("userId" to finderId)
+            )
         }
     }
 

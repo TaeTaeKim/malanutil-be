@@ -16,7 +16,15 @@ class InvitationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 .count { it.isPending() } > 0
         }
         fun invitedUserIdByParty(partyId: String): List<Long>{
-            return find { Invitation.partyId eq partyId }.map{it.invitedUserId.value}
+            return find { Invitation.partyId eq partyId }
+                .map{it.invitedUserId.value}
+        }
+        fun findById(invitationId: String) : InvitationEntity? {
+            return findById(UUID.fromString(invitationId))
+        }
+        fun changeStatus(invitationId: String, newStatus: InvitationStatus){
+            val invitation = findById(invitationId)
+            invitation?.status = newStatus
         }
     }
 
@@ -24,6 +32,7 @@ class InvitationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var invitedUserId by Invitation.invitedUserId
     var invitedAt by Invitation.invitedAt
     var positionId by Invitation.positionId
+    var status by Invitation.status
 
 
     fun isPending(): Boolean{

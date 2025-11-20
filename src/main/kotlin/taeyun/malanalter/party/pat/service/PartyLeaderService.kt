@@ -20,6 +20,7 @@ import taeyun.malanalter.party.pat.dto.*
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyCreateTopic
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyDeleteTopic
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyInviteTopic
+import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyLeaveTopic
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyUpdateTopic
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.Users
@@ -439,10 +440,15 @@ class PartyLeaderService(
     fun kickOutPartyMember(positionId: String): PositionDto {
         val leaderUserId = UserService.getLoginUserId()
 
-        val (updatedRow, mapCode) = transaction {
+        return transaction {
             // 리더의 파티를 확인
             val partyEntity = (PartyEntity.findByLeaderId(leaderUserId)
-                ?: throw PartyBadRequest(PARTY_NOT_FOUND, PARTY_NOT_FOUND.defaultMessage))
+                ?: throw PartyBadRequest(PARTY_NOT_FOUND))
+            val position = PositionTable.selectAll().where { PositionTable.id eq positionId }.forUpdate().singleOrNull()
+                ?: throw PartyBadRequest(POSITION_NOT_FOUND)
+            if (position[PositionTable.assignedUserId] == null || position[PositionTable.assignedCharacterId] == null) {
+                throw PartyBadRequest(USER_NOT_FOUND, "추방할 유저를 찾을 수 없습니다.")
+            }
             val row =
                 PositionTable.updateReturning(where = { PositionTable.partyId eq partyEntity.id and (PositionTable.id eq positionId) }) {
                     it[status] = PositionStatus.RECRUITING
@@ -450,14 +456,18 @@ class PartyLeaderService(
                     it[assignedCharacterId] = null
                     it[assignedCharacterName] = null
                     it[description] = null
-                }.singleOrNull() ?: throw PartyBadRequest(POSITION_NOT_FOUND, "해당 포지션을 찾을 수 없습니다.")
-            Pair(row, partyEntity.mapId)
+                }.singleOrNull()
+                    ?: throw PartyBadRequest(POSITION_NOT_FOUND, "해당 포지션을 찾을 수 없습니다.")
+            val message = PositionDto.from(row)
+            partyRedisService.publishMessage(partyUpdateTopic(partyEntity.mapId), message)
+            val assignedUserId = position[PositionTable.assignedUserId]!!.value
+            partyFinderService.leaveParty(
+                assignedUserId,
+                position[PositionTable.assignedCharacterId]!!.value
+            )
+            partyRedisService.publishMessage(partyLeaveTopic(assignedUserId), emptyMap<String, String>())
+
+            message
         }
-        // 추방 정상 처리 후 redis publish
-        val updatePositionDto = PositionDto.from(updatedRow)
-        partyRedisService.publishMessage(partyUpdateTopic(mapCode), updatePositionDto)
-        return updatePositionDto
-
-
     }
 }

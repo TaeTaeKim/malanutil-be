@@ -46,6 +46,9 @@ class PartyRedisService(
         fun partyAcceptedTopic(acceptedUserId: Long) : String{
             return "finder:accept:$acceptedUserId"
         }
+        fun partyLeaveTopic(leaveUserId: Long) : String{
+            return "finder:leave:$leaveUserId"
+        }
 
     }
 

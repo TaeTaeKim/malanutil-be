@@ -58,8 +58,8 @@ class TalentPoolService(
      * 2. talent:user:{userId} 에 유저가 등록한 캐릭터 정보 추가 -> TTL 15
      * 3. user:{userId}:talent:maps 에 유저가 등록한 맵들을 저장 : 언제 없애나? 없애지 않는다 2번 ttl 만료시 없어지는 것
      */
-    fun registerToTalentPool(mapId: Long, characterId: String): TalentDto {
-        val userId = UserService.Companion.getLoginUserId()
+    fun registerToTalentPool(userId: Long, mapId: Long, characterId: String): TalentDto {
+
         val talentRequest = getTalentDtoFrom(userId, characterId)
         // Store in Redis with TTL - manual JSON serialization
         val characterKey = getTalentUserKey(userId)

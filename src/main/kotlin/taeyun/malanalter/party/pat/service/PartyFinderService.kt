@@ -14,7 +14,6 @@ import taeyun.malanalter.auth.discord.DiscordService
 import taeyun.malanalter.config.exception.BaseException
 import taeyun.malanalter.config.exception.ErrorCode
 import taeyun.malanalter.config.exception.PartyBadRequest
-import taeyun.malanalter.config.exception.PartyServerError
 import taeyun.malanalter.party.character.CharacterEntity
 import taeyun.malanalter.party.character.CharacterTable
 import taeyun.malanalter.party.pat.dao.*
@@ -47,48 +46,37 @@ class PartyFinderService(
                 .where { PartyTable.id eq positionRow[PositionTable.partyId] }
                 .toList()
 
-            if(partyRowWithPosition.isEmpty()) {
+            if (partyRowWithPosition.isEmpty()) {
                 return@transaction null
             }
             PartyResponse.fromJoinedRow(partyRowWithPosition)
         }
     }
 
-    fun registerToTalentPool(mapId: Long, characterId: String): Long {
-        try {
+    fun registerToTalentPool(userId: Long, mapId: Long, characterId: String): Long {
 
-            talentPoolService.registerToTalentPool(mapId, characterId)
+        talentPoolService.registerToTalentPool(userId, mapId, characterId)
 
-            val publishData = transaction {
-                val userId = UserService.getLoginUserId()
-                val characterRow = CharacterTable.selectAll()
-                    .where { CharacterTable.userId eq userId and (CharacterTable.id eq characterId) }
-                    .singleOrNull()
-                    ?: throw PartyBadRequest(
-                        ErrorCode.CHARACTER_NOT_FOUND, ErrorCode.CHARACTER_NOT_FOUND.defaultMessage
-                    )
-
-                TalentResponse(
-                    userId = userId.toString(),
-                    characterId = characterId,
-                    isSent = false,
-                    name = characterRow[CharacterTable.name],
-                    level = characterRow[CharacterTable.level],
-                    job = characterRow[CharacterTable.job],
-                    comment = characterRow[CharacterTable.comment]
+        val publishData = transaction {
+            val characterRow = CharacterTable.selectAll()
+                .where { CharacterTable.userId eq userId and (CharacterTable.id eq characterId) }
+                .singleOrNull()
+                ?: throw PartyBadRequest(
+                    ErrorCode.CHARACTER_NOT_FOUND, ErrorCode.CHARACTER_NOT_FOUND.defaultMessage
                 )
-            }
-            partyRedisService.publishMessage(PartyRedisService.talentRegisterTopic(mapId), publishData)
-            return mapId
-        } catch (ex: Exception) {
-            val randomUUID = randomUUID()
-            logger.error { "$randomUUID Error in inviting user to server ${ex.message} ${ex.javaClass}" }
-            throw PartyServerError(
-                uuid = randomUUID.toString(),
-                message = "Error in inviting user to server",
-                rootCause = ex
+
+            TalentResponse(
+                userId = userId.toString(),
+                characterId = characterId,
+                isSent = false,
+                name = characterRow[CharacterTable.name],
+                level = characterRow[CharacterTable.level],
+                job = characterRow[CharacterTable.job],
+                comment = characterRow[CharacterTable.comment]
             )
         }
+        partyRedisService.publishMessage(PartyRedisService.talentRegisterTopic(mapId), publishData)
+        return mapId
 
     }
 
@@ -131,7 +119,7 @@ class PartyFinderService(
                 comment = characterEntity.comment
             )
             registeringMaps.mapIds.forEach { mapId ->
-                talentPoolService.registerToTalentPool(mapId, characterId)
+                talentPoolService.registerToTalentPool(userId, mapId, characterId)
                 partyRedisService.publishMessage(PartyRedisService.talentRegisterTopic(mapId), publishData)
             }
         }
@@ -411,5 +399,16 @@ class PartyFinderService(
 
     }
 
+    /**
+     * 파티에서 강퇴 혹은 파티가 삭제되었을 때 수행되어야하는 동작
+     * 1. 인재풀에 재등록 (redis) + 웹 소켓 메세지 발송
+     * 2. finder:kickout:{userId} 로 추방되었음을 알린다.
+     */
+    fun leaveParty(finderId: Long, characterId: String) {
+        val registeringMaps = talentPoolService.getRegisteringMaps(finderId)
+        registeringMaps.mapIds.forEach { registeredMapId ->
+            registerToTalentPool(finderId, registeredMapId, characterId)
+        }
+    }
 
 }

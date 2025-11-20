@@ -3,6 +3,7 @@ package taeyun.malanalter.party.pat
 import org.springframework.web.bind.annotation.*
 import taeyun.malanalter.party.pat.dto.*
 import taeyun.malanalter.party.pat.service.PartyFinderService
+import taeyun.malanalter.user.UserService
 
 /* 구직 유저 관련 컨트롤러 */
 @RestController
@@ -55,7 +56,8 @@ class PartyFinderController(
 
     @PostMapping("/talentPool")
     fun registerToTalentPool(@RequestBody request: TalentRegisterRequest) : Long {
-        return partyFinderService.registerToTalentPool(request.mapId, request.characterId)
+        val userId = UserService.getLoginUserId()
+        return partyFinderService.registerToTalentPool(userId, request.mapId, request.characterId)
     }
 
     @DeleteMapping("/talentPool/{mapId}")

@@ -273,7 +273,7 @@ class PartyFinderService(
         }
 
         val result = ApplicantRes.makeCancelRes(applyUserId.toString(), positionId)
-        partyRedisService.publishMessage(PartyRedisService.partyApplyTopic(partyId), result)
+        partyRedisService.publishMessage(partyApplyTopic(partyId), result)
     }
 
     fun getInvitations(): List<InvitationDto> {
@@ -353,10 +353,13 @@ class PartyFinderService(
             talentPoolService.removeFromAllTalentPool()
         }catch (ex: BaseException){
             // 이미 구인 포지션에 대한 초대일 경우 Invitation을 invalid 로 변경
-            if(ex.errorCode == ErrorCode.POSITION_ALREADY_OCCUPIED){
-                transaction { InvitationEntity.changeStatus(invitationId, InvitationStatus.INVALID) }
+            when(ex.errorCode){
+                ErrorCode.POSITION_ALREADY_OCCUPIED, ErrorCode.INVITATION_NOT_FOUND -> {
+                    transaction { InvitationEntity.changeStatus(invitationId, InvitationStatus.INVALID) }
+                    throw ex
+                }
+                else -> throw ex
             }
-            throw ex
         }
 
     }

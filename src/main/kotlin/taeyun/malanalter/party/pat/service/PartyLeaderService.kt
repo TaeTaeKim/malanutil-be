@@ -212,6 +212,8 @@ class PartyLeaderService(
      * party:{mapId}:update 를 줘야한다.
      * COMPLETED -> RECRUITING 요청은 없다.
      */
+
+    // todo : 포지션 수정시 파티장이 아닌 사람이 수정하는 경우 예외처리 필요
     fun updatePartyPosition(update: PositionUpdateReq, partyId: String, positionId: String) {
         // 요청 검증
         if (update.status == PositionStatus.COMPLETED && (update.recruitedJob == null || update.recruitedLevel == null)) {
@@ -264,7 +266,7 @@ class PartyLeaderService(
 
     /**
      * 유저에게 파티 초대 메세지 발송
-     * 5분 이내에 동일 유저에게 초대 메세지 발송 불가
+     * 초대는 파티당 유저에게 한번만 허용
      */
     fun inviteUserToParty(invitationReq: InvitationReq) {
         val leaderId = UserService.getLoginUserId()
@@ -296,14 +298,14 @@ class PartyLeaderService(
 
         }
         val redisMsg = transaction {
-                // 유저의 모든 초대 조회 Map<positionId, invitationId>
-                (Invitation leftJoin PositionTable)
-                    .join(PartyTable, JoinType.LEFT ,onColumn = Invitation.partyId, otherColumn = PartyTable.id)
-                    .selectAll()
-                    .where { Invitation.id eq invitationId }
-                    .singleOrNull()
-                    ?.let{ InvitationDto.from(it)}
-                    ?: throw PartyBadRequest(INVITATION_NOT_FOUND)
+            // 유저의 모든 초대 조회 Map<positionId, invitationId>
+            (Invitation leftJoin PositionTable)
+                .join(PartyTable, JoinType.LEFT, onColumn = Invitation.partyId, otherColumn = PartyTable.id)
+                .selectAll()
+                .where { Invitation.id eq invitationId }
+                .singleOrNull()
+                ?.let { InvitationDto.from(it) }
+                ?: throw PartyBadRequest(INVITATION_NOT_FOUND)
         }
         // websocket 으로 초대 메세지 발송
         partyRedisService.publishMessage(partyInviteTopic(invitationReq.userToInvite.toString()), redisMsg)
@@ -317,7 +319,7 @@ class PartyLeaderService(
             InvitationEntity.invitedUserIdByParty(partyId)
         }
 
-        return talentUserList.map{
+        return talentUserList.map {
             TalentResponse.from(it, invitedUserIds)
         }
     }
@@ -437,29 +439,26 @@ class PartyLeaderService(
     // 파티에서 유저를 추방하는 기능
     fun kickOutPartyMember(positionId: String): PositionDto {
         val leaderUserId = UserService.getLoginUserId()
-        var mapCode: Long = -1
-        val updatedRow = transaction {
+
+        val (updatedRow, mapCode) = transaction {
+            // 리더의 파티를 확인
             val partyEntity = (PartyEntity.findByLeaderId(leaderUserId)
                 ?: throw PartyBadRequest(PARTY_NOT_FOUND, PARTY_NOT_FOUND.defaultMessage))
-            // 리더의 파티를 확인
-
-            mapCode = partyEntity.mapId
-            PositionTable.updateReturning(where = { PositionTable.partyId eq partyEntity.id and (PositionTable.id eq positionId) }) {
-                it[status] = PositionStatus.RECRUITING
-                it[assignedUserId] = null
-                it[assignedCharacterId] = null
-                it[assignedCharacterName] = null
-                it[description] = null
-            }.singleOrNull() ?: throw PartyBadRequest(POSITION_NOT_FOUND, "해당 포지션을 찾을 수 없습니다.")
+            val row =
+                PositionTable.updateReturning(where = { PositionTable.partyId eq partyEntity.id and (PositionTable.id eq positionId) }) {
+                    it[status] = PositionStatus.RECRUITING
+                    it[assignedUserId] = null
+                    it[assignedCharacterId] = null
+                    it[assignedCharacterName] = null
+                    it[description] = null
+                }.singleOrNull() ?: throw PartyBadRequest(POSITION_NOT_FOUND, "해당 포지션을 찾을 수 없습니다.")
+            Pair(row, partyEntity.mapId)
         }
         // 추방 정상 처리 후 redis publish
-        if (mapCode != -1L) {
-            val updatePositionDto = PositionDto.from(updatedRow)
-            partyRedisService.publishMessage(partyUpdateTopic(mapCode), updatePositionDto)
-            return updatePositionDto
-        } else {
-            throw PartyBadRequest(BAD_REQUEST, "파티 정보 조회에 실패했습니다.")
-        }
+        val updatePositionDto = PositionDto.from(updatedRow)
+        partyRedisService.publishMessage(partyUpdateTopic(mapCode), updatePositionDto)
+        return updatePositionDto
+
 
     }
 }

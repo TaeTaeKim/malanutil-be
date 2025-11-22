@@ -446,9 +446,6 @@ class PartyLeaderService(
                 ?: throw PartyBadRequest(PARTY_NOT_FOUND))
             val position = PositionTable.selectAll().where { PositionTable.id eq positionId }.forUpdate().singleOrNull()
                 ?: throw PartyBadRequest(POSITION_NOT_FOUND)
-            if (position[PositionTable.assignedUserId] == null || position[PositionTable.assignedCharacterId] == null) {
-                throw PartyBadRequest(USER_NOT_FOUND, "추방할 유저를 찾을 수 없습니다.")
-            }
             val row =
                 PositionTable.updateReturning(where = { PositionTable.partyId eq partyEntity.id and (PositionTable.id eq positionId) }) {
                     it[status] = PositionStatus.RECRUITING
@@ -460,13 +457,14 @@ class PartyLeaderService(
                     ?: throw PartyBadRequest(POSITION_NOT_FOUND, "해당 포지션을 찾을 수 없습니다.")
             val message = PositionDto.from(row)
             partyRedisService.publishMessage(partyUpdateTopic(partyEntity.mapId), message)
-            val assignedUserId = position[PositionTable.assignedUserId]!!.value
-            partyFinderService.leaveParty(
-                assignedUserId,
-                position[PositionTable.assignedCharacterId]!!.value
-            )
-            partyRedisService.publishMessage(partyLeaveTopic(assignedUserId), emptyMap<String, String>())
-
+            val assignedUserId = position[PositionTable.assignedUserId]?.value // 유저가 매뉴얼로 구인와료 처리한 곳을 수정할 때는 assgiend user가 없을 수 있다.
+            if(assignedUserId != null){
+                partyFinderService.leaveParty(
+                    assignedUserId,
+                    position[PositionTable.assignedCharacterId]!!.value
+                )
+                partyRedisService.publishMessage(partyLeaveTopic(assignedUserId), emptyMap<String, String>())
+            }
             message
         }
     }

@@ -85,7 +85,7 @@ class PartyFinderService(
         // 제거하려는 맵의 초대장을 모두 제거
         transaction {
             addLogger(StdOutSqlLogger)
-            val join = Invitation.join(PartyTable, JoinType.LEFT)
+            val join = Invitation.join(PartyTable, JoinType.INNER)
             join.delete(Invitation) { PartyTable.mapId eq mapId }
         }
         talentPoolService.removeFromTalentPool(mapId)

@@ -10,6 +10,7 @@ import taeyun.malanalter.party.character.CharacterEntity
 import taeyun.malanalter.party.pat.dto.RegisteringPoolResponse
 import taeyun.malanalter.party.pat.dto.TalentDto
 import taeyun.malanalter.user.UserService
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 /**
@@ -35,6 +36,7 @@ class TalentPoolService(
 
     fun getRegisteringMaps(userId: Long): RegisteringPoolResponse {
         val ttlOfUser = getTTLOfUser(userId)
+        val expiredAt:Long = Instant.now().plusSeconds(ttlOfUser).epochSecond
         val registeringMapKey = getRegisteringMapKey(userId)
         val mapList = redisTemplate.opsForSet()
             .members(registeringMapKey)
@@ -42,7 +44,7 @@ class TalentPoolService(
             ?.toList()
             ?: emptyList()
 
-        return RegisteringPoolResponse(mapList, ttlOfUser)
+        return RegisteringPoolResponse(mapList, expiredAt)
     }
 
     fun getTTLOfUser(userId: Long): Long {

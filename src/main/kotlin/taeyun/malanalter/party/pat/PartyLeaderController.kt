@@ -47,7 +47,7 @@ class PartyLeaderController(
      * 파티 활성화 관련 API
      ************/
 
-    // @return : 음수(만료) 혹은 남은 시간 Sec
+    // @return : 만료일이 적인 unix timestamp long
     @GetMapping("/heartbeat")
     fun getPartyHeartbeat(@RequestParam partyId: String) : Long{
         return partyLeaderService.getPartyHeartbeat(partyId)

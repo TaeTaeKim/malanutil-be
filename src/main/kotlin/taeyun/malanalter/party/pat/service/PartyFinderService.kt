@@ -3,7 +3,6 @@ package taeyun.malanalter.party.pat.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.v1.core.StdOutSqlLogger
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.*
@@ -39,7 +38,7 @@ class PartyFinderService(
     fun getParticipatingParties(): PartyResponse? {
         val userId = UserService.getLoginUserId()
         return transaction {
-            addLogger(StdOutSqlLogger)
+//            addLogger(StdOutSqlLogger)
             val positionRow = PositionTable.selectAll()
                 .where { PositionTable.assignedUserId eq userId }
                 .singleOrNull() ?: return@transaction null
@@ -86,7 +85,7 @@ class PartyFinderService(
         val userId = UserService.getLoginUserId()
         // 제거하려는 맵의 초대장을 모두 제거
         transaction {
-            addLogger(StdOutSqlLogger)
+//            addLogger(StdOutSqlLogger)
             val join = Invitation.join(PartyTable, JoinType.INNER)
             join.delete(Invitation) { PartyTable.mapId eq mapId }
         }
@@ -320,7 +319,7 @@ class PartyFinderService(
         try {
 
             transaction {
-                addLogger(StdOutSqlLogger)
+//                addLogger(StdOutSqlLogger)
                 val (invitedPositionId, mapId) = (Invitation leftJoin PartyTable).select(
                     Invitation.positionId,
                     PartyTable.mapId

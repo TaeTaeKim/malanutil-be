@@ -24,6 +24,7 @@ import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyLeav
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyUpdateTopic
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.Users
+import java.time.Instant
 import java.util.*
 
 @Service
@@ -325,9 +326,10 @@ class PartyLeaderService(
             TalentResponse.from(it, invitedUserIds)
         }
     }
-
+    // 만기 시간 (UTC Instant)를 반환한다.
     fun getPartyHeartbeat(partyId: String): Long {
-        return partyRedisService.getPartyTTL(partyId)
+        val partyTTL = partyRedisService.getPartyTTL(partyId)
+        return Instant.now().plusSeconds(partyTTL).epochSecond
     }
 
     fun renewPartyHeartbeat(partyId: String) {

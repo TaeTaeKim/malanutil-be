@@ -97,7 +97,7 @@ class PartyFinderController(
 
     // 구직 유저가 파티에서 탈퇴하는 기능
     @PostMapping("/leave/{partyId}")
-    fun leaveParty(@RequestParam partyId: String){
-        TODO()
+    fun leaveParty(@PathVariable partyId: String){
+        partyFinderService.leaveParty(partyId)
     }
 }

@@ -459,7 +459,7 @@ class PartyLeaderService(
             partyRedisService.publishMessage(partyUpdateTopic(partyEntity.mapId), message)
             val assignedUserId = position[PositionTable.assignedUserId]?.value // 유저가 매뉴얼로 구인와료 처리한 곳을 수정할 때는 assgiend user가 없을 수 있다.
             if(assignedUserId != null){
-                partyFinderService.leaveParty(
+                partyFinderService.processAfterLeaveParty(
                     assignedUserId,
                     position[PositionTable.assignedCharacterId]!!.value
                 )

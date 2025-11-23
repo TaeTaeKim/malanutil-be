@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service
 import taeyun.malanalter.auth.discord.DiscordService
 import taeyun.malanalter.config.exception.BaseException
 import taeyun.malanalter.config.exception.ErrorCode
+import taeyun.malanalter.config.exception.ErrorCode.PARTY_NOT_FOUND
+import taeyun.malanalter.config.exception.ErrorCode.POSITION_NOT_FOUND
 import taeyun.malanalter.config.exception.PartyBadRequest
 import taeyun.malanalter.party.character.CharacterEntity
 import taeyun.malanalter.party.character.CharacterTable
@@ -402,13 +404,46 @@ class PartyFinderService(
     /**
      * 파티에서 강퇴 혹은 파티가 삭제되었을 때 수행되어야하는 동작
      * 1. 인재풀에 재등록 (redis) + 웹 소켓 메세지 발송
-     * 2. finder:kickout:{userId} 로 추방되었음을 알린다.
      */
-    fun leaveParty(finderId: Long, characterId: String) {
+    fun processAfterLeaveParty(finderId: Long, characterId: String) {
         val registeringMaps = talentPoolService.getRegisteringMaps(finderId)
         registeringMaps.mapIds.forEach { registeredMapId ->
             registerToTalentPool(finderId, registeredMapId, characterId)
         }
+    }
+
+    fun leaveParty(partyId: String) {
+
+        val userId = UserService.getLoginUserId()
+        transaction {
+            // 1. Party 의 Position 에서 유저가 들어가있는 포지션을 찾는다.
+            val partyEntity = (PartyEntity.findById(partyId)
+                ?: throw PartyBadRequest(PARTY_NOT_FOUND))
+            val updatePosition = PositionTable.updateReturning(where = {
+                PositionTable.partyId eq partyId and PositionTable.assignedUserId.eq(userId)
+            }) {
+                it[status] = PositionStatus.RECRUITING
+                it[assignedUserId] = null
+                it[assignedCharacterId] = null
+                it[assignedCharacterName] = null
+                it[description] = null
+            }.singleOrNull()
+                ?: throw PartyBadRequest(POSITION_NOT_FOUND, "해당 포지션을 찾을 수 없습니다.")
+            // 2. Party Position update 를 메세지 보낸다.
+            partyRedisService.publishMessage(partyUpdateTopic(partyEntity.mapId), PositionDto.from(updatePosition))
+            partyRedisService.publishMessage(
+                partyApplyTopic(partyId),
+                ApplicantRes.makeLeaveRes(userId.toString(), updatePosition[PositionTable.id].value)
+            )
+            // 3. processAfterLeaveParty 실행
+            val character =
+                CharacterEntity.findActiveCharacter(userId) ?: throw PartyBadRequest(ErrorCode.CHARACTER_NOT_FOUND)
+            processAfterLeaveParty(userId, character.id.value)
+
+
+        }
+
+
     }
 
 }

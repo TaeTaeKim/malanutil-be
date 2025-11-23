@@ -38,6 +38,8 @@ object PositionTable: IdTable<String>("party_position") {
                 status eq PositionStatus.COMPLETED and assignedUserId.isNotNull()
             }
         )
+        // 참가중인 포지션을 쉽게 찾기 위한 인덱스
+        index(isUnique = false,  partyId, assignedUserId)
     }
 
 }

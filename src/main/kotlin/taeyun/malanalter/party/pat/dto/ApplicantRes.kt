@@ -7,26 +7,20 @@ import taeyun.malanalter.party.character.CharacterEntity
  */
 data class ApplicantRes(
     val actionType: ApplicantAction,
-    val applyId: String?,
+    val applyId: String? = null, // 초대를
     val applyUserId: String,
-    val characterId: String,
-    val name: String,
-    val level: Int,
-    val job: String,
-    val comment: String?,
+    val characterId: String? = null,
+    val name: String? = null,
+    val level: Int? = null,
+    val job: String?= null,
+    val comment: String?=null,
     val positionId: String,
 ){
     companion object{
         fun makeCancelRes(applicantUserId: String, positionId: String) : ApplicantRes{
             return ApplicantRes(
                 actionType = ApplicantAction.CANCEL,
-                applyId = null,
                 applyUserId = applicantUserId,
-                characterId = "",
-                name = "",
-                level = 0,
-                job = "",
-                comment = null,
                 positionId = positionId,
             )
         }
@@ -34,18 +28,23 @@ data class ApplicantRes(
         fun makeAcceptRes(acceptUserId: Long,positionId: String,  characterEntity: CharacterEntity): ApplicantRes{
             return ApplicantRes(
                 actionType = ApplicantAction.ACCEPT,
-                applyId = null,
                 applyUserId = acceptUserId.toString(),
                 characterId = characterEntity.id.value,
                 name = characterEntity.name,
                 level = characterEntity.level,
                 job = characterEntity.job,
-                comment = null,
+                positionId = positionId,
+            )
+        }
+        fun makeLeaveRes(applicantUserId: String, positionId: String) : ApplicantRes{
+            return ApplicantRes(
+                actionType = ApplicantAction.LEAVE,
+                applyUserId = applicantUserId,
                 positionId = positionId,
             )
         }
     }
 }
 enum class ApplicantAction{
-    ADD, CANCEL, NONE, ACCEPT
+    ADD, CANCEL, NONE, ACCEPT, LEAVE
 }

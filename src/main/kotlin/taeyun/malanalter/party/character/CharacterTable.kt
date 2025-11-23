@@ -18,6 +18,7 @@ object CharacterTable : IdTable<String>(name = "character") {
     val comment = varchar("comment", 255).nullable()
     val userId = reference("user_id", Users.id, onDelete = ReferenceOption.CASCADE)
     val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
+    val isActive = bool("is_active").default(false)
 
     override val primaryKey = PrimaryKey(id)
 

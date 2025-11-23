@@ -3,6 +3,7 @@ package taeyun.malanalter.party.pat
 import org.springframework.web.bind.annotation.*
 import taeyun.malanalter.party.pat.dto.*
 import taeyun.malanalter.party.pat.service.PartyFinderService
+import taeyun.malanalter.user.UserService
 
 /* 구직 유저 관련 컨트롤러 */
 @RestController
@@ -22,10 +23,9 @@ class PartyFinderController(
         return partyFinderService.getMapDiscordMessages(mapIds)
     }
 
-    // 구직 유저가 요청한 맵 디스코드를 반환하는 컨트롤러
-    @GetMapping("/mapDiscord")
-    fun getPartyDiscord(mapIds: List<Long>){
-
+    @GetMapping("/participating")
+    fun  getParticipatingParty(): PartyResponse?{
+        return partyFinderService.getParticipatingParties()
     }
 
     /**********
@@ -56,7 +56,8 @@ class PartyFinderController(
 
     @PostMapping("/talentPool")
     fun registerToTalentPool(@RequestBody request: TalentRegisterRequest) : Long {
-        return partyFinderService.registerToTalentPool(request.mapId, request.characterId)
+        val userId = UserService.getLoginUserId()
+        return partyFinderService.registerToTalentPool(userId, request.mapId, request.characterId)
     }
 
     @DeleteMapping("/talentPool/{mapId}")
@@ -73,21 +74,30 @@ class PartyFinderController(
     /**********
      * 파티 초대 관련 API
      *********/
-    // 구직 유저가 초대를 수락 거절 컨트롤러
-    @PostMapping("/invite/respond")
-    fun handleInvitation(@RequestParam invitationId: String){
-        TODO()
-
-    }
     // 받은 초대를 반환하는 컨트롤러
     @GetMapping("/invite")
-    fun getInvitations(): List<Any>{
-        TODO()
+    fun getInvitations(): List<InvitationDto>{
+        return partyFinderService.getInvitations()
+    }
+
+    // 구직 유저가 초대를 수락 거절 컨트롤러
+    @DeleteMapping("/invite/{invitationId}")
+    fun handleInvitation(@PathVariable invitationId: String){
+        partyFinderService.rejectInvitation(invitationId)
+    }
+
+    // 파티초대를 수락하는 기능
+    @PostMapping("/invite/accept/{invitationId}")
+    fun acceptInvitation(@PathVariable invitationId: String, @RequestBody body: Map<String, String>){
+        if(body.containsKey("characterId").not()){
+            throw IllegalArgumentException("characterId is required")
+        }
+        partyFinderService.acceptInvitation(invitationId, body["characterId"]!!)
     }
 
     // 구직 유저가 파티에서 탈퇴하는 기능
     @PostMapping("/leave/{partyId}")
-    fun leaveParty(@RequestParam partyId: String){
-        TODO()
+    fun leaveParty(@PathVariable partyId: String){
+        partyFinderService.leaveParty(partyId)
     }
 }

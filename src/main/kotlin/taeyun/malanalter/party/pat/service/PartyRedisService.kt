@@ -37,8 +37,18 @@ class PartyRedisService(
         fun talentUnRegisterTopic(mapId:Long) : String{
             return "talent:$mapId:unregister"
         }
+        // todo:  Party manage 토픽으로 변경해야한다. -> 파티장이 구독해서 참여한 파티원의 state를 실시간으로 받을 수 있는 토픽
         fun partyApplyTopic(partyId: String) : String{
             return "party:apply:$partyId"
+        }
+        fun partyInviteTopic(inviteUserId: String) : String{
+            return "finder:invite:$inviteUserId"
+        }
+        fun partyAcceptedTopic(acceptedUserId: Long) : String{
+            return "finder:accept:$acceptedUserId"
+        }
+        fun partyLeaveTopic(leaveUserId: Long) : String{
+            return "finder:leave:$leaveUserId"
         }
 
     }

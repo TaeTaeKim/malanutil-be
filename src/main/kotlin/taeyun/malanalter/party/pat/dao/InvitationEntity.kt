@@ -15,14 +15,24 @@ class InvitationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             return find { Invitation.partyId eq partyId and (Invitation.invitedUserId eq invitedUserId) }
                 .count { it.isPending() } > 0
         }
-        fun getInvitedTimeByPartyId(partyId:String) :Map<Long, LocalDateTime>{
-            return find{ Invitation.partyId eq partyId }.filter{it.isPending()}.associate { it.invitedUserId to it.invitedAt.toJavaLocalDateTime() }
+        fun invitedUserIdByParty(partyId: String): List<Long>{
+            return find { Invitation.partyId eq partyId }
+                .map{it.invitedUserId.value}
+        }
+        fun findById(invitationId: String) : InvitationEntity? {
+            return findById(UUID.fromString(invitationId))
+        }
+        fun changeStatus(invitationId: String, newStatus: InvitationStatus){
+            val invitation = findById(invitationId)
+            invitation?.status = newStatus
         }
     }
 
     var partyId by Invitation.partyId
     var invitedUserId by Invitation.invitedUserId
     var invitedAt by Invitation.invitedAt
+    var positionId by Invitation.positionId
+    var status by Invitation.status
 
 
     fun isPending(): Boolean{

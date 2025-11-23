@@ -1,9 +1,6 @@
 package taeyun.malanalter.party.pat.dto
 
 
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-
 /**
  * 파티장을 위한 인재풀 DTO
  * @see TalentDto 에서 lastSent가 추가 되었음.
@@ -12,19 +9,19 @@ import java.time.ZoneOffset
 data class TalentResponse(
     val userId: String,
     val characterId: String,
-    val lastSent: Long?,
+    val isSent: Boolean,
     val name: String,
     val level: Int,
     val job: String,
     val comment: String?
 ){
     companion object{
-        fun from(dto: TalentDto, inviteTime: LocalDateTime?): TalentResponse {
+        fun from(dto: TalentDto, invitedUserIds: List<Long>): TalentResponse {
             return TalentResponse(
                 userId = dto.userId.toString(),
                 characterId = dto.characterId,
                 name = dto.name,
-                lastSent = inviteTime?.atZone(ZoneOffset.UTC)?.toEpochSecond(),
+                isSent = invitedUserIds.contains(dto.userId),
                 level = dto.level,
                 job = dto.job,
                 comment = dto.comment

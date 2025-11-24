@@ -221,7 +221,7 @@ class PartyFinderService(
             transaction {
                 val partyEntity = PartyEntity.findById(partyApplyRequest.partyId)
                     ?: throw PartyBadRequest(
-                        ErrorCode.PARTY_NOT_FOUND,
+                        PARTY_NOT_FOUND,
                         "지원한 파티를 찾을 수 없습니다."
                     )
                 if (partyEntity.discordNotification) {
@@ -237,7 +237,7 @@ class PartyFinderService(
         }
         // 웹소켓으로 실시간 전송
         partyRedisService.publishMessage(
-            PartyRedisService.partyApplyTopic(partyApplyRequest.partyId),
+            partyApplyTopic(partyApplyRequest.partyId),
             applicantRes
         )
 
@@ -334,7 +334,7 @@ class PartyFinderService(
                     .where { PositionTable.id eq invitedPositionId }
                     .forUpdate()
                     .singleOrNull()
-                    ?: throw PartyBadRequest(ErrorCode.POSITION_NOT_FOUND, "초대된 포지션을 찾을 수 없습니다.")
+                    ?: throw PartyBadRequest(POSITION_NOT_FOUND, "초대된 포지션을 찾을 수 없습니다.")
 
                 if (positionRow[PositionTable.status] == PositionStatus.COMPLETED) {
                     throw PartyBadRequest(ErrorCode.POSITION_ALREADY_OCCUPIED, "이미 할당된 포지션입니다.")
@@ -386,7 +386,7 @@ class PartyFinderService(
                 .associate { it[ApplicantTable.partyId].value to it[ApplicantTable.positionId].value }
                 .forEach { (partyId, positionId) ->
                     partyRedisService.publishMessage(
-                        PartyRedisService.partyApplyTopic(partyId),
+                        partyApplyTopic(partyId),
                         ApplicantRes.makeCancelRes(finderId.toString(), positionId)
                     )
                 }

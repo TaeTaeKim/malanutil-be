@@ -4,15 +4,17 @@ import kotlinx.datetime.toJavaLocalDateTime
 import org.jetbrains.exposed.v1.core.ResultRow
 import taeyun.malanalter.party.pat.dao.PartyStatus
 import taeyun.malanalter.party.pat.dao.PartyTable
+import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 // Response DTO for Party information
 data class PartyResponse(
     val id: String,
     val mapCode: Long,
-    val hasPosition: Boolean, // Whether party uses position system (e.g., 커파, 개미굴)
+    val hasPosition: Boolean, // 포지션이 있는 파티 여부 (개미굴 등은 없다)
     val description: String,
-    val numPeople: Int, // Total recruitment slots
+    val numPeople: Int,
     val channel: String,
 
     // Leader information
@@ -26,7 +28,7 @@ data class PartyResponse(
     val positions: List<PositionDto>,
 
     // Metadata
-    val createdAt: LocalDateTime,
+    val createdAt: Instant,
     val updatedAt: LocalDateTime
 ) {
     companion object {
@@ -43,7 +45,7 @@ data class PartyResponse(
                 leaderCharacterId = row[PartyTable.leaderCharacter].value,
                 status = row[PartyTable.status],
                 positions = emptyList(), // Positions should be loaded separately
-                createdAt = row[PartyTable.createdAt].toJavaLocalDateTime(),
+                createdAt = row[PartyTable.createdAt].toJavaLocalDateTime().toInstant(ZoneOffset.UTC),
                 updatedAt = row[PartyTable.updatedAt].toJavaLocalDateTime()
             )
         }

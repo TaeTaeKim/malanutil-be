@@ -14,7 +14,6 @@ object CharacterTable : IdTable<String>(name = "character") {
     val name = varchar("name", 50)
     val level = integer("level")
     val job = varchar("job", 50)
-    val isDefault = bool("is_default").default(false)
     val comment = varchar("comment", 255).nullable()
     val userId = reference("user_id", Users.id, onDelete = ReferenceOption.CASCADE)
     val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)

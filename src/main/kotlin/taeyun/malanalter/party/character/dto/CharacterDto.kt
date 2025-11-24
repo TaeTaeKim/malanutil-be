@@ -8,7 +8,7 @@ data class CharacterDto(
     val name: String,
     val level: Int,
     val job: String,
-    val isDefault: Boolean,
+    val isActive: Boolean? = false,
     val comment: String? = null,
 ){
     companion object{
@@ -18,7 +18,7 @@ data class CharacterDto(
                 name = row[CharacterTable.name],
                 level = row[CharacterTable.level],
                 job = row[CharacterTable.job],
-                isDefault = row[CharacterTable.isDefault],
+                isActive = row[CharacterTable.isActive],
                 comment = row[CharacterTable.comment] ?: ""
             )
         }

@@ -27,4 +27,9 @@ class CharacterController(val characterService: CharacterService) {
         return characterService.createCharacter(characterDto)
     }
 
+    @PostMapping("/{characterId}")
+    fun changeActiveCharacter(@PathVariable characterId:String){
+        characterService.changeActiveCharacter(characterId)
+    }
+
 }

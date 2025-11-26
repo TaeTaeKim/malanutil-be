@@ -5,7 +5,6 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import taeyun.malanalter.party.pat.dao.PartyStatus
 import taeyun.malanalter.party.pat.dao.PartyTable
 import java.time.Instant
-import java.time.LocalDateTime
 import java.time.ZoneOffset
 
 // Response DTO for Party information
@@ -29,7 +28,7 @@ data class PartyResponse(
 
     // Metadata
     val createdAt: Instant,
-    val updatedAt: LocalDateTime
+    val updatedAt: Instant
 ) {
     companion object {
         // Convert database ResultRow to PartyResponse (without positions)
@@ -46,7 +45,7 @@ data class PartyResponse(
                 status = row[PartyTable.status],
                 positions = emptyList(), // Positions should be loaded separately
                 createdAt = row[PartyTable.createdAt].toJavaLocalDateTime().toInstant(ZoneOffset.UTC),
-                updatedAt = row[PartyTable.updatedAt].toJavaLocalDateTime()
+                updatedAt = row[PartyTable.updatedAt].toJavaLocalDateTime().toInstant(ZoneOffset.UTC)
             )
         }
 

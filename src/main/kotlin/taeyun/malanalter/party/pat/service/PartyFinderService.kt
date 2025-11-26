@@ -2,6 +2,7 @@ package taeyun.malanalter.party.pat.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
@@ -136,6 +137,7 @@ class PartyFinderService(
         return transaction {
             PartyTable.selectAll()
                 .where { PartyTable.mapId inList mapIds and (PartyTable.status eq PartyStatus.RECRUITING) }
+                .orderBy(PartyTable.updatedAt, SortOrder.DESC)
                 .filter { partyRedisService.getPartyTTL(it[PartyTable.id].value) > 0 }
                 .map {
                     val positions = PositionTable.selectAll()

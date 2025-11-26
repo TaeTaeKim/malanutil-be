@@ -31,6 +31,9 @@ class PartyRedisService(
         fun partyDeleteTopic(mapId:Long) : String{
             return "party:$mapId:delete"
         }
+        fun partyChatTopic(partyId:String):String{
+            return "party:chat:$partyId"
+        }
         fun talentRegisterTopic(mapId:Long) : String{
             return "talent:$mapId:register"
         }
@@ -96,5 +99,15 @@ class PartyRedisService(
     fun publishMessage(topic: String, message: Any){
         val data = objectMapper.writeValueAsString(message)
         redisTemplate.convertAndSend(topic, data)
+    }
+
+    fun getPartyChatId(partyId: String): String{
+        val seqNum = redisTemplate.opsForValue().increment("party:${partyId}:chat:seq")
+            ?: throw RuntimeException("Party not registered for $partyId")
+        return "$partyId-$seqNum"
+    }
+
+    fun deleteSeq(partyId: String) {
+        redisTemplate.delete("party:${partyId}:chat:seq")
     }
 }

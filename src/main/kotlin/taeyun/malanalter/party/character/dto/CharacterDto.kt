@@ -4,7 +4,7 @@ import org.jetbrains.exposed.v1.core.ResultRow
 import taeyun.malanalter.party.character.CharacterTable
 
 data class CharacterDto(
-    val id: String,
+    val id: String? = null,
     val name: String,
     val level: Int,
     val job: String,

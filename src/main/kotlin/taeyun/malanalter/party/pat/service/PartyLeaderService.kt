@@ -5,6 +5,7 @@ import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.datetime.CurrentDateTime
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -33,7 +34,7 @@ class PartyLeaderService(
     val partyRedisService: PartyRedisService,
     val partyFinderService: PartyFinderService
 ) {
-    fun getParticipatingParty() : PartyWithRoleResponse? {
+    fun getParticipatingParty(): PartyWithRoleResponse? {
         val userId = UserService.getLoginUserId()
         return transaction {
             val positionRow = PositionTable.selectAll()
@@ -41,16 +42,18 @@ class PartyLeaderService(
                 .singleOrNull() ?: return@transaction null
 
             val partyRowWithPosition = (PartyTable leftJoin PositionTable).selectAll()
-                .where { PartyTable.id eq positionRow[PositionTable.partyId]  }
+                .where { PartyTable.id eq positionRow[PositionTable.partyId] }
                 .toList()
             if (partyRowWithPosition.isEmpty()) {
                 return@transaction null
             }
             val partyResponse = PartyResponse.fromJoinedRow(partyRowWithPosition)
-            val role = if(partyRowWithPosition[0][PartyTable.leaderId].value == userId) PartyRole.LEADER else PartyRole.MEMBER
+            val role =
+                if (partyRowWithPosition[0][PartyTable.leaderId].value == userId) PartyRole.LEADER else PartyRole.MEMBER
             PartyWithRoleResponse(partyResponse, role)
         }
     }
+
     /**
      * 로그인 유저가 리더인 파티 조회
      * @return 리더인 파티 정보, 없으면 null
@@ -205,7 +208,6 @@ class PartyLeaderService(
         }
     }
 
-    // todo: 파티 없애기 시 들어와 있던 지원자들을 free 시켜줘야 함
     fun deleteParty(partyId: String) {
         val userId = UserService.getLoginUserId()
         val mapCode = transaction {
@@ -219,6 +221,8 @@ class PartyLeaderService(
             partyRedisService.removePartyHeartbeat(partyId)
             // Delete the party (positions will be cascade deleted)
             PartyTable.deleteWhere { PartyTable.id eq partyId }
+            partyRedisService.deleteSeq(partyId)
+
             resultRow[PartyTable.mapId]
         }
         partyRedisService.publishMessage(partyDeleteTopic(mapCode), hashMapOf("partyId" to partyId, "type" to "DELETE"))
@@ -344,6 +348,7 @@ class PartyLeaderService(
             TalentResponse.from(it, invitedUserIds)
         }
     }
+
     // 만기 시간 (UTC Instant)를 반환한다.
     fun getPartyHeartbeat(partyId: String): Long {
         val partyTTL = partyRedisService.getPartyTTL(partyId)
@@ -351,9 +356,13 @@ class PartyLeaderService(
     }
 
     fun renewPartyHeartbeat(partyId: String) {
-        val partyResponse = transaction {
+        transaction {
+            val partyTTL = partyRedisService.getPartyTTL(partyId)
             val party = PartyTable.updateReturning(where = { PartyTable.id eq partyId }) {
                 it[PartyTable.inactiveSince] = null
+                if(partyTTL<=600L){// 10분 이내로 남았을 경우에는 끌올
+                    it[PartyTable.updatedAt] = CurrentDateTime
+                }
             }.singleOrNull()
                 ?: throw PartyBadRequest(PARTY_NOT_FOUND, PARTY_NOT_FOUND.defaultMessage)
 
@@ -361,16 +370,16 @@ class PartyLeaderService(
                 .where { PositionTable.partyId eq partyId }
                 .map(PositionDto::from)
 
-            PartyResponse.withPositions(party, positionDtos)
+            val partyResponse = PartyResponse.withPositions(party, positionDtos)
 
-        }
-        try {
-            // 아직 남은 상태에서 재 갱신이면 보이지 않는다.
-            if (partyRedisService.getPartyTTL(partyId) <= 0L) {
-                partyRedisService.publishMessage(partyCreateTopic(partyResponse.mapCode), partyResponse)
+            try {
+                // 아직 남은 상태에서 재 갱신이면 보이지 않는다.
+                if (partyTTL <= 0L) {
+                    partyRedisService.publishMessage(partyCreateTopic(partyResponse.mapCode), partyResponse)
+                }
+            } finally {
+                partyRedisService.registerPartyHeartbeat(partyId)
             }
-        } finally {
-            partyRedisService.registerPartyHeartbeat(partyId)
         }
     }
 
@@ -477,8 +486,9 @@ class PartyLeaderService(
                     ?: throw PartyBadRequest(POSITION_NOT_FOUND, "해당 포지션을 찾을 수 없습니다.")
             val message = PositionDto.from(row)
             partyRedisService.publishMessage(partyUpdateTopic(partyEntity.mapId), message)
-            val assignedUserId = position[PositionTable.assignedUserId]?.value // 유저가 매뉴얼로 구인와료 처리한 곳을 수정할 때는 assgiend user가 없을 수 있다.
-            if(assignedUserId != null){
+            val assignedUserId =
+                position[PositionTable.assignedUserId]?.value // 유저가 매뉴얼로 구인와료 처리한 곳을 수정할 때는 assgiend user가 없을 수 있다.
+            if (assignedUserId != null) {
                 partyFinderService.processAfterLeaveParty(
                     assignedUserId,
                     position[PositionTable.assignedCharacterId]!!.value

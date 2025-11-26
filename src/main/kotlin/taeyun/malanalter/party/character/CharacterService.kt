@@ -12,6 +12,7 @@ import taeyun.malanalter.party.character.dto.CharacterDto
 import taeyun.malanalter.party.pat.dao.PartyEntity
 import taeyun.malanalter.party.pat.dao.PositionTable
 import taeyun.malanalter.user.UserService
+import java.util.*
 
 @Service
 class CharacterService {
@@ -30,23 +31,22 @@ class CharacterService {
     // 1. 유저당 기본 캐릭은 하나만 존재
     fun createCharacter(characterDto: CharacterDto): CharacterDto {
         val userId = UserService.getLoginUserId()
-        transaction {
+        return transaction {
             // 이미 default 캐릭터가 존재하면 false 로 설정
             val isCharacterExist = CharacterTable.select(CharacterTable.id)
                 .where { CharacterTable.userId eq userId }
                 .count() > 0
 
-            CharacterTable.insert {
-                it[id] = characterDto.id.toString()
+            CharacterTable.insertReturning {
+                it[id] = UUID.randomUUID().toString()
                 it[name] = characterDto.name
                 it[level] = characterDto.level
                 it[job] = characterDto.job
                 it[isActive] = !isCharacterExist
                 it[comment] = characterDto.comment
                 it[CharacterTable.userId] = userId
-            }
+            }.single().let { CharacterDto.from(it) }
         }
-        return characterDto
     }
 
     fun deleteCharacter(characterId: String) {

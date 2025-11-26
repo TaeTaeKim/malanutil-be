@@ -33,6 +33,24 @@ class PartyLeaderService(
     val partyRedisService: PartyRedisService,
     val partyFinderService: PartyFinderService
 ) {
+    fun getParticipatingParty() : PartyWithRoleResponse? {
+        val userId = UserService.getLoginUserId()
+        return transaction {
+            val positionRow = PositionTable.selectAll()
+                .where { PositionTable.assignedUserId eq userId }
+                .singleOrNull() ?: return@transaction null
+
+            val partyRowWithPosition = (PartyTable leftJoin PositionTable).selectAll()
+                .where { PartyTable.id eq positionRow[PositionTable.partyId]  }
+                .toList()
+            if (partyRowWithPosition.isEmpty()) {
+                return@transaction null
+            }
+            val partyResponse = PartyResponse.fromJoinedRow(partyRowWithPosition)
+            val role = if(partyRowWithPosition[0][PartyTable.leaderId].value == userId) PartyRole.LEADER else PartyRole.MEMBER
+            PartyWithRoleResponse(partyResponse, role)
+        }
+    }
     /**
      * 로그인 유저가 리더인 파티 조회
      * @return 리더인 파티 정보, 없으면 null
@@ -203,7 +221,7 @@ class PartyLeaderService(
             PartyTable.deleteWhere { PartyTable.id eq partyId }
             resultRow[PartyTable.mapId]
         }
-        partyRedisService.publishMessage(partyDeleteTopic(mapCode), hashMapOf("partyId" to partyId))
+        partyRedisService.publishMessage(partyDeleteTopic(mapCode), hashMapOf("partyId" to partyId, "type" to "DELETE"))
     }
 
     /**

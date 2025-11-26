@@ -68,7 +68,7 @@ class PartyHeartbeatExpirationListener(
         // 파티 비활성화 웹소켓 알림 전송
         partyRedisService.publishMessage(
             PartyRedisService.partyDeleteTopic(partyRow[PartyTable.mapId]),
-            hashMapOf("partyId" to partyId)
+            hashMapOf("partyId" to partyId, "type" to "DEACTIVATED")
         )
 
         logger.info { "Party heartbeat expired for partyId: $partyId (key: $expiredKey)" }

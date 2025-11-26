@@ -21,8 +21,8 @@ class PartyLeaderController(
 
     // 로그인 유저가 리더인 파티 조회
     @GetMapping
-    fun getLeaderParty(): PartyResponse? {
-        return partyLeaderService.getLeaderParty()
+    fun getLeaderParty(): PartyWithRoleResponse? {
+        return partyLeaderService.getParticipatingParty()
     }
 
     // 로그인 유저의 특정 맵 파티 생성 이력 조회 -> 가장 최근 생성된 파티 이력 반환
@@ -43,10 +43,10 @@ class PartyLeaderController(
     fun updatePartyPosition(@RequestBody update: PositionUpdateReq, @PathVariable partyId: String, @PathVariable positionId: String) {
         partyLeaderService.updatePartyPosition(update, partyId, positionId)
     }
+
     /**************
      * 파티 활성화 관련 API
      ************/
-
     // @return : 만료일이 적인 unix timestamp long
     @GetMapping("/heartbeat")
     fun getPartyHeartbeat(@RequestParam partyId: String) : Long{
@@ -57,8 +57,6 @@ class PartyLeaderController(
     fun renewHeartbeat(@PathVariable partyId: String) {
         partyLeaderService.renewPartyHeartbeat(partyId)
     }
-
-
 
     /**************
      * 유저 초대 및 인재풀 조회 API

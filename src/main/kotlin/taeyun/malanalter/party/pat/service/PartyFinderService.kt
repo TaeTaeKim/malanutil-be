@@ -44,7 +44,7 @@ class PartyFinderService(
                 .singleOrNull() ?: return@transaction null
 
             val partyRowWithPosition = (PartyTable leftJoin PositionTable).selectAll()
-                .where { PartyTable.id eq positionRow[PositionTable.partyId] }
+                .where { PartyTable.id eq positionRow[PositionTable.partyId]  }
                 .toList()
 
             if (partyRowWithPosition.isEmpty()) {

@@ -12,7 +12,7 @@ class PartyFinderController(
     val partyFinderService: PartyFinderService
 ){
 
-    // 구직 유저가 선택한 맵의 파티를 반환하는 컨트롤러
+    // 선택한 맵의 구인중인 파타티를 반환하는 API
     @GetMapping
     fun getParties(@RequestParam mapIds: List<Long>): List<PartyResponse>{
         return partyFinderService.getPartiesByMaps(mapIds)

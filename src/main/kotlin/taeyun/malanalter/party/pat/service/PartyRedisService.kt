@@ -13,7 +13,7 @@ class PartyRedisService(
 ) {
 
     companion object {
-        private const val PARTY_TIMEOUT_MINUTES = 15L
+        private const val PARTY_TIMEOUT_MINUTES = 1L
         private const val PARTY_KEY_PREFIX = "party"
 
         fun getPartyHeartbeatKey(partyId: String): String {

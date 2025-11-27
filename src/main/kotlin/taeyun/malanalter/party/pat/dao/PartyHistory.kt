@@ -21,6 +21,6 @@ object PartyHistory : LongIdTable(name = "party_create_history") {
     val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
 
     init {
-        index(isUnique = false, userId, mapId)
+        index(isUnique = true, userId, mapId)
     }
 }

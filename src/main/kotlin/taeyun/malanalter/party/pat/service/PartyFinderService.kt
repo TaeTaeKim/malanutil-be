@@ -447,4 +447,13 @@ class PartyFinderService(
 
     }
 
+    fun getPartyByShortId(partyShortId: String): PartyResponse? {
+        val partyPositionRow =
+            (PartyTable leftJoin PositionTable).selectAll().where { PartyTable.partyShortId eq partyShortId }.toList()
+
+        if(partyPositionRow.isEmpty()) throw PartyBadRequest(ErrorCode.PARTY_NOT_FOUND)
+
+        return PartyResponse.fromJoinedRow(partyPositionRow)
+    }
+
 }

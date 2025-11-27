@@ -3,6 +3,7 @@ package taeyun.malanalter.party.pat.service
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.v1.core.StdOutSqlLogger
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.datetime.CurrentDateTime
@@ -53,31 +54,6 @@ class PartyLeaderService(
             PartyWithRoleResponse(partyResponse, role)
         }
     }
-
-    /**
-     * 로그인 유저가 리더인 파티 조회
-     * @return 리더인 파티 정보, 없으면 null
-     */
-    fun getLeaderParty(): PartyResponse? = transaction {
-        val userId = UserService.getLoginUserId()
-
-        // Find party where user is the leader
-        PartyTable.selectAll()
-            .where { PartyTable.leaderId eq userId }
-            .singleOrNull()
-            ?.let { partyRow ->
-                // Fetch positions for this party
-                val partyId = partyRow[PartyTable.id].value
-                val positions = PositionTable.selectAll()
-                    .where { PositionTable.partyId eq partyId }
-                    .orderBy(PositionTable.orderNumber)
-                    .map { PositionDto.from(it) }
-
-                // Return party with positions
-                PartyResponse.withPositions(partyRow, positions)
-            }
-    }
-
     /**
      * 파티 생성 서비스
      * @param mapId 생성할 파티의 맵 ID
@@ -123,6 +99,7 @@ class PartyLeaderService(
                 it[description] = partyCreate.description
                 it[numPeople] = partyCreate.numPeople
                 it[channel] = partyCreate.channel
+                it[partyShortId] = partyId.substring(0,5)
                 it[leaderId] = userId
                 it[leaderCharacter] = partyCreate.characterId
                 it[discordNotification] = partyCreate.discordNotification
@@ -130,12 +107,12 @@ class PartyLeaderService(
             }
 
             savePartyPositions(partyCreate, partyId)
-
+            addLogger(StdOutSqlLogger)
             // Save party creation history
-            PartyHistory.insert {
+            PartyHistory.upsert(keys = arrayOf(PartyHistory.userId, PartyHistory.mapId)) {
                 it[PartyHistory.userId] = userId
-                it[PartyHistory.partyData] = partyCreate
                 it[PartyHistory.mapId] = mapId
+                it[PartyHistory.partyData] = partyCreate
             }
 
             // 파티 heartbeat 시작
@@ -196,6 +173,7 @@ class PartyLeaderService(
                     it[isLeader] = leaderPosition // 첫번쨰 포지션을 강제로 리더로 지정
                     it[status] = if (leaderPosition) PositionStatus.COMPLETED else PositionStatus.RECRUITING
                     it[isPriestSlot] = false
+                    it[orderNumber] = idx
                     // If this is the leader position, auto-assign to creator
                     if (leaderPosition) {
                         it[assignedUserId] = userId
@@ -237,8 +215,6 @@ class PartyLeaderService(
      * party:{mapId}:update 를 줘야한다.
      * COMPLETED -> RECRUITING 요청은 없다.
      */
-
-    // todo : 포지션 수정시 파티장이 아닌 사람이 수정하는 경우 예외처리 필요
     fun updatePartyPosition(update: PositionUpdateReq, partyId: String, positionId: String) {
         // 요청 검증
         if (update.status == PositionStatus.COMPLETED && (update.recruitedJob == null || update.recruitedLevel == null)) {
@@ -270,7 +246,7 @@ class PartyLeaderService(
                     it[assignedCharacterName] = null
                 }
             }.single().let { PositionDto.from(it) }
-            // redis publish
+
         }
         partyRedisService.publishMessage(partyUpdateTopic(update.mapCode), positionDto)
 
@@ -356,11 +332,12 @@ class PartyLeaderService(
     }
 
     fun renewPartyHeartbeat(partyId: String) {
+        val bumpUpTime = 600L // 10분이 안남았을 때 renew 시에는 끌올된다.
         transaction {
             val partyTTL = partyRedisService.getPartyTTL(partyId)
             val party = PartyTable.updateReturning(where = { PartyTable.id eq partyId }) {
                 it[PartyTable.inactiveSince] = null
-                if(partyTTL<=600L){// 10분 이내로 남았을 경우에는 끌올
+                if(partyTTL<=bumpUpTime){// 10분 이내로 남았을 경우에는 끌올
                     it[PartyTable.updatedAt] = CurrentDateTime
                 }
             }.singleOrNull()
@@ -374,7 +351,7 @@ class PartyLeaderService(
 
             try {
                 // 아직 남은 상태에서 재 갱신이면 보이지 않는다.
-                if (partyTTL <= 0L) {
+                if (partyTTL <=bumpUpTime) {
                     partyRedisService.publishMessage(partyCreateTopic(partyResponse.mapCode), partyResponse)
                 }
             } finally {

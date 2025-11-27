@@ -16,6 +16,7 @@ object PartyTable : IdTable<String>(name = "party") {
     val description = varchar("description", 255)
     val numPeople = integer("num_people")
     val channel = varchar("channel", 50)
+    val partyShortId = varchar("party_short_id", 10).nullable().index()
 
     val leaderId  = reference("leader_id", Users.id)
     val leaderCharacter = reference("leader_character", CharacterTable.id)

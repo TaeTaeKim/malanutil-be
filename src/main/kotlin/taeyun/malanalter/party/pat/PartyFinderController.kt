@@ -18,6 +18,12 @@ class PartyFinderController(
         return partyFinderService.getPartiesByMaps(mapIds)
     }
 
+    @GetMapping("/{partyShortId}")
+    fun getPartiesByPartyId(@PathVariable partyShortId: String): PartyResponse?{
+        return partyFinderService.getPartyByShortId(partyShortId)
+
+    }
+
     @GetMapping("/discord")
     fun getMapDiscord(@RequestParam mapIds: List<Long>): Map<Long, List<DiscordMessageDto>> {
         return partyFinderService.getMapDiscordMessages(mapIds)

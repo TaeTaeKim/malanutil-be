@@ -3,7 +3,6 @@ package taeyun.malanalter.party.pat.service
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.v1.core.StdOutSqlLogger
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.datetime.CurrentDateTime
@@ -54,6 +53,7 @@ class PartyLeaderService(
             PartyWithRoleResponse(partyResponse, role)
         }
     }
+
     /**
      * 파티 생성 서비스
      * @param mapId 생성할 파티의 맵 ID
@@ -99,7 +99,7 @@ class PartyLeaderService(
                 it[description] = partyCreate.description
                 it[numPeople] = partyCreate.numPeople
                 it[channel] = partyCreate.channel
-                it[partyShortId] = partyId.substring(0,5)
+                it[partyShortId] = partyId.substring(0, 6)
                 it[leaderId] = userId
                 it[leaderCharacter] = partyCreate.characterId
                 it[discordNotification] = partyCreate.discordNotification
@@ -107,7 +107,6 @@ class PartyLeaderService(
             }
 
             savePartyPositions(partyCreate, partyId)
-            addLogger(StdOutSqlLogger)
             // Save party creation history
             PartyHistory.upsert(keys = arrayOf(PartyHistory.userId, PartyHistory.mapId)) {
                 it[PartyHistory.userId] = userId
@@ -196,11 +195,27 @@ class PartyLeaderService(
                 BAD_REQUEST,
                 "삭제할 파티를 찾지 못했습니다."
             )
+            // 모든 포지션에 있는 유저를 재등록 처리
+            val leavingMembers =
+                PositionTable.select(PositionTable.assignedUserId, PositionTable.assignedCharacterId)
+                    .where {
+                        PositionTable.partyId eq partyId and (PositionTable.assignedUserId neq null)
+                    }
+                    .filter { it[PositionTable.assignedUserId]!!.value != userId }
+                    .toList()
+            leavingMembers.forEach {
+                val leaveMemberId = it[PositionTable.assignedUserId]!!.value
+                partyFinderService.processAfterLeaveParty(
+                    leaveMemberId,
+                    it[PositionTable.assignedCharacterId]!!.value
+                )
+            }
+
             partyRedisService.removePartyHeartbeat(partyId)
-            // Delete the party (positions will be cascade deleted)
-            PartyTable.deleteWhere { PartyTable.id eq partyId }
             partyRedisService.deleteSeq(partyId)
 
+            // Delete the party (positions will be cascade deleted)
+            PartyTable.deleteWhere { PartyTable.id eq partyId }
             resultRow[PartyTable.mapId]
         }
         partyRedisService.publishMessage(partyDeleteTopic(mapCode), hashMapOf("partyId" to partyId, "type" to "DELETE"))
@@ -337,7 +352,7 @@ class PartyLeaderService(
             val partyTTL = partyRedisService.getPartyTTL(partyId)
             val party = PartyTable.updateReturning(where = { PartyTable.id eq partyId }) {
                 it[PartyTable.inactiveSince] = null
-                if(partyTTL<=bumpUpTime){// 10분 이내로 남았을 경우에는 끌올
+                if (partyTTL <= bumpUpTime) {// 10분 이내로 남았을 경우에는 끌올
                     it[PartyTable.updatedAt] = CurrentDateTime
                 }
             }.singleOrNull()
@@ -351,7 +366,7 @@ class PartyLeaderService(
 
             try {
                 // 아직 남은 상태에서 재 갱신이면 보이지 않는다.
-                if (partyTTL <=bumpUpTime) {
+                if (partyTTL <= bumpUpTime) {
                     partyRedisService.publishMessage(partyCreateTopic(partyResponse.mapCode), partyResponse)
                 }
             } finally {

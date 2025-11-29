@@ -18,7 +18,7 @@ class PartyFinderController(
         return partyFinderService.getPartiesByMaps(mapIds)
     }
 
-    @GetMapping("/{partyShortId}")
+    @GetMapping("/search/{partyShortId}")
     fun getPartiesByPartyId(@PathVariable partyShortId: String): PartyResponse?{
         return partyFinderService.getPartyByShortId(partyShortId)
 

@@ -36,6 +36,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     testImplementation 'org.springframework.security:spring-security-test'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -92,7 +93,12 @@ dependencies {
     implementation("org.apache.commons:commons-lang3:3.18.0")
     
     // observability - Java Agent approach
+    // Micrometer Prometheus registry for metrics export
     implementation 'io.micrometer:micrometer-registry-prometheus'
+    // Required Prometheus client libraries for exposition formats
+    implementation 'io.prometheus:prometheus-metrics-core'
+    implementation 'io.prometheus:prometheus-metrics-exposition-formats'
+    // OpenTelemetry extension for Kotlin coroutine context propagation
     implementation 'io.opentelemetry:opentelemetry-extension-kotlin'
 }
 

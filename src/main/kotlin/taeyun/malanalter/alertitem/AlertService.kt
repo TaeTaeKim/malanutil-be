@@ -35,7 +35,6 @@ class AlertService(
     }
 
     fun saveNewAlertItem(itemId: Int, itemCondition: ItemCondition, tradeType: TradeType?) {
-        // todo : FE 반영전에는 무조건 SELL로 저장
         alertRepository.save(itemId, itemCondition, tradeType ?: TradeType.SELL)
         val loginUserId = UserService.getLoginUserId()
         discordService.sendDirectMessage(

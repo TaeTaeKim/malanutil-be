@@ -32,6 +32,7 @@ class DcinsideCheatAgent(
     override suspend fun searchWithUsername(username: String): CheatArticle {
         return try {
             // Step 1: Fetch HTML from DC Inside
+            logger.info { "Searching for $username for $domain" }
             val html = fetchHtml(username)
 
             // Step 2: Count valid results and create article with search URL

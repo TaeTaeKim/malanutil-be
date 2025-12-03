@@ -16,6 +16,7 @@ class MalanTalkCheatAgent(
 ) : CheatSearchAgent {
     override suspend fun searchWithUsername(username: String): CheatArticle {
         return try{
+            logger.info { "Searching for $username for $domain" }
             val res = fetchJson(username)
             CheatArticle.fromMalanTalkRes(res)
         }catch (e : Exception){
@@ -49,5 +50,5 @@ data class MalanTalkPost(
     val content: String,
     val reporter: String,
     val target: String,
-    val timestamp: ZonedDateTime
+    val createdAt: ZonedDateTime
 )

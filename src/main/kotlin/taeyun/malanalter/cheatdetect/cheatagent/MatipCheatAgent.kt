@@ -25,6 +25,7 @@ class MatipCheatAgent(
     override suspend fun searchWithUsername(username: String): CheatArticle {
         return try {
             // Step 1: Fetch HTML from Matip website
+            logger.info { "Searching for $username for $domain" }
             val html = fetchHtml(username)
 
             // Step 2: Count results and create article with search URL
@@ -65,6 +66,7 @@ class MatipCheatAgent(
         }
 
         // Count the number of table rows (td elements or tr rows)
+
         val rowCount = tbody.select("tr").size
 
         // Return a single article with the count and search URL

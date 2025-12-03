@@ -1,12 +1,13 @@
 package taeyun.malanalter.cheatdetect
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import org.springframework.stereotype.Service
 import taeyun.malanalter.cheatdetect.cheatagent.CheatSearchAgent
 import taeyun.malanalter.cheatdetect.dto.CheatArticle
-
+private val logger = KotlinLogging.logger {}
 @Service
 class CheatSearchService (
     private val agents: List<CheatSearchAgent>
@@ -17,6 +18,7 @@ class CheatSearchService (
                 async {
                     try {
                         agent.searchWithUsername(characterName)
+
                     }catch (e : Exception){
                         CheatArticle.makeEmpty(agent.domain)
                     }

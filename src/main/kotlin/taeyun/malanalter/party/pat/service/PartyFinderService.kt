@@ -1,6 +1,10 @@
 package taeyun.malanalter.party.pat.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
@@ -35,6 +39,8 @@ class PartyFinderService(
     private val partyRedisService: PartyRedisService,
     val discordService: DiscordService
 ) {
+    // CoroutineScope for async operations with SupervisorJob to prevent child failures from affecting other jobs
+    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     fun getParticipatingParties(): PartyResponse? {
         val userId = UserService.getLoginUserId()
@@ -397,9 +403,53 @@ class PartyFinderService(
                 it[Invitation.status] = InvitationStatus.REJECTED
             }
         }
+        // Save participation history asynchronously (fire and forget)
+        saveParticipationHistoryAsync(finderId, partyId)
+
         // 4. 참여자에게 참여성공 메세지 발송
         partyRedisService.publishMessage(partyAcceptedTopic(finderId), hashMapOf("partyId" to partyId))
 
+    }
+
+    /**
+     * Saves participation history asynchronously in a fire-and-forget manner
+     * @param participantId The ID of the user who joined the party
+     * @param partyId The ID of the party that was joined
+     */
+    private fun saveParticipationHistoryAsync(participantId: Long, partyId: String) {
+        // Launch coroutine in IO dispatcher for database operations
+        serviceScope.launch {
+            try {
+                // Execute database transaction in a separate context
+                transaction {
+                    // Fetch party and leader character details to populate history record
+                    val partyWithLeaderChar = (PartyTable leftJoin CharacterTable)
+                        .selectAll()
+                        .where { PartyTable.id eq partyId }
+                        .singleOrNull()
+                        ?: run {
+                            logger.warn { "Party not found for history logging: partyId=$partyId" }
+                            return@transaction
+                        }
+
+                    // Insert participation history record
+                    ParticipatingHistoryTable.insert {
+                        it[ParticipatingHistoryTable.participant] = participantId
+                        it[ParticipatingHistoryTable.leaderId] = partyWithLeaderChar[PartyTable.leaderId].value
+                        it[ParticipatingHistoryTable.mapId] = partyWithLeaderChar[PartyTable.mapId]
+                        it[ParticipatingHistoryTable.description] = partyWithLeaderChar[PartyTable.description]
+                        it[ParticipatingHistoryTable.leaderCharacterName] = partyWithLeaderChar[CharacterTable.name]
+                        it[ParticipatingHistoryTable.partyId] = partyId
+                        // createdAt is automatically set by default expression
+                    }
+                    logger.info { "Participation history saved successfully: participantId=$participantId, partyId=$partyId" }
+                }
+            } catch (ex: Exception) {
+                // Log error but don't propagate (fire and forget)
+                val uuid = randomUUID().toString()
+                logger.error(ex) { "[$uuid] Failed to save participation history: participantId=$participantId, partyId=$partyId" }
+            }
+        }
     }
 
     /**

@@ -1,5 +1,11 @@
 package taeyun.malanalter.party.pat.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
@@ -16,6 +22,7 @@ import taeyun.malanalter.config.exception.ErrorCode.*
 import taeyun.malanalter.config.exception.PartyBadRequest
 import taeyun.malanalter.party.character.CharacterEntity
 import taeyun.malanalter.party.character.CharacterTable
+import taeyun.malanalter.party.chat.PartyChatTable
 import taeyun.malanalter.party.pat.dao.*
 import taeyun.malanalter.party.pat.dto.*
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyCreateTopic
@@ -23,17 +30,24 @@ import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyDele
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyInviteTopic
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyLeaveTopic
 import taeyun.malanalter.party.pat.service.PartyRedisService.Companion.partyUpdateTopic
+import taeyun.malanalter.timer.MinioService
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.Users
 import java.time.Instant
 import java.util.*
 
+private val archiveLogger = KotlinLogging.logger {}
+
 @Service
 class PartyLeaderService(
     val talentPoolService: TalentPoolService,
     val partyRedisService: PartyRedisService,
-    val partyFinderService: PartyFinderService
+    val partyFinderService: PartyFinderService,
+    val minioService: MinioService,
+    val objectMapper: ObjectMapper
 ) {
+    // CoroutineScope for async operations with SupervisorJob to prevent child failures from affecting other jobs
+    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     fun getParticipatingParty(): PartyWithRoleResponse? {
         val userId = UserService.getLoginUserId()
         return transaction {
@@ -187,6 +201,10 @@ class PartyLeaderService(
 
     fun deleteParty(partyId: String) {
         val userId = UserService.getLoginUserId()
+
+        // Archive chat history asynchronously before deletion (fire and forget)
+        archivePartyChatAsync(partyId)
+
         val mapCode = transaction {
             // Verify that the party exists and the user is the leader
             val resultRow = PartyTable.select(PartyTable.mapId)
@@ -214,11 +232,67 @@ class PartyLeaderService(
             partyRedisService.removePartyHeartbeat(partyId)
             partyRedisService.deleteSeq(partyId)
 
-            // Delete the party (positions will be cascade deleted)
+            // Delete the party (positions will be cascade deleted, including chats due to CASCADE)
             PartyTable.deleteWhere { PartyTable.id eq partyId }
             resultRow[PartyTable.mapId]
         }
         partyRedisService.publishMessage(partyDeleteTopic(mapCode), hashMapOf("partyId" to partyId, "type" to "DELETE"))
+    }
+
+    /**
+     * Archives all chat messages for a party to MinIO asynchronously (fire and forget)
+     * @param partyId The ID of the party whose chats should be archived
+     */
+    private fun archivePartyChatAsync(partyId: String) {
+        // Launch coroutine in IO dispatcher for database and file operations
+        serviceScope.launch {
+            try {
+                // Fetch all chat messages for the party
+                val chatMessages = transaction {
+                    PartyChatTable.selectAll()
+                        .where { PartyChatTable.partyId eq partyId }
+                        .orderBy(PartyChatTable.createdAt, SortOrder.ASC)
+                        .map { row ->
+                            mapOf(
+                                "chatId" to row[PartyChatTable.id].value,
+                                "partyId" to row[PartyChatTable.partyId].value,
+                                "userId" to row[PartyChatTable.userId]?.value?.toString(),
+                                "characterName" to row[PartyChatTable.characterName],
+                                "positionName" to row[PartyChatTable.positionName],
+                                "content" to row[PartyChatTable.content],
+                                "createdAt" to row[PartyChatTable.createdAt].toString()
+                            )
+                        }
+                }
+
+                // If there are no chat messages, skip archiving
+                if (chatMessages.isEmpty()) {
+                    archiveLogger.info { "No chat messages to archive for partyId=$partyId" }
+                    return@launch
+                }
+
+                // Create archive metadata and serialize to JSON
+                val archiveData = mapOf(
+                    "partyId" to partyId,
+                    "archivedAt" to Instant.now().toString(),
+                    "messageCount" to chatMessages.size,
+                    "messages" to chatMessages
+                )
+                val jsonContent = objectMapper.writeValueAsString(archiveData)
+
+                // Upload to MinIO
+                val objectName = minioService.uploadJsonData(
+                    jsonContent = jsonContent,
+                    fileName = "party-chat-$partyId",
+                    folder = "party-archives/"
+                )
+                archiveLogger.info { "Party chat archived successfully: partyId=$partyId, location=$objectName, messageCount=${chatMessages.size}" }
+            } catch (ex: Exception) {
+                // Log error but don't propagate (fire and forget)
+                val uuid = UUID.randomUUID().toString()
+                archiveLogger.error(ex) { "[$uuid] Failed to archive party chat: partyId=$partyId" }
+            }
+        }
     }
 
     /**

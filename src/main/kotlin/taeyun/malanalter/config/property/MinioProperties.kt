@@ -8,5 +8,6 @@ data class MinioProperties @ConstructorBinding constructor(
     val url: String,
     val accessKey: String,
     val secretKey: String,
-    val bucketName: String
+    val imageBucketName: String,
+    val chatBucketName: String,
 )

@@ -3,7 +3,7 @@ package taeyun.malanalter.cheatdetect
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import taeyun.malanalter.cheatdetect.dto.CheatSearchResult
+import taeyun.malanalter.cheatdetect.dto.CheatArticle
 
 @RestController
 class CheatUserController(
@@ -11,7 +11,7 @@ class CheatUserController(
 ) {
 
     @GetMapping("/cheat")
-    fun searchCheatHistory(@RequestParam characterName : String) : CheatSearchResult {
+    fun searchCheatHistory(@RequestParam characterName : String) : List<CheatArticle> {
         return cheatSearchService.searchWithUserName(characterName)
 
     }

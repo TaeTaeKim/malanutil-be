@@ -91,7 +91,10 @@ dependencies {
 
     // serialization
     implementation("org.apache.commons:commons-lang3:3.18.0")
-    
+
+    // html parsing for web scraping
+    implementation 'org.jsoup:jsoup:1.18.3'
+
     // observability - Java Agent approach
     // Micrometer Prometheus registry for metrics export
     implementation 'io.micrometer:micrometer-registry-prometheus'

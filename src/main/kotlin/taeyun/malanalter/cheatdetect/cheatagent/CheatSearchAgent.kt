@@ -5,5 +5,5 @@ import taeyun.malanalter.cheatdetect.dto.CheatArticle
 
 interface CheatSearchAgent {
     val domain: CheatSearchDomain
-    suspend fun searchWithUsername(username: String) : List<CheatArticle>
+    suspend fun searchWithUsername(username: String) : CheatArticle
 }

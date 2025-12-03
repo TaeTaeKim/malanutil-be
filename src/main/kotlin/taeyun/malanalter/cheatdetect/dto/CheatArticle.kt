@@ -1,13 +1,27 @@
 package taeyun.malanalter.cheatdetect.dto
 
 import taeyun.malanalter.cheatdetect.CheatSearchDomain
-import java.time.Instant
+import taeyun.malanalter.cheatdetect.cheatagent.MalantalkResponse
 
 data class CheatArticle(
     val domain: CheatSearchDomain,
-    val timestamp: Instant,
-    val content: String,
-    val link: String
-
-
-)
+    val count: Int,
+    val link: String?,
+){
+    companion object{
+        fun fromMalanTalkRes(res: MalantalkResponse): CheatArticle {
+            return CheatArticle(
+                CheatSearchDomain.MALANTALK,
+                count = res.totalCount,
+                link = null
+            )
+        }
+        fun makeEmpty(domain: CheatSearchDomain): CheatArticle {
+            return CheatArticle(
+                domain = domain,
+                count = 0,
+                link = null
+            )
+        }
+    }
+}

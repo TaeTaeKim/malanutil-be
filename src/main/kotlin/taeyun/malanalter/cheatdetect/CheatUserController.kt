@@ -11,8 +11,8 @@ class CheatUserController(
 ) {
 
     @GetMapping("/cheat")
-    fun searchCheatHistory(@RequestParam characterName : String) : List<CheatArticle> {
-        return cheatSearchService.searchWithUserName(characterName)
+    suspend fun searchCheatHistory(@RequestParam characterName : String) : List<CheatArticle> {
+        return cheatSearchService.searchAllDomains(characterName)
 
     }
 }

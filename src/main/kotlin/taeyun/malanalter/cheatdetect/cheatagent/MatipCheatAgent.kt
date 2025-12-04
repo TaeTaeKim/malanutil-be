@@ -25,7 +25,6 @@ class MatipCheatAgent(
     override suspend fun searchWithUsername(username: String): CheatArticle {
         return try {
             // Step 1: Fetch HTML from Matip website
-            logger.info { "Searching for $username for $domain" }
             val html = fetchHtml(username)
 
             // Step 2: Count results and create article with search URL
@@ -65,18 +64,24 @@ class MatipCheatAgent(
             return CheatArticle.makeEmpty(domain)
         }
 
-        // Count the number of table rows (td elements or tr rows)
+        // Count the number of table rows, filtering out "no results" row
+        // The "no results" row has: <td colspan="6" class="has-text-centered">해당하는 사례가 없습니다</td>
+        val validRows = tbody.select("tr").filter { row ->
+            val td = row.selectFirst("td")
+            // Exclude rows with colspan (indicates "no results" message)
+            td != null && !td.hasAttr("colspan")
+        }
 
-        val rowCount = tbody.select("tr").size
+        val rowCount = validRows.size
 
         // Return a single article with the count and search URL
         return if (rowCount > 0) {
-                CheatArticle(
-                    domain = domain,
-                    count = rowCount,
-                    link = searchUrl
-                )
-        }else{
+            CheatArticle(
+                domain = domain,
+                count = rowCount,
+                link = searchUrl
+            )
+        } else {
             CheatArticle.makeEmpty(domain)
         }
     }

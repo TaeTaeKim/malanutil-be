@@ -12,19 +12,17 @@ private val logger = KotlinLogging.logger {}
 class CheatSearchService (
     private val agents: List<CheatSearchAgent>
 ){
-    suspend fun searchAllDomains(characterName: String): List<CheatArticle> {
-        val deferedResults = agents.map{ agent ->
-            coroutineScope {
-                async {
-                    try {
-                        agent.searchWithUsername(characterName)
-
-                    }catch (e : Exception){
-                        CheatArticle.makeEmpty(agent.domain)
-                    }
+    suspend fun searchAllDomains(characterName: String): List<CheatArticle> = coroutineScope {
+        // Create all async tasks within the same coroutineScope for parallel execution
+        agents.map { agent ->
+            async {
+                try {
+                    agent.searchWithUsername(characterName)
+                } catch (e: Exception) {
+                    logger.error(e) { "Failed to search for $characterName in ${agent.domain}" }
+                    CheatArticle.makeEmpty(agent.domain)
                 }
             }
-        }
-        return deferedResults.awaitAll()
+        }.awaitAll()
     }
 }

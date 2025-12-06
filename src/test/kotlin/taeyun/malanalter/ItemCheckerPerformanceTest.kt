@@ -13,6 +13,7 @@ import taeyun.malanalter.alertitem.dto.TradeType
 import taeyun.malanalter.alertitem.repository.AlertRepository
 import taeyun.malanalter.auth.discord.DiscordService
 import taeyun.malanalter.config.MetricsService
+import taeyun.malanalter.feignclient.DiscordAlertClient
 import taeyun.malanalter.feignclient.MalanClient
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.UserEntity
@@ -31,6 +32,9 @@ class ItemCheckerPerformanceTest {
     private lateinit var userService: UserService
 
     @MockK
+    private lateinit var discordAlertClient: DiscordAlertClient
+
+    @MockK
     private lateinit var discordService: DiscordService
 
     @MockK
@@ -42,7 +46,7 @@ class ItemCheckerPerformanceTest {
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
-        asyncChecker = ItemCheckerV2(alertRepository, malanClient, userService, discordService, metricsService)
+        asyncChecker = ItemCheckerV2(alertRepository, malanClient, discordAlertClient, userService, discordService, metricsService)
 
         // Mock UserEntity objects
         val user1 = mockk<UserEntity>()

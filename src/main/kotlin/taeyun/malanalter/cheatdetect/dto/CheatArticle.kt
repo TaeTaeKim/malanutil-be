@@ -13,7 +13,7 @@ data class CheatArticle(
             return CheatArticle(
                 CheatSearchDomain.MALANTALK,
                 count = res.totalCount,
-                link = null
+                link = "https://xn--lj2bo5cl56a.com/search"
             )
         }
         fun makeEmpty(domain: CheatSearchDomain): CheatArticle {

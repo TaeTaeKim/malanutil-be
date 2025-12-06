@@ -16,5 +16,5 @@ interface MalanClient {
     fun getItemBidList(
         @RequestParam("itemCode") itemCode: Int,
         @SpringQueryMap malanggBidRequest: MalanggBidRequest
-    ): List<ItemBidInfo>
+    ): List<ItemBidInfo>?
 }

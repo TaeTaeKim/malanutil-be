@@ -48,7 +48,7 @@ class FeignClientTest(private val malanClient: MalanClient) : StringSpec({
         val malanggBidRequest = MalanggBidRequest(itemCondition)
         shouldNotThrow<Exception> {
             val itemBidList = malanClient.getItemBidList(itemCode, malanggBidRequest)
-            itemBidList.forEach { item ->
+            itemBidList.orEmpty().forEach { item ->
                 item.itemPrice shouldBe gte(itemCondition.lowPrice!!)
                 item.itemPrice shouldBe lte(itemCondition.highPrice!!)
             }
@@ -81,7 +81,7 @@ class FeignClientTest(private val malanClient: MalanClient) : StringSpec({
         val malanggBidRequest = MalanggBidRequest(itemCondition)
         shouldNotThrow<Exception> {
             val itemBidList = malanClient.getItemBidList(itemCode, malanggBidRequest)
-            println(itemBidList.size)
+            println(itemBidList?.size)
         }
 
     }

@@ -11,6 +11,8 @@ import taeyun.malanalter.alertitem.dto.*
 import taeyun.malanalter.alertitem.repository.AlertRepository
 import taeyun.malanalter.auth.discord.DiscordService
 import taeyun.malanalter.config.MetricsService
+import taeyun.malanalter.config.exception.ErrorNotification
+import taeyun.malanalter.feignclient.DiscordAlertClient
 import taeyun.malanalter.feignclient.MalanClient
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.UserEntity
@@ -23,6 +25,7 @@ private val logger = KotlinLogging.logger { }
 class ItemCheckerV2(
     private val alertRepository: AlertRepository,
     private val malanClient: MalanClient,
+    private val alertClient: DiscordAlertClient,
     private val userService: UserService,
     private val discordService: DiscordService,
     private val metricsService: MetricsService
@@ -107,12 +110,13 @@ class ItemCheckerV2(
 
                 val detectedBids: List<ItemBidInfo> =
                     malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
+                        .orEmpty()
                         .filter { bids -> bids.tradeType == item.tradeType && bids.tradeStatus }
                         .sortedWith(
                             if (item.tradeType == TradeType.BUY) {
-                                compareByDescending<ItemBidInfo> { it.itemPrice }.thenBy { it.comment }
+                                compareByDescending<ItemBidInfo> { it.itemPrice }
                             } else {
-                                compareBy<ItemBidInfo> { it.itemPrice }.thenBy { it.comment }
+                                compareBy<ItemBidInfo> { it.itemPrice }
                             }
                         )
                         .take(100)
@@ -128,6 +132,7 @@ class ItemCheckerV2(
                     .filter { notSentAlarm(existBidList, it.url) }
             } catch (e: Exception) {
                 metricsService.incrementMalanggApiFailure()
+                alertClient.sendAlarm(ErrorNotification.fromException(e))
                 logger.error { "Error in Request to Malangg : ItemId : ${item.id} [${item.itemId}] ErrorMsg : ${e.message} ${e.stackTraceToString()}" }
                 return@withContext emptyList()
             }

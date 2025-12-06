@@ -17,7 +17,7 @@ class ItemCheckerTest : StringSpec({
     val client = mockk<MalanClient>()
     val metricService = mockk<MetricsService>(relaxed = true)
 
-    val checker = ItemCheckerV2(repo, client, mockk(), mockk(), metricService)
+    val checker = ItemCheckerV2(repo, client,mockk(), mockk(), mockk(), metricService)
 
     val sellBids = listOf(
         ItemBidInfo(true, 600L, "comment6", "testItemName", TradeType.SELL, "bid-6"),

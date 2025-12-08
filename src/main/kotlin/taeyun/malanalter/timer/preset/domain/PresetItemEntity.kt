@@ -9,5 +9,7 @@ class PresetItemEntity(id:EntityID<Long>): LongEntity(id) {
 
     var itemId by PresetItemTable.itemId
     var price by PresetItemTable.price
+    val isCustom by PresetItemTable.isCustom
+    val customItemName by PresetItemTable.customItemName
     var presetId by PresetItemTable.presetId
 }

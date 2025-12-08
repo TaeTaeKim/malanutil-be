@@ -1,5 +1,6 @@
 package taeyun.malanalter.timer
 
+import jakarta.validation.Valid
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -32,7 +33,7 @@ class TimerController(val minioService: MinioService, val presetService: PresetS
     }
 
     @PostMapping("/preset")
-    fun savePreset(@RequestBody saveRequest: PresetSaveRequest){
+    fun savePreset(@RequestBody @Valid saveRequest: PresetSaveRequest){
         presetService.savePreset(saveRequest)
     }
 
@@ -44,7 +45,7 @@ class TimerController(val minioService: MinioService, val presetService: PresetS
     @GetMapping("/preset/{presetId}")
     fun getPresetItems(@PathVariable presetId: Long): List<PresetItemDto> {
         return presetService.getPresetItems(presetId).map {
-            PresetItemDto(it.itemId, it.price)
+            PresetItemDto(it.itemId, it.price, it.isCustom, it.customItemName)
         }
     }
 }

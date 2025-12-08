@@ -43,3 +43,9 @@ class PartyServerError(
     message: String,
     val rootCause: Exception?,
 ) : BaseException(errorCode, rootCause?.message ?: "[$uuid] $message", isAlarm = true)
+
+class TimerBadRequest(
+    errorCode: ErrorCode,
+    message: String?,
+    isAlarm: Boolean=false
+) : BaseException(errorCode, message, isAlarm)

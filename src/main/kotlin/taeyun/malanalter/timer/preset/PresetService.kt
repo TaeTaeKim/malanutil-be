@@ -6,6 +6,8 @@ import org.jetbrains.exposed.v1.dao.with
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.stereotype.Service
+import taeyun.malanalter.config.exception.ErrorCode
+import taeyun.malanalter.config.exception.TimerBadRequest
 import taeyun.malanalter.timer.preset.domain.PresetEntity
 import taeyun.malanalter.timer.preset.domain.PresetItemEntity
 import taeyun.malanalter.timer.preset.domain.PresetItemTable
@@ -48,6 +50,12 @@ class PresetService {
                 this[PresetItemTable.presetId] = newPreset.id.value
                 this[PresetItemTable.itemId] = it.itemId
                 this[PresetItemTable.price] = it.price
+                if(it.isCustom && it.customItemName.isNullOrBlank()){
+                    throw TimerBadRequest(ErrorCode.BAD_REQUEST, "커스텀아이템은 이름이 필수입니다.")
+                }
+                this[PresetItemTable.isCustom] = it.isCustom
+                this[PresetItemTable.customItemName] = it.customItemName
+
             }
         }
     }

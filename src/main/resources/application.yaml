@@ -29,6 +29,11 @@ spring:
             tokenUri: https://discordapp.com/api/oauth2/token
             userInfoUri: https://discordapp.com/api/users/@me
             user-name-attribute: username
+# ItemCheckerV2 디버그 로그 활성화
+logging:
+  level:
+    taeyun.malanalter.ItemCheckerV2: DEBUG
+
 # Observability Configuration - Java Agent handles tracing
 management:
   endpoints:

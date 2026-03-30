@@ -32,7 +32,8 @@ class ItemCheckerV2(
 ) {
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 
-    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 1000 * 60 * 5)
+//    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 1000 * 60 * 5)
+    @Scheduled(fixedRate = 1000 * 60 * 5)
     fun callCheckItem() {
         metricsService.resetCycleMetrics()
         val time = measureTimeMillis {
@@ -52,45 +53,66 @@ class ItemCheckerV2(
     fun checkItem(): Job {
         logger.debug { "[Scheduler] Starting item check on thread: ${Thread.currentThread().name}" }
         return coroutineScope.launch {
-            logger.debug { "[Coroutine] Executing main task on thread: ${Thread.currentThread().name}" }
-            val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()
-            val itemsByUser = alertRepository.getRegisteredItem().groupBy { it.userId }
-            val savedBidsByItemId: Map<Int, List<ItemBidEntity>> =
-                alertRepository.getAllItemComments().groupBy { it.alertItemId.value }
+            try {
+                logger.debug { "[Coroutine] Executing main task on thread: ${Thread.currentThread().name}" }
+                val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()
+                val itemsByUser = alertRepository.getRegisteredItem().groupBy { it.userId }
+                val savedBidsByItemId: Map<Int, List<ItemBidEntity>> =
+                    alertRepository.getAllItemComments().groupBy { it.alertItemId.value }
 
-            itemsByUser.forEach { (userId, registeredItems) ->
-                launch {
-                    logger.debug { "[User Coroutine] Start processing for User:$userId on thread: ${Thread.currentThread().name}" }
-                    val userEntity = allUserEntityMap[userId] ?: return@launch
-                    if (userEntity.disabled) {
-                        logger.debug { "[User Coroutine] User:$userId is disabled, skipping." }
-                        return@launch
-                    }
-                    if (userEntity.isAlarmOff() || userEntity.isNotAlarmTime()) return@launch
+                // 등록된 아이템이 없으면 로그 남기고 종료
+                if (itemsByUser.isEmpty()) {
+                    logger.warn { "[Scheduler] No registered items found. Skipping check." }
+                    return@launch
+                }
+                logger.info { "[Scheduler] Processing ${itemsByUser.size} users with registered items" }
 
-                    val messageContainer = DiscordMessageContainer()
-                    val deferredBids = registeredItems
-                        .filter { it.isAlarm }
-                        .map { item ->
-                            async {
-                                val bids = requestItemBids(item, savedBidsByItemId[item.id] ?: emptyList())
-                                Pair(item.id, bids)
-                            }
+                itemsByUser.forEach { (userId, registeredItems) ->
+                    launch {
+                        logger.debug { "[User Coroutine] Start processing for User:$userId on thread: ${Thread.currentThread().name}" }
+                        val userEntity = allUserEntityMap[userId] ?: return@launch
+                        if (userEntity.disabled) {
+                            logger.debug { "[User Coroutine] User:$userId is disabled, skipping." }
+                            return@launch
+                        }
+                        if (userEntity.isAlarmOff() || userEntity.isNotAlarmTime()) {
+                            logger.info { "[User Coroutine] User:$userId skipped - alarmOff:${userEntity.isAlarmOff()} notAlarmTime:${userEntity.isNotAlarmTime()}" }
+                            return@launch
                         }
 
-                    val bidResults = deferredBids.awaitAll()
-                    logger.debug { "[User Coroutine] Fetched all bids for User:$userId on thread: ${Thread.currentThread().name}" }
+                        val alarmItems = registeredItems.filter { it.isAlarm }
+                        if (alarmItems.isEmpty()) {
+                            logger.info { "[User Coroutine] User:$userId has no alarm-enabled items, skipping." }
+                            return@launch
+                        }
 
-                    bidResults.forEach { (itemId, bids) ->
-                        messageContainer.addBids(itemId, bids)
-                    }
+                        val messageContainer = DiscordMessageContainer()
+                        val deferredBids = alarmItems
+                            .map { item ->
+                                async {
+                                    val bids = requestItemBids(item, savedBidsByItemId[item.id] ?: emptyList())
+                                    Pair(item.id, bids)
+                                }
+                            }
 
-                    val chunkedMessageList: List<String> = messageContainer.getMessageContentList()
-                    if (chunkedMessageList.isNotEmpty()) {
-                        chunkedMessageList.forEach { discordService.sendDirectMessage(userId, it) }
-                        logger.debug { "[User Coroutine] Sent ${chunkedMessageList.size} messages to User:$userId" }
+                        val bidResults = deferredBids.awaitAll()
+                        logger.debug { "[User Coroutine] Fetched all bids for User:$userId on thread: ${Thread.currentThread().name}" }
+
+                        bidResults.forEach { (itemId, bids) ->
+                            messageContainer.addBids(itemId, bids)
+                        }
+
+                        val chunkedMessageList: List<String> = messageContainer.getMessageContentList()
+                        if (chunkedMessageList.isNotEmpty()) {
+                            chunkedMessageList.forEach { discordService.sendDirectMessage(userId, it) }
+                            logger.debug { "[User Coroutine] Sent ${chunkedMessageList.size} messages to User:$userId" }
+                        }
                     }
                 }
+            } catch (e: Exception) {
+                // DB 연결 실패 등 coroutine 내부 예외를 로깅
+                logger.error(e) { "[Scheduler] checkItem coroutine failed: ${e.message}" }
+                alertClient.sendAlarm(ErrorNotification.fromException(e))
             }
         }
     }

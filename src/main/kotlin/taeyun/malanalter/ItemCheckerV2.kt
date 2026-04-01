@@ -3,7 +3,6 @@ package taeyun.malanalter
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.*
 import lombok.RequiredArgsConstructor
-import org.jetbrains.annotations.VisibleForTesting
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import taeyun.malanalter.alertitem.domain.ItemBidEntity
@@ -29,8 +28,9 @@ class ItemCheckerV2(
     private val userService: UserService,
     private val discordService: DiscordService,
     private val metricsService: MetricsService
-) {
-    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+) : ItemChecker {
+    // SupervisorJob: 자식 코루틴의 예외가 부모 스코프를 취소하지 않도록 방지
+    private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
 //    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 1000 * 60 * 5)
     @Scheduled(fixedRate = 1000 * 60 * 5)
@@ -50,7 +50,7 @@ class ItemCheckerV2(
     }
 
 
-    fun checkItem(): Job {
+    override fun checkItem(): Job {
         logger.debug { "[Scheduler] Starting item check on thread: ${Thread.currentThread().name}" }
         return coroutineScope.launch {
             try {
@@ -122,8 +122,7 @@ class ItemCheckerV2(
      * 실제로 메랜지지에 아이템 비드를 요청하는 로직
      * 기존에 가지고 있던 비드 리스트를 업데이트하고 알람끈 내역은 반환하지 않는다.
      */
-    @VisibleForTesting
-    internal suspend fun requestItemBids(item: RegisteredItem, existBidList: List<ItemBidEntity>): List<ItemBidInfo> =
+    override suspend fun requestItemBids(item: RegisteredItem, existBidList: List<ItemBidEntity>): List<ItemBidInfo> =
         withContext(Dispatchers.IO) {
             logger.debug { "[Item Request] Fetching bids for Item:${item.id} on thread: ${Thread.currentThread().name}" }
             try {

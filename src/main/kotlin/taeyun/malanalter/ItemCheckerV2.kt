@@ -6,14 +6,13 @@ import lombok.RequiredArgsConstructor
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import taeyun.malanalter.alertitem.domain.ItemBidEntity
-import taeyun.malanalter.alertitem.dto.*
+import taeyun.malanalter.alertitem.dto.DiscordMessageContainer
 import taeyun.malanalter.alertitem.repository.AlertRepository
-import taeyun.malanalter.alertitem.service.BidAlarmFilter
+import taeyun.malanalter.alertitem.service.BidDetectService
 import taeyun.malanalter.auth.discord.DiscordService
 import taeyun.malanalter.config.MetricsService
 import taeyun.malanalter.config.exception.ErrorNotification
 import taeyun.malanalter.feignclient.DiscordAlertClient
-import taeyun.malanalter.feignclient.MalanClient
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.UserEntity
 import kotlin.system.measureTimeMillis
@@ -24,11 +23,11 @@ private val logger = KotlinLogging.logger { }
 @RequiredArgsConstructor
 class ItemCheckerV2(
     private val alertRepository: AlertRepository,
-    private val malanClient: MalanClient,
     private val alertClient: DiscordAlertClient,
     private val userService: UserService,
     private val discordService: DiscordService,
-    private val metricsService: MetricsService
+    private val metricsService: MetricsService,
+    private val bidDetectService: BidDetectService
 ) : ItemChecker {
     // SupervisorJob: 자식 코루틴의 예외가 부모 스코프를 취소하지 않도록 방지
     private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -91,7 +90,7 @@ class ItemCheckerV2(
                         val deferredBids = alarmItems
                             .map { item ->
                                 async {
-                                    val bids = requestItemBids(item, savedBidsByItemId[item.id] ?: emptyList())
+                                    val bids = bidDetectService.fetchAlarmsForItem(item, savedBidsByItemId[item.id] ?: emptyList())
                                     Pair(item.id, bids)
                                 }
                             }
@@ -118,45 +117,5 @@ class ItemCheckerV2(
         }
     }
 
-    /**
-     * @return 가격순으로 알람이 켜져있고 보내지 않은 비드를 최대 5개까지 반환한다.
-     * 실제로 메랜지지에 아이템 비드를 요청하는 로직
-     * 기존에 가지고 있던 비드 리스트를 업데이트하고 알람끈 내역은 반환하지 않는다.
-     */
-    override suspend fun requestItemBids(item: RegisteredItem, existBidList: List<ItemBidEntity>): List<ItemBidInfo> =
-        withContext(Dispatchers.IO) {
-            logger.debug { "[Item Request] Fetching bids for Item:${item.id} on thread: ${Thread.currentThread().name}" }
-            try {
-                metricsService.incrementMalanggApiCall()
-                val startTime = System.currentTimeMillis()
 
-                val detectedBids: List<ItemBidInfo> =
-                    malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
-                        .orEmpty()
-                        .filter { bids -> bids.tradeType == item.tradeType && bids.tradeStatus }
-                        .sortedWith(
-                            if (item.tradeType == TradeType.BUY) {
-                                compareByDescending<ItemBidInfo> { it.itemPrice }
-                            } else {
-                                compareBy<ItemBidInfo> { it.itemPrice }
-                            }
-                        )
-                        .take(100)
-
-                metricsService.recordMalanggApiTime(System.currentTimeMillis() - startTime)
-
-                // 기존 Bid info 새로운 bidInfo Sync
-                alertRepository.syncBids(item.id, detectedBids, existBidList)
-                // 모든 비드에서 보내야할 알람 반환
-                return@withContext detectedBids
-                    .filter { BidAlarmFilter.isAlarmEnabled(existBidList, it.url) }
-                    .take(5)
-                    .filter { BidAlarmFilter.isNotYetSent(existBidList, it.url) }
-            } catch (e: Exception) {
-                metricsService.incrementMalanggApiFailure()
-                alertClient.sendAlarm(ErrorNotification.fromException(e))
-                logger.error { "Error in Request to Malangg : ItemId : ${item.id} [${item.itemId}] ErrorMsg : ${e.message} ${e.stackTraceToString()}" }
-                return@withContext emptyList()
-            }
-        }
 }

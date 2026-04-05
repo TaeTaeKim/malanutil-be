@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component
 import taeyun.malanalter.alertitem.domain.ItemBidEntity
 import taeyun.malanalter.alertitem.dto.*
 import taeyun.malanalter.alertitem.repository.AlertRepository
+import taeyun.malanalter.alertitem.service.BidAlarmFilter
 import taeyun.malanalter.auth.discord.DiscordService
 import taeyun.malanalter.config.MetricsService
 import taeyun.malanalter.config.exception.ErrorNotification
@@ -148,9 +149,9 @@ class ItemCheckerV2(
                 alertRepository.syncBids(item.id, detectedBids, existBidList)
                 // 모든 비드에서 보내야할 알람 반환
                 return@withContext detectedBids
-                    .filter { isAlarmComment(existBidList, it.url) }
+                    .filter { BidAlarmFilter.isAlarmEnabled(existBidList, it.url) }
                     .take(5)
-                    .filter { notSentAlarm(existBidList, it.url) }
+                    .filter { BidAlarmFilter.isNotYetSent(existBidList, it.url) }
             } catch (e: Exception) {
                 metricsService.incrementMalanggApiFailure()
                 alertClient.sendAlarm(ErrorNotification.fromException(e))
@@ -158,17 +159,4 @@ class ItemCheckerV2(
                 return@withContext emptyList()
             }
         }
-
-    private fun notSentAlarm(
-        existBidList: List<ItemBidEntity>,
-        url: String
-    ): Boolean {
-        val existingBid = existBidList.find { it.url == url }
-        return existingBid == null || !existingBid.isSent // 새로운 비드이거나 한번도 알람을 보내지 않은 경우
-    }
-
-    private fun isAlarmComment(existComment: List<ItemBidEntity>, bidId: String): Boolean {
-        val existingBid = existComment.find { it.url == bidId }
-        return existingBid == null || (existingBid.isAlarm) // 알람이 켜져있거나 기존에 없던 비드인 경우
-    }
 }

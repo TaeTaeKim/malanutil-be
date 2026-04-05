@@ -3,19 +3,15 @@ package taeyun.malanalter
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.*
 import lombok.RequiredArgsConstructor
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import taeyun.malanalter.alertitem.domain.ItemBidEntity
-import taeyun.malanalter.alertitem.dto.DiscordMessageContainer
 import taeyun.malanalter.alertitem.repository.AlertRepository
+import taeyun.malanalter.alertitem.service.AlertNotificationService
 import taeyun.malanalter.alertitem.service.BidDetectService
-import taeyun.malanalter.auth.discord.DiscordService
-import taeyun.malanalter.config.MetricsService
 import taeyun.malanalter.config.exception.ErrorNotification
 import taeyun.malanalter.feignclient.DiscordAlertClient
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.UserEntity
-import kotlin.system.measureTimeMillis
 
 private val logger = KotlinLogging.logger { }
 
@@ -25,30 +21,11 @@ class ItemCheckerV2(
     private val alertRepository: AlertRepository,
     private val alertClient: DiscordAlertClient,
     private val userService: UserService,
-    private val discordService: DiscordService,
-    private val metricsService: MetricsService,
-    private val bidDetectService: BidDetectService
+    private val bidDetectService: BidDetectService,
+    private val alertNotificationService: AlertNotificationService
 ) : ItemChecker {
     // SupervisorJob: 자식 코루틴의 예외가 부모 스코프를 취소하지 않도록 방지
     private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-//    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 1000 * 60 * 5)
-    @Scheduled(fixedRate = 1000 * 60 * 5)
-    fun callCheckItem() {
-        metricsService.resetCycleMetrics()
-        val time = measureTimeMillis {
-            val checkItem = checkItem()
-            runBlocking {
-                checkItem.join() // Wait for the job to complete
-            }
-        }
-        metricsService.recordAlertProcessingTime(time)
-        if (time > 1000 * 3) {
-            logger.error { "[Scheduler] checkItem took too long: $time ms" }
-        }
-
-    }
-
 
     override fun checkItem(): Job {
         logger.debug { "[Scheduler] Starting item check on thread: ${Thread.currentThread().name}" }
@@ -86,27 +63,19 @@ class ItemCheckerV2(
                             return@launch
                         }
 
-                        val messageContainer = DiscordMessageContainer()
-                        val deferredBids = alarmItems
+                        // 각 아이템의 비드를 비동기로 조회
+                        val bidResults = alarmItems
                             .map { item ->
                                 async {
                                     val bids = bidDetectService.fetchAlarmsForItem(item, savedBidsByItemId[item.id] ?: emptyList())
                                     Pair(item.id, bids)
                                 }
                             }
-
-                        val bidResults = deferredBids.awaitAll()
+                            .awaitAll()
                         logger.debug { "[User Coroutine] Fetched all bids for User:$userId on thread: ${Thread.currentThread().name}" }
 
-                        bidResults.forEach { (itemId, bids) ->
-                            messageContainer.addBids(itemId, bids)
-                        }
-
-                        val chunkedMessageList: List<String> = messageContainer.getMessageContentList()
-                        if (chunkedMessageList.isNotEmpty()) {
-                            chunkedMessageList.forEach { discordService.sendDirectMessage(userId, it) }
-                            logger.debug { "[User Coroutine] Sent ${chunkedMessageList.size} messages to User:$userId" }
-                        }
+                        // 비드 결과를 Discord DM으로 발송
+                        alertNotificationService.sendBidAlerts(userId, bidResults)
                     }
                 }
             } catch (e: Exception) {

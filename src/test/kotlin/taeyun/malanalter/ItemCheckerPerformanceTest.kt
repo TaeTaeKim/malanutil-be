@@ -11,6 +11,7 @@ import taeyun.malanalter.alertitem.dto.ItemCondition
 import taeyun.malanalter.alertitem.dto.RegisteredItem
 import taeyun.malanalter.alertitem.dto.TradeType
 import taeyun.malanalter.alertitem.repository.AlertRepository
+import taeyun.malanalter.alertitem.service.AlertNotificationService
 import taeyun.malanalter.alertitem.service.BidDetectService
 import taeyun.malanalter.auth.discord.DiscordService
 import taeyun.malanalter.config.MetricsService
@@ -48,7 +49,8 @@ class ItemCheckerPerformanceTest {
     fun setUp() {
         MockKAnnotations.init(this)
         val bidDetectService = BidDetectService(metricsService, malanClient, alertRepository, discordAlertClient)
-        asyncChecker = ItemCheckerV2(alertRepository, discordAlertClient, userService, discordService, metricsService, bidDetectService)
+        val alertNotificationService = AlertNotificationService(discordService)
+        asyncChecker = ItemCheckerV2(alertRepository, discordAlertClient, userService, bidDetectService, alertNotificationService)
 
         // Mock UserEntity objects
         val user1 = mockk<UserEntity>()

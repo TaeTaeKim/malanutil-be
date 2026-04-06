@@ -2,65 +2,39 @@ package taeyun.malanalter
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.*
-import lombok.RequiredArgsConstructor
-import org.jetbrains.annotations.VisibleForTesting
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import taeyun.malanalter.alertitem.domain.ItemBidEntity
-import taeyun.malanalter.alertitem.dto.*
+import taeyun.malanalter.alertitem.dto.ItemBidInfo
+import taeyun.malanalter.alertitem.dto.RegisteredItem
 import taeyun.malanalter.alertitem.repository.AlertRepository
-import taeyun.malanalter.auth.discord.DiscordService
-import taeyun.malanalter.config.MetricsService
+import taeyun.malanalter.alertitem.service.AlertNotificationService
+import taeyun.malanalter.alertitem.service.BidDetectService
 import taeyun.malanalter.config.exception.ErrorNotification
 import taeyun.malanalter.feignclient.DiscordAlertClient
-import taeyun.malanalter.feignclient.MalanClient
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.UserEntity
-import kotlin.system.measureTimeMillis
 
 private val logger = KotlinLogging.logger { }
 
 @Component
-@RequiredArgsConstructor
 class ItemCheckerV2(
     private val alertRepository: AlertRepository,
-    private val malanClient: MalanClient,
     private val alertClient: DiscordAlertClient,
     private val userService: UserService,
-    private val discordService: DiscordService,
-    private val metricsService: MetricsService
-) {
-    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+    private val bidDetectService: BidDetectService,
+    private val alertNotificationService: AlertNotificationService
+) : ItemChecker {
+    // SupervisorJob: 자식 코루틴의 예외가 부모 스코프를 취소하지 않도록 방지
+    private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-//    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 1000 * 60 * 5)
-    @Scheduled(fixedRate = 1000 * 60 * 5)
-    fun callCheckItem() {
-        metricsService.resetCycleMetrics()
-        val time = measureTimeMillis {
-            val checkItem = checkItem()
-            runBlocking {
-                checkItem.join() // Wait for the job to complete
-            }
-        }
-        metricsService.recordAlertProcessingTime(time)
-        if (time > 1000 * 3) {
-            logger.error { "[Scheduler] checkItem took too long: $time ms" }
-        }
-
-    }
-
-
-    fun checkItem(): Job {
-        logger.debug { "[Scheduler] Starting item check on thread: ${Thread.currentThread().name}" }
+    override fun checkItem(scheduleIdx: Int): Job {
         return coroutineScope.launch {
             try {
-                logger.debug { "[Coroutine] Executing main task on thread: ${Thread.currentThread().name}" }
                 val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()
-                val itemsByUser = alertRepository.getRegisteredItem().groupBy { it.userId }
+                val itemsByUser = alertRepository.getRegisteredItemsByScheduleIdx(scheduleIdx).groupBy { it.userId }
                 val savedBidsByItemId: Map<Int, List<ItemBidEntity>> =
-                    alertRepository.getAllItemComments().groupBy { it.alertItemId.value }
+                    alertRepository.getItemCommentsByScheduleIdx(scheduleIdx).groupBy { it.alertItemId.value }
 
-                // 등록된 아이템이 없으면 로그 남기고 종료
                 if (itemsByUser.isEmpty()) {
                     logger.warn { "[Scheduler] No registered items found. Skipping check." }
                     return@launch
@@ -68,108 +42,62 @@ class ItemCheckerV2(
                 logger.info { "[Scheduler] Processing ${itemsByUser.size} users with registered items" }
 
                 itemsByUser.forEach { (userId, registeredItems) ->
-                    launch {
-                        logger.debug { "[User Coroutine] Start processing for User:$userId on thread: ${Thread.currentThread().name}" }
-                        val userEntity = allUserEntityMap[userId] ?: return@launch
-                        if (userEntity.disabled) {
-                            logger.debug { "[User Coroutine] User:$userId is disabled, skipping." }
-                            return@launch
-                        }
-                        if (userEntity.isAlarmOff() || userEntity.isNotAlarmTime()) {
-                            logger.info { "[User Coroutine] User:$userId skipped - alarmOff:${userEntity.isAlarmOff()} notAlarmTime:${userEntity.isNotAlarmTime()}" }
-                            return@launch
-                        }
-
-                        val alarmItems = registeredItems.filter { it.isAlarm }
-                        if (alarmItems.isEmpty()) {
-                            logger.info { "[User Coroutine] User:$userId has no alarm-enabled items, skipping." }
-                            return@launch
-                        }
-
-                        val messageContainer = DiscordMessageContainer()
-                        val deferredBids = alarmItems
-                            .map { item ->
-                                async {
-                                    val bids = requestItemBids(item, savedBidsByItemId[item.id] ?: emptyList())
-                                    Pair(item.id, bids)
-                                }
-                            }
-
-                        val bidResults = deferredBids.awaitAll()
-                        logger.debug { "[User Coroutine] Fetched all bids for User:$userId on thread: ${Thread.currentThread().name}" }
-
-                        bidResults.forEach { (itemId, bids) ->
-                            messageContainer.addBids(itemId, bids)
-                        }
-
-                        val chunkedMessageList: List<String> = messageContainer.getMessageContentList()
-                        if (chunkedMessageList.isNotEmpty()) {
-                            chunkedMessageList.forEach { discordService.sendDirectMessage(userId, it) }
-                            logger.debug { "[User Coroutine] Sent ${chunkedMessageList.size} messages to User:$userId" }
-                        }
-                    }
+                    launch { processUserItems(userId, allUserEntityMap[userId], registeredItems, savedBidsByItemId) }
                 }
             } catch (e: Exception) {
-                // DB 연결 실패 등 coroutine 내부 예외를 로깅
                 logger.error(e) { "[Scheduler] checkItem coroutine failed: ${e.message}" }
                 alertClient.sendAlarm(ErrorNotification.fromException(e))
             }
         }
     }
 
-    /**
-     * @return 가격순으로 알람이 켜져있고 보내지 않은 비드를 최대 5개까지 반환한다.
-     * 실제로 메랜지지에 아이템 비드를 요청하는 로직
-     * 기존에 가지고 있던 비드 리스트를 업데이트하고 알람끈 내역은 반환하지 않는다.
-     */
-    @VisibleForTesting
-    internal suspend fun requestItemBids(item: RegisteredItem, existBidList: List<ItemBidEntity>): List<ItemBidInfo> =
-        withContext(Dispatchers.IO) {
-            logger.debug { "[Item Request] Fetching bids for Item:${item.id} on thread: ${Thread.currentThread().name}" }
-            try {
-                metricsService.incrementMalanggApiCall()
-                val startTime = System.currentTimeMillis()
+    // 유저별 아이템 비드 조회 및 알림 발송
+    private suspend fun CoroutineScope.processUserItems(
+        userId: Long,
+        userEntity: UserEntity?,
+        registeredItems: List<RegisteredItem>,
+        savedBidsByItemId: Map<Int, List<ItemBidEntity>>
+    ) {
+        logger.debug { "[User Coroutine] Start processing for User:$userId on thread: ${Thread.currentThread().name}" }
+        if (!shouldProcessUser(userId, userEntity)) return
 
-                val detectedBids: List<ItemBidInfo> =
-                    malanClient.getItemBidList(item.itemId, MalanggBidRequest(item.itemOptions))
-                        .orEmpty()
-                        .filter { bids -> bids.tradeType == item.tradeType && bids.tradeStatus }
-                        .sortedWith(
-                            if (item.tradeType == TradeType.BUY) {
-                                compareByDescending<ItemBidInfo> { it.itemPrice }
-                            } else {
-                                compareBy<ItemBidInfo> { it.itemPrice }
-                            }
-                        )
-                        .take(100)
-
-                metricsService.recordMalanggApiTime(System.currentTimeMillis() - startTime)
-
-                // 기존 Bid info 새로운 bidInfo Sync
-                alertRepository.syncBids(item.id, detectedBids, existBidList)
-                // 모든 비드에서 보내야할 알람 반환
-                return@withContext detectedBids
-                    .filter { isAlarmComment(existBidList, it.url) }
-                    .take(5)
-                    .filter { notSentAlarm(existBidList, it.url) }
-            } catch (e: Exception) {
-                metricsService.incrementMalanggApiFailure()
-                alertClient.sendAlarm(ErrorNotification.fromException(e))
-                logger.error { "Error in Request to Malangg : ItemId : ${item.id} [${item.itemId}] ErrorMsg : ${e.message} ${e.stackTraceToString()}" }
-                return@withContext emptyList()
-            }
+        val alarmItems = registeredItems.filter { it.isAlarm }
+        if (alarmItems.isEmpty()) {
+            logger.info { "[User Coroutine] User:$userId has no alarm-enabled items, skipping." }
+            return
         }
 
-    private fun notSentAlarm(
-        existBidList: List<ItemBidEntity>,
-        url: String
-    ): Boolean {
-        val existingBid = existBidList.find { it.url == url }
-        return existingBid == null || !existingBid.isSent // 새로운 비드이거나 한번도 알람을 보내지 않은 경우
+        val bidResults = fetchBidsAsync(alarmItems, savedBidsByItemId)
+        logger.debug { "[User Coroutine] Fetched all bids for User:$userId on thread: ${Thread.currentThread().name}" }
+
+        alertNotificationService.sendBidAlerts(userId, bidResults)
     }
 
-    private fun isAlarmComment(existComment: List<ItemBidEntity>, bidId: String): Boolean {
-        val existingBid = existComment.find { it.url == bidId }
-        return existingBid == null || (existingBid.isAlarm) // 알람이 켜져있거나 기존에 없던 비드인 경우
+    // 유저가 알림을 받을 수 있는 상태인지 확인
+    private fun shouldProcessUser(userId: Long, userEntity: UserEntity?): Boolean {
+        if (userEntity == null) return false
+        if (userEntity.disabled) {
+            logger.debug { "[User Coroutine] User:$userId is disabled, skipping." }
+            return false
+        }
+        if (userEntity.isAlarmOff() || userEntity.isNotAlarmTime()) {
+            logger.info { "[User Coroutine] User:$userId skipped - alarmOff:${userEntity.isAlarmOff()} notAlarmTime:${userEntity.isNotAlarmTime()}" }
+            return false
+        }
+        return true
     }
+
+    // 각 아이템의 비드를 비동기로 조회
+    private suspend fun CoroutineScope.fetchBidsAsync(
+        alarmItems: List<RegisteredItem>,
+        savedBidsByItemId: Map<Int, List<ItemBidEntity>>
+    ): List<Pair<Int, List<ItemBidInfo>>> =
+        alarmItems
+            .map { item ->
+                async {
+                    val bids = bidDetectService.fetchAlarmsForItem(item, savedBidsByItemId[item.id] ?: emptyList())
+                    Pair(item.id, bids)
+                }
+            }
+            .awaitAll()
 }

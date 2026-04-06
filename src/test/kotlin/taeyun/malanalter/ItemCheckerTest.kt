@@ -8,6 +8,7 @@ import io.mockk.mockk
 import taeyun.malanalter.alertitem.domain.ItemBidEntity
 import taeyun.malanalter.alertitem.dto.*
 import taeyun.malanalter.alertitem.repository.AlertRepository
+import taeyun.malanalter.alertitem.service.BidDetectService
 import taeyun.malanalter.config.MetricsService
 import taeyun.malanalter.feignclient.MalanClient
 
@@ -17,7 +18,7 @@ class ItemCheckerTest : StringSpec({
     val client = mockk<MalanClient>()
     val metricService = mockk<MetricsService>(relaxed = true)
 
-    val checker = ItemCheckerV2(repo, client,mockk(), mockk(), mockk(), metricService)
+    val checker = BidDetectService(metricService, client, repo, mockk(relaxed = true))
 
     val sellBids = listOf(
         ItemBidInfo(true, 600L, "comment6", "testItemName", TradeType.SELL, "bid-6"),
@@ -58,7 +59,7 @@ class ItemCheckerTest : StringSpec({
         every { client.getItemBidList(item.itemId, any<MalanggBidRequest>()) } returns sellBids
         justRun { repo.syncBids(item.id, any(), any()) }
 
-        val result = checker.requestItemBids(item, existBids)
+        val result = checker.fetchAlarmsForItem(item, existBids)
 
         // then
         result.size shouldBe 5
@@ -69,7 +70,7 @@ class ItemCheckerTest : StringSpec({
         every { client.getItemBidList(item.itemId, any<MalanggBidRequest>()) } returns buyBids
         justRun { repo.syncBids(item.id, any(), any()) }
 
-        val result = checker.requestItemBids(item.copy(tradeType = TradeType.BUY), existBids)
+        val result = checker.fetchAlarmsForItem(item.copy(tradeType = TradeType.BUY), existBids)
 
         // then
         result.size shouldBe 5
@@ -86,7 +87,7 @@ class ItemCheckerTest : StringSpec({
         )
         every { client.getItemBidList(item.itemId, any<MalanggBidRequest>()) } returns sellBids
         justRun { repo.syncBids(item.id, any(), any()) }
-        val result = checker.requestItemBids(item, existBids)
+        val result = checker.fetchAlarmsForItem(item, existBids)
         // then
         result.size shouldBe 4
         result.map { it.url } shouldBe listOf("bid-2", "bid-3", "bid-4", "bid-5")
@@ -112,7 +113,7 @@ class ItemCheckerTest : StringSpec({
 
         // 2, 3번 비드가 이미 존재하고 알람이 켜져있고 보낸적이 있다. -> 1, 4, 5 비드가 오름차순으로 정렬되어서 보여져야한다
         // 2,3 이 보내졌지만 알람은 켜져있기 때문에 6은 보내지 않는다. 즉 1,4,5 알림 보낸다.
-        val result = checker.requestItemBids(item, existBids)
+        val result = checker.fetchAlarmsForItem(item, existBids)
         // then
         result.size shouldBe 3
         result.map { it.url } shouldBe listOf("bid-1", "bid-4", "bid-5")
@@ -137,7 +138,7 @@ class ItemCheckerTest : StringSpec({
 
         // 2, 3번 비드가 이미 존재하고 알람이 켜져있고 보낸적이 있다. -> 2번이 꺼져있다.
         // 1,4,5,6 비드가 오름차순으로 정렬되어서 보여져야한다
-        val result = checker.requestItemBids(item, existBids)
+        val result = checker.fetchAlarmsForItem(item, existBids)
         // then
         result.size shouldBe 4
         result.map { it.url } shouldBe listOf("bid-1", "bid-4", "bid-5", "bid-6")

@@ -2,11 +2,8 @@ package taeyun.malanalter.alertitem.repository
 
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.inList
-import org.jetbrains.exposed.v1.jdbc.batchInsert
-import org.jetbrains.exposed.v1.jdbc.deleteWhere
-import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import org.jetbrains.exposed.v1.jdbc.update
 import org.springframework.stereotype.Repository
 import taeyun.malanalter.alertitem.domain.AlertItemEntity
 import taeyun.malanalter.alertitem.domain.AlertItemTable
@@ -22,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Repository
 class AlertItemRepository : AlertRepository {
 
+
     companion object {
         val itemNameMap: ConcurrentHashMap<Int, String> = ConcurrentHashMap()
 
@@ -36,13 +34,20 @@ class AlertItemRepository : AlertRepository {
         AlertItemEntity.all().map { RegisteredItem(it) }
     }
 
-    override fun getAllItemComments(): List<ItemBidEntity> {
-        return transaction {
-            ItemBidEntity.all().toList()
-        }
+    override fun getRegisteredItemsByScheduleIdx(idx: Int): List<RegisteredItem> = transaction {
+        AlertItemEntity.find { AlertItemTable.scheduleIndex eq idx }
+            .map { RegisteredItem(it) }
     }
 
-    override fun syncBids(alertItemId: Int, detectedBids: List<ItemBidInfo>, existBidList: List<ItemBidEntity>)  {
+    override fun getItemCommentsByScheduleIdx(idx: Int): List<ItemBidEntity> = transaction {
+        ItemBidEntity.wrapRows(
+            ItemBidTable.innerJoin(AlertItemTable)
+                .select(ItemBidTable.columns)
+                .where { AlertItemTable.scheduleIndex eq idx }
+        ).toList()
+    }
+
+    override fun syncBids(alertItemId: Int, detectedBids: List<ItemBidInfo>, existBidList: List<ItemBidEntity>) {
         transaction {
             if (existBidList.isEmpty()) {
                 bulkSaveFromBids(alertItemId, detectedBids)

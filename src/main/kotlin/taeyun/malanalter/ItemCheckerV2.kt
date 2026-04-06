@@ -27,13 +27,11 @@ class ItemCheckerV2(
     // SupervisorJob: 자식 코루틴의 예외가 부모 스코프를 취소하지 않도록 방지
     private val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    override fun checkItem(): Job {
-        logger.debug { "[Scheduler] Starting item check on thread: ${Thread.currentThread().name}" }
+    override fun checkItem(scheduleIdx: Int): Job {
         return coroutineScope.launch {
             try {
-                logger.debug { "[Coroutine] Executing main task on thread: ${Thread.currentThread().name}" }
                 val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()
-                val itemsByUser = alertRepository.getRegisteredItem().groupBy { it.userId }
+                val itemsByUser = alertRepository.getRegisteredItemsByScheduleIdx(scheduleIdx).groupBy { it.userId }
                 val savedBidsByItemId: Map<Int, List<ItemBidEntity>> =
                     alertRepository.getAllItemComments().groupBy { it.alertItemId.value }
 

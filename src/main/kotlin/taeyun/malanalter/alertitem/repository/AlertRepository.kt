@@ -8,6 +8,7 @@ import taeyun.malanalter.alertitem.dto.TradeType
 
 interface AlertRepository {
     fun getRegisteredItem(): List<RegisteredItem>
+    fun getRegisteredItemsByScheduleIdx(idx: Int): List<RegisteredItem>
     fun save(itemId: Int, itemCondition: ItemCondition, tradeType: TradeType)
     fun delete(alertId: Int)
     fun update(alertId: Int, updateItemCondition: ItemCondition)

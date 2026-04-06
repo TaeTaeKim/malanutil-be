@@ -21,6 +21,7 @@ object AlertItemTable : IntIdTable("alert_item") {
     )
     val isAalarm = bool("is_alarm").default(true)
     val tradeType = enumerationByName("trade_type", 255, TradeType::class)
-    val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
     val userId = long("user_id").references(Users.id, onDelete = ReferenceOption.CASCADE)
+    val scheduleIndex = integer("schedule_index")
+    val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
 }

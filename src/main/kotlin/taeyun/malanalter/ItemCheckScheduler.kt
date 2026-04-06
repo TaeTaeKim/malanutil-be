@@ -5,6 +5,7 @@ import kotlinx.coroutines.runBlocking
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import taeyun.malanalter.config.MetricsService
+import java.time.LocalDateTime
 import kotlin.system.measureTimeMillis
 
 private val logger = KotlinLogging.logger { }
@@ -18,18 +19,21 @@ class ItemCheckScheduler(
     private val metricsService: MetricsService
 ) {
 
-    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 1000 * 60 * 5)
+    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 1000 * 60)
     fun callCheckItem() {
         metricsService.resetCycleMetrics()
+        val scheduleIdx = LocalDateTime.now().minute % 5;
         val time = measureTimeMillis {
-            val checkItem = itemChecker.checkItem()
+            val checkItem = itemChecker.checkItem(scheduleIdx)
             runBlocking {
                 checkItem.join()
             }
         }
         metricsService.recordAlertProcessingTime(time)
         if (time > 1000 * 3) {
-            logger.error { "[Scheduler] checkItem took too long: $time ms" }
+            logger.error { "[알리미 스케줄] item check 시간 오래 걸림: $time ms" }
+        }else{
+            logger.info { "[알리미 스케줄] item check 시간 : $time ms"  }
         }
     }
 }

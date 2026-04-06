@@ -9,5 +9,5 @@ import kotlinx.coroutines.Job
 interface ItemChecker {
 
     /** 등록된 아이템을 확인하고 알람을 발송하는 Job을 실행한다. */
-    fun checkItem(): Job
+    fun checkItem(scheduleIdx : Int): Job
 }

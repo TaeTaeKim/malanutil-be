@@ -2,10 +2,7 @@ package taeyun.malanalter
 
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
 import org.springframework.test.context.ActiveProfiles
 import taeyun.malanalter.alertitem.dto.ItemCondition
 import taeyun.malanalter.alertitem.dto.RegisteredItem
@@ -19,7 +16,6 @@ import taeyun.malanalter.feignclient.DiscordAlertClient
 import taeyun.malanalter.feignclient.MalanClient
 import taeyun.malanalter.user.UserService
 import taeyun.malanalter.user.domain.UserEntity
-import kotlin.system.measureTimeMillis
 
 @ActiveProfiles("test")
 class ItemCheckerPerformanceTest {
@@ -79,19 +75,20 @@ class ItemCheckerPerformanceTest {
         every { alertRepository.syncBids(any(), any(), any()) } just runs
         every { discordService.sendDirectMessage(any(), any()) } just runs
     }
-    @Test
-    fun `Asynchronous Checker Performance Test`() = runBlocking {
-        // Mock network call with non-blocking delay
-        coEvery { malanClient.getItemBidList(any(), any()) } coAnswers { 
-            delay(100)
-            emptyList()
-        }
+    // 성능 테스트는  주석 -> 이전에 동기식이랑 비교하기 위해 사용했었음.
+//    @Test
+//    fun `Asynchronous Checker Performance Test`() = runBlocking {
+//        // Mock network call with non-blocking delay
+//        coEvery { malanClient.getItemBidList(any(), any()) } coAnswers {
+//            delay(100)
+//            emptyList()
+//        }
 
-        val time = measureTimeMillis {
-            val job = asyncChecker.checkItem()
-            job.join()
-        }
-        println("Asynchronous Checker took: $time ms")
+//        val time = measureTimeMillis {
+//            val job = asyncChecker.checkItem()
+//            job.join()
+//        }
+//        println("Asynchronous Checker took: $time ms")
         // Expected time: A bit more than 100ms, since all calls run concurrently.
-    }
+//    }
 }

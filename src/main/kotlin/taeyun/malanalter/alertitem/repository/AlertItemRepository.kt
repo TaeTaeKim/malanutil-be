@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Repository
 class AlertItemRepository : AlertRepository {
 
+
     companion object {
         val itemNameMap: ConcurrentHashMap<Int, String> = ConcurrentHashMap()
 
@@ -36,13 +37,18 @@ class AlertItemRepository : AlertRepository {
         AlertItemEntity.all().map { RegisteredItem(it) }
     }
 
+    override fun getRegisteredItemsByScheduleIdx(idx: Int): List<RegisteredItem> = transaction {
+        AlertItemEntity.find { AlertItemTable.scheduleIndex eq idx }
+            .map { RegisteredItem(it) }
+    }
+
     override fun getAllItemComments(): List<ItemBidEntity> {
         return transaction {
             ItemBidEntity.all().toList()
         }
     }
 
-    override fun syncBids(alertItemId: Int, detectedBids: List<ItemBidInfo>, existBidList: List<ItemBidEntity>)  {
+    override fun syncBids(alertItemId: Int, detectedBids: List<ItemBidInfo>, existBidList: List<ItemBidEntity>) {
         transaction {
             if (existBidList.isEmpty()) {
                 bulkSaveFromBids(alertItemId, detectedBids)

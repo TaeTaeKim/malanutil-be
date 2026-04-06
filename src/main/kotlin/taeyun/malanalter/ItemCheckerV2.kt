@@ -33,7 +33,7 @@ class ItemCheckerV2(
                 val allUserEntityMap: Map<Long, UserEntity> = userService.getAllUserEntityMap()
                 val itemsByUser = alertRepository.getRegisteredItemsByScheduleIdx(scheduleIdx).groupBy { it.userId }
                 val savedBidsByItemId: Map<Int, List<ItemBidEntity>> =
-                    alertRepository.getAllItemComments().groupBy { it.alertItemId.value }
+                    alertRepository.getItemCommentsByScheduleIdx(scheduleIdx).groupBy { it.alertItemId.value }
 
                 if (itemsByUser.isEmpty()) {
                     logger.warn { "[Scheduler] No registered items found. Skipping check." }

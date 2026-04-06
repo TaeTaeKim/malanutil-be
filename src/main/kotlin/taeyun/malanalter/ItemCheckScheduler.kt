@@ -19,7 +19,7 @@ class ItemCheckScheduler(
     private val metricsService: MetricsService
 ) {
 
-    @Scheduled(fixedRate = 1000 * 60 * 5, initialDelay = 1000 * 60)
+    @Scheduled(fixedRate = 1000 * 60)
     fun callCheckItem() {
         metricsService.resetCycleMetrics()
         val scheduleIdx = LocalDateTime.now().minute % 5;

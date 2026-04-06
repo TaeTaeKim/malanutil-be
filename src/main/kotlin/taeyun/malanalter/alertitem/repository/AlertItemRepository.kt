@@ -2,7 +2,6 @@ package taeyun.malanalter.alertitem.repository
 
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.inList
-import org.jetbrains.exposed.v1.core.StdOutSqlLogger
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.springframework.stereotype.Repository
@@ -36,13 +35,11 @@ class AlertItemRepository : AlertRepository {
     }
 
     override fun getRegisteredItemsByScheduleIdx(idx: Int): List<RegisteredItem> = transaction {
-        addLogger(StdOutSqlLogger)
         AlertItemEntity.find { AlertItemTable.scheduleIndex eq idx }
             .map { RegisteredItem(it) }
     }
 
     override fun getItemCommentsByScheduleIdx(idx: Int): List<ItemBidEntity> = transaction {
-        addLogger(StdOutSqlLogger)
         ItemBidEntity.wrapRows(
             ItemBidTable.innerJoin(AlertItemTable)
                 .select(ItemBidTable.columns)

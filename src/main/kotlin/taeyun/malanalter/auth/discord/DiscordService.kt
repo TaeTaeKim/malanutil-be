@@ -29,6 +29,15 @@ class DiscordService(
     companion object {
         val URL_PATTERN = Regex("\\[링크]\\(https://mapleland\\.gg/trade/([^)]+)\\)")
         const val MAX_FAILURE_COUNT = 3
+
+        // 에러 문자열을 검사하여 사용자가 서버를 탈퇴했거나 DM 수신이 불가능한 상태인지 판별
+        // 50007: Cannot send messages to this user (DM 차단/비공개)
+        // 50278: 서버를 떠난 사용자 관련 에러
+        // CANNOT_SEND_TO_USER: JDA가 노출하는 에러 상수명
+        fun isLeftUser(errorString: String): Boolean =
+            errorString.contains("50007") ||
+                    errorString.contains("50278") ||
+                    errorString.contains("CANNOT_SEND_TO_USER")
     }
 
     fun addUserToServer(discordUser: DiscordOAuth2User) {
@@ -71,7 +80,7 @@ class DiscordService(
                                     logger.error {
                                         "Failed to send message to user $userId: ${error.message}\n message : ${message.substring(0,15)}..."
                                     }
-                                    if (error.toString().contains("50007") || error.toString().contains("CANNOT_SEND_TO_USER")) {
+                                    if (isLeftUser(error.toString())) {
                                         handleCannotSendToUserError(userId)
                                     }
                                 }
